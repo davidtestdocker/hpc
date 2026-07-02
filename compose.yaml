@@ -1,0 +1,13 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+
+    environment:
+      APP_NAME: HPC API Dev
+
+    volumes:
+      - ./api:/app/api
