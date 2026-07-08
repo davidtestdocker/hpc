@@ -6,11 +6,13 @@ metadata:
   namespace: hpc-platform
 
 spec:
+  type: NodePort
   selector:
     app: api
 
   ports:
     - port: 8000
       targetPort: 8000
+      nodePort: 30080  
 
-  type: ClusterIP
+
