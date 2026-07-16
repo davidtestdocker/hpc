@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: api
+
+spec:
+  replicas: 3
+
+  template:
+    spec:
+      containers:
+        - name: api
+
+          env:
+            - name: APP_ENV
+              value: stage
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+
+            limits:
+              cpu: "300m"
+              memory: "384Mi"

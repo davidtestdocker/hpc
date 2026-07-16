@@ -1,0 +1,21 @@
+replicaCount: 1
+
+image:
+  repository: postgres
+  tag: 16-alpine
+  pullPolicy: IfNotPresent
+
+service:
+  name: postgres-service
+  port: 5432
+
+database:
+  name: hpc_platform
+  user: hpc
+  password: hpc_password
+
+persistence:
+  claimName: postgres-pvc
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  mountPath: /var/lib/postgresql/data

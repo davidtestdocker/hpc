@@ -1,0 +1,12 @@
+replicaCount: 1
+
+image:
+  repository: redis
+  tag: 7-alpine
+  pullPolicy: IfNotPresent
+
+service:
+  name: redis-service
+  port: 6379
+
+containerPort: 6379

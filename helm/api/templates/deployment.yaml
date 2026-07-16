@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: {{ include "api.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "api.labels" . | nindent 4 }}
+
+
+spec:
+  replicas: {{ .Values.replicaCount }}
+
+  selector:
+    matchLabels:
+      {{- include "api.selectorLabels" . | nindent 6 }}
+
+  template:
+
+    metadata:
+      labels:
+        {{- include "api.selectorLabels" . | nindent 8 }}
+
+    spec:
+
+      containers:
+      - name: api
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: Never
+
+        ports:
+        - containerPort: {{ .Values.containerPort }}
+
+        envFrom:
+          - configMapRef:
+              name: {{ include "api.fullname" . }}-config
+          - secretRef:
+              name: postgres-secret
+
+        resources:
+{{- toYaml .Values.resources | nindent 10 }}
+        readinessProbe:
+{{- toYaml .Values.readinessProbe | nindent 10 }}
+        livenessProbe:
+{{- toYaml .Values.livenessProbe | nindent 10 }}

@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: api
+  namespace: hpc-platform-dev
+spec:
+  replicas: 2
+
+  template:
+    spec:
+      containers:
+        - name: api
+          env:
+            - name: APP_ENV
+              value: dev
+
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+
+            limits:
+              cpu: "200m"
+              memory: "256Mi"

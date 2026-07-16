@@ -1,0 +1,9 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+
+metadata:
+  name: api-ingress
+
+spec:
+  rules:
+    - host: api.hpc.example.com
