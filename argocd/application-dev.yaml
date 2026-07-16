@@ -14,9 +14,16 @@ spec:
     path: kustomize/overlays/dev
 
   destination:
+    #Kubernetes API Server 的DNS，意思部屬到目前這個Cluster
     server: https://kubernetes.default.svc
     namespace: hpc-platform-dev
 
   syncPolicy:
+  #automated 是不用手動按sync只要有差異(push完)就會同步
+  #prune true 如果git沒有這檔案但cluster 有的話檔案也會刪除變成跟git一樣
+  #selfHeal 假設有人編輯了replicas數量 但是git沒變的話 argocd會發現差異自動改回git上的數量 (不用等push)
+    automated:
+      prune: true
+      selfHeal: true
     syncOptions:
       - CreateNamespace=true
