@@ -9,7 +9,10 @@ metadata:
 
 
 spec:
+  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
+
 
   selector:
     matchLabels:
