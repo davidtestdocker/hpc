@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+
+metadata:
+  name: hpc-platform
+  namespace: argocd
+
+spec:
+
+  description: HPC AI Benchmark Platform
+
+  sourceRepos:
+    - https://github.com/davidtestdocker/hpc.git
+
+  destinations:
+    - namespace: hpc-platform-dev
+      server: https://kubernetes.default.svc
+
+    - namespace: hpc-platform-stage
+      server: https://kubernetes.default.svc
+
+    - namespace: hpc-platform-prod
+      server: https://kubernetes.default.svc
+
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"

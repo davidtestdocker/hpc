@@ -6,7 +6,8 @@ metadata:
   namespace: argocd
 
 spec:
-  project: default
+  #決定吃哪個project，這project有限制只能部屬到哪個namespace
+  project: hpc-platform
 
   source:
     repoURL: https://github.com/davidtestdocker/hpc.git

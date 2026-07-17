@@ -3,18 +3,26 @@ kind: Kustomization
 
 namespace: hpc-platform-stage
 
-
 helmGlobals:
   chartHome: ../../../helm
 
 helmCharts:
   - name: api
     releaseName: api
-    namespace: hpc-platform
+    namespace: hpc-platform-stage
     valuesFile: ../../../helm/api/values-stage.yaml
+    includeCRDs: false
+
+  - name: redis
+    releaseName: redis
+    namespace: hpc-platform-stage
+    includeCRDs: false
+
+  - name: postgres
+    releaseName: postgres
+    namespace: hpc-platform-stage
     includeCRDs: false
 
 patches:
   - path: deployment-patch.yaml
   - path: ingress-patch.yaml
-

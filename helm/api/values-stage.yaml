@@ -1,2 +1,7 @@
 image:
   tag: stage
+
+service:
+  type: ClusterIP
+  port: 8000
+  targetPort: 8000

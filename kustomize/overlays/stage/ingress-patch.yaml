@@ -3,7 +3,7 @@ kind: Ingress
 
 metadata:
   name: api-ingress
-
+  namespace: hpc-platform-stage
 spec:
   rules:
     - host: api-stage.hpc.local

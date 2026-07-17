@@ -3,7 +3,7 @@ kind: Deployment
 
 metadata:
   name: api
-
+  namespace: hpc-platform-stage
 spec:
   replicas: 3
 
