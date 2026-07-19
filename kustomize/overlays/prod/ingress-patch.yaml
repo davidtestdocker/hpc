@@ -6,4 +6,4 @@ metadata:
   namespace: hpc-platform-prod
 spec:
   rules:
-    - host: api.hpc.example.com
+    - host: api-prod.hpc.local
