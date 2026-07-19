@@ -1,2 +1,7 @@
 image:
   tag: v1.0.0
+
+service:
+  type: ClusterIP
+  port: 8000
+  targetPort: 8000
