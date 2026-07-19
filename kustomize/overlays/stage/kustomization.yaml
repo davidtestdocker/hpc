@@ -25,4 +25,3 @@ helmCharts:
 
 patches:
   - path: deployment-patch.yaml
-  - path: ingress-patch.yaml

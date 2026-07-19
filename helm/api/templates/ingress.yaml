@@ -13,14 +13,10 @@ spec:
   {{- end }}
 
   rules:
-    {{- range .Values.ingress.hosts }}
-
-    - host: {{ .host | quote }}
-
+    - host: {{ .Values.ingress.host | quote }}
       http:
         paths:
-          {{- range .paths }}
-
+          {{- range .Values.ingress.paths  }}
           - path: {{ .path | quote }}
             pathType: {{ .pathType }}
 
@@ -31,6 +27,5 @@ spec:
                   number: {{ $.Values.service.port }}
 
           {{- end }}
-    {{- end }}
 
 {{- end }}
