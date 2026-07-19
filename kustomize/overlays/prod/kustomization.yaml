@@ -10,8 +10,18 @@ helmGlobals:
 helmCharts:
   - name: api
     releaseName: api
-    namespace: hpc-platform
+    namespace: hpc-platform-prod
     valuesFile: ../../../helm/api/values-prod.yaml
+    includeCRDs: false
+
+  - name: redis
+    releaseName: redis
+    namespace: hpc-platform-prod
+    includeCRDs: false
+
+  - name: postgres
+    releaseName: postgres
+    namespace: hpc-platform-prod
     includeCRDs: false
 
 patches:
