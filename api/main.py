@@ -1,15 +1,17 @@
+import json
+import logging
+import os
+from datetime import datetime, timedelta, timezone
+from uuid import uuid4
+
+import redis
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from uuid import uuid4
-from uuid import UUID
-import os
-import logging
-import redis
+from redis.exceptions import ConnectionError
+
 from api.database.models import Job
 from api.database.session import SessionLocal
-from redis.exceptions import ConnectionError
-import json
-from datetime import datetime, timezone, timedelta
+
 logging.basicConfig(level=logging.INFO)
 
 APP_NAME = os.getenv(

@@ -3,7 +3,8 @@ import subprocess
 result = subprocess.run(
     ["ps", "-eo", "pid,comm"],
     capture_output=True,
-    text=True
+    text=True,
+    check=False
 )
 
 print(result.stdout)

@@ -1,11 +1,7 @@
-from sqlalchemy import String
-from sqlalchemy import UUID
-from sqlalchemy import Integer
-from sqlalchemy import DateTime
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
 from datetime import datetime
+
+from sqlalchemy import UUID, DateTime, Integer, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
