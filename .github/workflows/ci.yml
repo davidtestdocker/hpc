@@ -46,3 +46,10 @@ jobs:
         run: |
 
           ruff check . --output-format=github
+
+
+      - name: Run Pytest
+
+        run: |
+
+          python -m pytest
