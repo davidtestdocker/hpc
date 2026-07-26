@@ -1,5 +1,5 @@
 image:
-  tag: <github.sha>
+  tag: b0e3e42669f5ae0086c066eb381cc33365d7fd0e
 
 service:
   type: ClusterIP
