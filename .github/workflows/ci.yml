@@ -10,7 +10,7 @@ on:
       - master
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -23,6 +23,8 @@ jobs:
 
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
       - name: Authenticate to Google Cloud
         id: auth
@@ -87,3 +89,23 @@ jobs:
         run: |
           docker push \
             asia-east1-docker.pkg.dev/project-4b82f780-0a12-4087-b94/hpc-images/hpc-api:${{ github.sha }}
+
+
+
+      - name: Update Image Tag
+        run: |
+          sed -i "s/^  tag:.*/  tag: ${{ github.sha }}/" helm/api/values-dev.yaml
+          cat helm/api/values-dev.yaml
+
+
+
+      - name: Commit GitOps Changes
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+
+          git add helm/api/values-dev.yaml
+
+          git commit -m "chore: update image tag [skip ci]" || echo "No changes"
+
+          git push
