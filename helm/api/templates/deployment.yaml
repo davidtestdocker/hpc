@@ -29,7 +29,7 @@ spec:
       containers:
       - name: api
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        imagePullPolicy: Never
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
 
         ports:
         - containerPort: {{ .Values.containerPort }}
