@@ -1,5 +1,5 @@
 image:
-  tag: 16dbe5a052446f14794afafd2ff40ab8b8301a42
+  tag: 696ad837c7ffa6ddcc12b36d7682b92daa80817f
 
 service:
   type: ClusterIP
