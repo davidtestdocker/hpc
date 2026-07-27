@@ -8,6 +8,7 @@ helmGlobals:
   chartHome: ../../../helm
 
 helmCharts:
+  #name api 代表 helm/api
   - name: api
     releaseName: api
     namespace: hpc-platform-dev
