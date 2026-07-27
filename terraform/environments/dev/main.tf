@@ -18,14 +18,16 @@ module "firewall" {
   ]
 }
 
-module "api" {
-  source = "../../modules/compute"
 
-  name         = "hpc-api-${var.environment}"
-  machine_type = "e2-medium"
+module "gke" {
+
+  source       = "../../modules/gke"
+  project_id   = var.project_id
+  region       = var.region
   zone         = var.zone
-  image        = "ubuntu-os-cloud/ubuntu-2404-lts-amd64"
-
-  network    = module.network.network_id
-  subnetwork = module.network.subnet_id
+  cluster_name = "hpc-dev"
+  network      = module.network.network_name
+  subnetwork   = module.network.subnet_name
+  node_count   = 1
+  machine_type = "e2-standard-2"
 }

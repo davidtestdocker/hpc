@@ -42,6 +42,9 @@ spec:
                 secretKeyRef:
                   name: postgres-secret
                   key: POSTGRES_PASSWORD
+            #如果你有設定 PGDATA就用它，沒有設定就用預設 /var/lib/postgresql/data
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
 
           volumeMounts:
             - name: postgres-storage
