@@ -6,9 +6,10 @@ from uuid import uuid4
 
 import redis
 from fastapi import FastAPI, HTTPException
+from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel
 from redis.exceptions import ConnectionError
-from prometheus_fastapi_instrumentator import Instrumentator
+
 from api.database.models import Job
 from api.database.session import SessionLocal
 
