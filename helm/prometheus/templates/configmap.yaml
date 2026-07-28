@@ -21,3 +21,7 @@ data:
         static_configs:
           - targets:
               - api-service:8000
+      - job_name: node-exporter
+        static_configs:
+          - targets:
+              - node-exporter-prometheus-node-exporter:9100
