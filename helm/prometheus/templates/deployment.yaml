@@ -14,9 +14,6 @@ spec:
   template:
     metadata:
       #只要configmap.yaml內容有變 sha256sum就會變，所以就會偵測到prometheus的deployment有變，就會建新的prometheus pod
-    valuesInline:
-      nodeSelector:
-        workload: observability
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
       labels:
