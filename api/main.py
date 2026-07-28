@@ -8,7 +8,7 @@ import redis
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from redis.exceptions import ConnectionError
-
+from prometheus_fastapi_instrumentator import Instrumentator
 from api.database.models import Job
 from api.database.session import SessionLocal
 
@@ -34,6 +34,8 @@ app = FastAPI(
     title=APP_NAME,
     version="0.1.0"
 )
+#建立一個 Metrics 收集器.攔截 FastAPI 所有 HTTP Request.自動新增：GET /metrics
+Instrumentator().instrument(app).expose(app)
 
 class BenchmarkRequest(BaseModel):
     benchmark: str
@@ -235,8 +237,8 @@ def process_next_job():
 
     return job
 
-@app.get("/metrics")
-def metrics():
+@app.get("/job-metrics")
+def job_metrics():
     job_keys = redis_client.keys("job:*")
     completed_jobs = 0
 
