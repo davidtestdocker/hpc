@@ -30,6 +30,12 @@ helmCharts:
     namespace: hpc-platform-dev
     includeCRDs: false
 
+  - name: prometheus-node-exporter
+    repo: https://prometheus-community.github.io/helm-charts
+    version: 4.56.1
+    releaseName: node-exporter
+    namespace: hpc-platform-dev
+
 patches:
   - path: deployment-patch.yaml
 
