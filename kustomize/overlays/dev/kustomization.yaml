@@ -25,6 +25,11 @@ helmCharts:
     namespace: hpc-platform-dev
     includeCRDs: false
 
+  - name: prometheus
+    releaseName: prometheus
+    namespace: hpc-platform-dev
+    includeCRDs: false
+
 patches:
   - path: deployment-patch.yaml
 

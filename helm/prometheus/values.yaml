@@ -1,0 +1,36 @@
+replicaCount: 1
+
+image:
+  repository: prom/prometheus
+  tag: v3.7.3
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 9090
+  targetPort: 9090
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 500m
+    memory: 1Gi
+# 讓Prometheus Pod 只能排到剛建立的 Observability Node
+nodeSelector:
+  workload: observability
+# enabled: true  Pod 重建後歷史 metrics 全部還在
+# storageClassName 指定要使用哪個 StorageClass 建立磁碟
+# ReadWriteOnce 一台 Node 可以讀寫
+persistence:
+  enabled: true
+  storageClassName: standard-rwo
+  accessModes:
+    - ReadWriteOnce
+  size: 10Gi
+# scrapeInterval 15 秒抓一次所有 Metrics
+# evaluationInterval 15 秒重新計算一次 Rules
+config:
+  scrapeInterval: 15s
+  evaluationInterval: 15s

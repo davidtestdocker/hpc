@@ -4,7 +4,7 @@ resource "google_compute_instance" "this" {
   machine_type = var.machine_type
   zone         = var.zone
 
-allow_stopping_for_update = true
+  allow_stopping_for_update = true
 
   boot_disk {
     initialize_params {
@@ -13,7 +13,7 @@ allow_stopping_for_update = true
   }
 
   network_interface {
-    network = var.network
+    network    = var.network
     subnetwork = var.subnetwork
   }
 

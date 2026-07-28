@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "prometheus.fullname" . }}
+  labels:
+    {{- include "prometheus.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "prometheus.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "prometheus.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: prometheus
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          args:
+            #pod裡面容器prometheus程式去讀prometheus.yml這檔案
+            - --config.file=/etc/prometheus/prometheus.yml
+            #所有Metrics Database 都存到 /prometheus (gke硬碟)  
+            - --storage.tsdb.path=/prometheus
+
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 15
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          # 把ConfigMap 裡的所有檔案掛到這個pod的/etc/prometheus路徑
+          volumeMounts:
+            - name: prometheus-config
+              mountPath: /etc/prometheus
+
+            - name: prometheus-data
+              mountPath: /prometheus
+
+      #include 裡面是函式 ex:prometheus.fullname 被定義在_helpers.tpl          
+      #找 Kubernetes 裡名叫 prometheus 的 ConfigMap
+      #建立一個 Volume，名字叫 prometheus-config
+      #這個 Volume 的內容就是 ConfigMap 裡的所有檔案
+      volumes:
+        - name: prometheus-config
+          configMap:
+            name: {{ include "prometheus.fullname" . }}
+
+        - name: prometheus-data
+          persistentVolumeClaim:
+            claimName: {{ include "prometheus.fullname" . }}
+
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}

@@ -34,3 +34,28 @@ resource "google_container_node_pool" "primary" {
     ]
   }
 }
+
+resource "google_container_node_pool" "observability" {
+
+  name     = "observability-pool"
+  project  = var.project_id
+  location = var.zone
+
+  cluster = google_container_cluster.this.name
+
+  node_count = 1
+
+  node_config {
+
+    machine_type = "e2-standard-2"
+    # 設定 Node Label，之後可透過 nodeSelector 指定 Observability 服務
+    # (Prometheus、Grafana、Alertmanager) 部署到此 Node Pool
+    labels = {
+      workload = "observability"
+    }
+
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/cloud-platform"
+    ]
+  }
+}

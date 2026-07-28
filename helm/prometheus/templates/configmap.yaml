@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "prometheus.fullname" . }}
+  labels:
+    {{- include "prometheus.labels" . | nindent 4 }}
+data:
+  #建立prometheus.yml檔案，內容是global...
+  prometheus.yml: |
+    global:
+      scrape_interval: {{ .Values.config.scrapeInterval }}
+      evaluation_interval: {{ .Values.config.evaluationInterval }}
+
+    scrape_configs:
+      - job_name: prometheus
+        static_configs:
+          - targets:
+              - localhost:9090
