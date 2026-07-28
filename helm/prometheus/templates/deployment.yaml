@@ -70,6 +70,7 @@ spec:
         - name: prometheus-data
           persistentVolumeClaim:
             claimName: {{ include "prometheus.fullname" . }}
-
+      # nodeSelector Kubernetes Scheduler可以透過這個將pod被放到有同樣lable的node
+      # - toYaml 把 values.yaml 裡的 nodeSelector 整個轉成 YAML，最後產生nodeSelector:workload: observability
       nodeSelector:
         {{- toYaml .Values.nodeSelector | nindent 8 }}

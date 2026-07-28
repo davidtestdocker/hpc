@@ -8,11 +8,16 @@ data:
   #建立prometheus.yml檔案，內容是global...
   prometheus.yml: |
     global:
+      #15秒抓一次
       scrape_interval: {{ .Values.config.scrapeInterval }}
       evaluation_interval: {{ .Values.config.evaluationInterval }}
-
+    #定義 Prometheus 要定期抓取哪些 Metrics Target
     scrape_configs:
       - job_name: prometheus
         static_configs:
           - targets:
               - localhost:9090
+      - job_name: api
+        static_configs:
+          - targets:
+              - api-service:8000
