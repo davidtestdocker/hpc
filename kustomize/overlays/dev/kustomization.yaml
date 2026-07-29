@@ -36,6 +36,25 @@ helmCharts:
     releaseName: node-exporter
     namespace: hpc-platform-dev
 
+  - name: grafana
+    repo: https://grafana.github.io/helm-charts
+    version: 10.5.15
+    releaseName: grafana
+    namespace: hpc-platform-dev
+
+    #valuesInline 就是直接在 kustomization.yaml 裡設定 Helm Chart 的 values.yaml 參數
+    valuesInline:
+      nodeSelector:
+        workload: observability
+
+      persistence:
+        enabled: true
+        storageClassName: standard-rwo
+        size: 10Gi
+
+      adminUser: admin
+      adminPassword: admin123
+
 patches:
   - path: deployment-patch.yaml
 
