@@ -22,14 +22,20 @@ data:
           - targets:
               - api-service:8000
       - job_name: node-exporter
+
+  # 使用 Kubernetes Service Discovery
+  # 自動從 Kubernetes Endpoint 發現所有 Node Exporter Pod
+  # kubernetes_sd_configs：從 Kubernetes 自動找要監控的 Pod／Service
+  # role: endpoints：以 Service 的 Endpoint（每個 Pod IP）為監控目標
         kubernetes_sd_configs:
           - role: endpoints
-
+  #relabel_configs：篩選要保留哪些 Endpoint。
         relabel_configs:
+           # 只保留 Service 名稱為 node-exporter-prometheus-node-exporter 的 Endpoint
           - source_labels: [__meta_kubernetes_service_name]
             action: keep
             regex: node-exporter-prometheus-node-exporter
-
+          # 只保留 metrics Port，避免抓到其他 Port
           - source_labels: [__meta_kubernetes_endpoint_port_name]
             action: keep
             regex: metrics

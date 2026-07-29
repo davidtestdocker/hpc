@@ -1,0 +1,43 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+
+metadata:
+  name: prometheus
+
+
+# RBAC 規則
+# Core API ("") 與 discovery.k8s.io 是不同的 API Group，
+# 必須分成不同的 rules。
+#
+# Core API ("")
+#   - nodes
+#   - nodes/proxy
+#   - services
+#   - endpoints
+#   - pods
+# discovery.k8s.io
+#   - endpointslices
+# Prometheus 使用 kubernetes_sd_configs 時，
+# 需要 list/watch 這些資源，才能透過 Kubernetes API
+# 自動發現所有 Scrape Targets。
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - nodes/proxy
+      - services
+      - endpoints
+      - pods
+    verbs:
+      - get
+      - list
+      - watch
+
+  - apiGroups:
+      - discovery.k8s.io
+    resources:
+      - endpointslices
+    verbs:
+      - get
+      - list
+      - watch

@@ -19,6 +19,7 @@ spec:
       labels:
         {{- include "prometheus.selectorLabels" . | nindent 8 }}
     spec:
+      serviceAccountName: prometheus
       #這個 Pod 掛載的 Volume（PVC）都套用這個權限設定
       securityContext:
         fsGroup: 65534
