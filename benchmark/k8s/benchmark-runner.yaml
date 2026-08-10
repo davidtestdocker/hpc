@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: benchmark
+  namespace: hpc-platform-dev
+  labels:
+    app: benchmark
+
+spec:
+  restartPolicy: Never
+
+  nodeSelector:
+    cloud.google.com/gke-nodepool: primary-pool
+
+  containers:
+  - name: benchmark
+    image: debian:12
+
+    command:
+      - tail
+    args:
+      - -f
+      - /dev/null
+
+    resources:
+      requests:
+        cpu: "1"
+        memory: "512Mi"
+
+      limits:
+        cpu: "4"
+        memory: "2Gi"
