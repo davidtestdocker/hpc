@@ -58,3 +58,19 @@ data:
             action: keep
             regex: metrics
 
+      - job_name: gpu-metrics
+
+        kubernetes_sd_configs:
+          - role: endpoints
+
+        relabel_configs:
+
+          # Keep only DCGM Exporter Service
+          - source_labels: [__meta_kubernetes_service_name]
+            action: keep
+            regex: nvidia-dcgm-exporter
+
+          # Keep only metrics port
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: metrics

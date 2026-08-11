@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: DaemonSet
+
+metadata:
+  name: nvidia-dcgm
+  namespace: hpc-platform-dev
+
+spec:
+  selector:
+    matchLabels:
+      app: nvidia-dcgm
+
+  template:
+    metadata:
+      labels:
+        app: nvidia-dcgm
+
+    spec:
+      # Only schedule this Pod onto GPU nodes
+      nodeSelector:
+        cloud.google.com/gke-nodepool: gpu-pool
+
+      # Allow scheduling onto the GPU node taint
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Equal
+          value: present
+          effect: NoSchedule
+
+      volumes:
+        # GKE-managed NVIDIA driver directory on the GPU node
+        - name: nvidia-install-dir-host
+          hostPath:
+            path: /home/kubernetes/bin/nvidia
+            type: Directory
+
+      containers:
+        - name: nvidia-dcgm
+          image: nvcr.io/nvidia/cloud-native/dcgm:3.3.0-1-ubuntu22.04
+
+          # Start DCGM HostEngine and listen on all interfaces
+          command:
+            - nv-hostengine
+            - -n
+            - -b
+            - ALL
+
+          ports:
+            - name: dcgm
+              containerPort: 5555
+              hostPort: 5555
+
+          # Google GKE reference deployment uses privileged mode
+          securityContext:
+            privileged: true
+
+          volumeMounts:
+            # Make GKE's NVIDIA driver libraries available inside the container
+            - name: nvidia-install-dir-host
+              mountPath: /usr/local/nvidia

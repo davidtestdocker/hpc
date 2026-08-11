@@ -1,0 +1,128 @@
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: nvidia-dcgm-exporter-metrics
+  namespace: hpc-platform-dev
+
+data:
+  counters.csv: |
+    # GPU utilization
+    DCGM_FI_DEV_GPU_UTIL, gauge, GPU utilization percentage.
+
+    # Memory
+    DCGM_FI_DEV_FB_FREE, gauge, GPU framebuffer memory free in MiB.
+    DCGM_FI_DEV_FB_USED, gauge, GPU framebuffer memory used in MiB.
+    DCGM_FI_DEV_FB_TOTAL, gauge, Total GPU framebuffer memory in MiB.
+
+    # Temperature and power
+    DCGM_FI_DEV_GPU_TEMP, gauge, GPU temperature in Celsius.
+    DCGM_FI_DEV_POWER_USAGE, gauge, GPU power usage in Watts.
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+
+metadata:
+  name: nvidia-dcgm-exporter
+  namespace: hpc-platform-dev
+
+spec:
+  selector:
+    matchLabels:
+      app: nvidia-dcgm-exporter
+
+  template:
+    metadata:
+      labels:
+        app: nvidia-dcgm-exporter
+
+    spec:
+      # Run only on our GPU node pool
+      nodeSelector:
+        cloud.google.com/gke-nodepool: gpu-pool
+
+      # Allow scheduling on GPU node taint
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Equal
+          value: present
+          effect: NoSchedule
+
+      volumes:
+        # Metrics configuration
+        - name: dcgm-metrics
+          configMap:
+            name: nvidia-dcgm-exporter-metrics
+
+        # GKE-managed NVIDIA driver
+        - name: nvidia-install-dir-host
+          hostPath:
+            path: /home/kubernetes/bin/nvidia
+            type: Directory
+
+        # Kubernetes GPU pod metadata
+        - name: pod-resources
+          hostPath:
+            path: /var/lib/kubelet/pod-resources
+            type: Directory
+
+      containers:
+        - name: nvidia-dcgm-exporter
+          image: nvcr.io/nvidia/k8s/dcgm-exporter:3.3.0-3.2.0-ubuntu22.04
+
+          # Connect to nv-hostengine running on this same GPU node
+          command:
+            - /bin/bash
+            - -c
+
+          args:
+            - >
+              hostname $NODE_NAME;
+              dcgm-exporter
+              --remote-hostengine-info $(NODE_IP)
+              --collectors /etc/dcgm-exporter/counters.csv
+
+          ports:
+            - name: metrics
+              containerPort: 9400
+
+          # Google reference deployment uses privileged mode
+          securityContext:
+            privileged: true
+
+          env:
+            # Kubernetes node name
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+
+            # Host IP of the GPU node
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+
+            # Required for GKE-managed NVIDIA driver libraries
+            - name: LD_LIBRARY_PATH
+              value: /usr/local/nvidia/lib64
+
+            - name: DCGM_EXPORTER_KUBERNETES
+              value: "true"
+
+            - name: DCGM_EXPORTER_LISTEN
+              value: ":9400"
+
+          volumeMounts:
+            - name: dcgm-metrics
+              mountPath: /etc/dcgm-exporter
+              readOnly: true
+
+            - name: nvidia-install-dir-host
+              mountPath: /usr/local/nvidia
+              readOnly: true
+
+            - name: pod-resources
+              mountPath: /var/lib/kubelet/pod-resources
+              readOnly: true
