@@ -60,7 +60,7 @@ def main():
 
     # Train the model for multiple epochs
     for epoch in range(epochs):
-
+        epoch_loss = 0.0
         # Train all batches in the dataloader
         for features_batch, labels_batch in dataloader:
 
