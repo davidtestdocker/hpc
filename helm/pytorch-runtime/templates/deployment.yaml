@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pytorch-runtime
+
+spec:
+  replicas: {{ .Values.replicaCount }}
+
+  selector:
+    matchLabels:
+      app: pytorch-runtime
+
+  template:
+    metadata:
+      labels:
+        app: pytorch-runtime
+
+    spec:
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | nindent 8 }}
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Equal
+          value: present
+          effect: NoSchedule
+
+      containers:
+        - name: pytorch-runtime
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          command:
+            - python
+
+          args:
+            - /runtime/runtime.py
+
+          resources:
+            limits:
+              nvidia.com/gpu: {{ .Values.gpu.count }}
+
+          volumeMounts:
+            - name: runtime-code
+              mountPath: /runtime
+              readOnly: true
+
+      volumes:
+        - name: runtime-code
+          configMap:
+            name: pytorch-runtime-code

@@ -36,6 +36,11 @@ helmCharts:
     releaseName: node-exporter
     namespace: hpc-platform-dev
 
+  - name: pytorch-runtime
+    releaseName: pytorch-runtime
+    namespace: hpc-platform-dev
+    includeCRDs: false
+
   - name: grafana
     repo: https://grafana.github.io/helm-charts
     version: 10.5.15
@@ -54,6 +59,14 @@ helmCharts:
 
       adminUser: admin
       adminPassword: admin123
+
+configMapGenerator:
+  - name: pytorch-runtime-code
+    files:
+      - runtime.py=../../../runtime/pytorch/runtime.py
+
+generatorOptions:
+  disableNameSuffixHash: true
 
 patches:
   - path: deployment-patch.yaml

@@ -1,0 +1,12 @@
+replicaCount: 1
+
+image:
+  repository: pytorch/pytorch
+  tag: 2.12.0-cuda12.6-cudnn9-runtime
+  pullPolicy: IfNotPresent
+
+gpu:
+  count: 1
+
+nodeSelector:
+  cloud.google.com/gke-nodepool: gpu-pool
