@@ -33,6 +33,7 @@ spec:
             - python
 
           args:
+            - -u
             - /runtime/runtime.py
 
           resources:
