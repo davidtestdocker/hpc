@@ -51,7 +51,7 @@ def main():
     )
 
     # Set the number of training epochs
-    epochs = 5
+    epochs = 100
 
     print(f"Training Device: {device}")
     print(f"GPU: {torch.cuda.get_device_name(device)}")
