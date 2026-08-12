@@ -6,13 +6,21 @@ class SimpleModel(torch.nn.Module):
     def __init__(self):
         super().__init__()
 
-        # Map 10 input features to 1 prediction
-        self.linear = torch.nn.Linear(10, 1)
+        # Expand 1024 input features into a larger hidden representation
+        self.layer1 = torch.nn.Linear(1024, 4096)
+        # Convert the hidden representation into one prediction
+        self.layer2 = torch.nn.Linear(4096, 1)
+
 
     def forward(self, x):
-        # Run input data through the linear layer
-        return self.linear(x)
+        # First linear transformation
+        x = self.layer1(x)
 
+        # Apply a non-linear activation
+        x = torch.relu(x)
+
+        # Produce the final prediction
+        return self.layer2(x)
 
 def main():
     # Verify that CUDA is available
@@ -23,7 +31,7 @@ def main():
     device = torch.device("cuda:0")
 
     # Create synthetic input data on CPU
-    features = torch.randn(1000, 10)
+    features = torch.randn(20000, 1024)
 
     # Create labels with a learnable relationship to the input features
     labels = features.sum(dim=1, keepdim=True)
@@ -34,7 +42,7 @@ def main():
     # Create batches from the dataset
     dataloader = DataLoader(
         dataset,
-        batch_size=64,
+        batch_size=512,
         shuffle=True,
     )
 
