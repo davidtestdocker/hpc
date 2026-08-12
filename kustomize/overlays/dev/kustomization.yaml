@@ -64,6 +64,7 @@ configMapGenerator:
   - name: pytorch-runtime-code
     files:
       - runtime.py=../../../runtime/pytorch/runtime.py
+      - train.py=../../../runtime/pytorch/train.py
 
 generatorOptions:
   disableNameSuffixHash: true

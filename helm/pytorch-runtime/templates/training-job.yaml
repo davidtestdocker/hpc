@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pytorch-training
+
+spec:
+  backoffLimit: 1
+
+  template:
+    metadata:
+      labels:
+        app: pytorch-training
+
+    spec:
+      restartPolicy: Never
+
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | nindent 8 }}
+
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Equal
+          value: present
+          effect: NoSchedule
+
+      containers:
+        - name: pytorch-training
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          command:
+            - python
+
+          args:
+            - -u
+            - /runtime/train.py
+
+          resources:
+            limits:
+              nvidia.com/gpu: {{ .Values.gpu.count }}
+
+          volumeMounts:
+            - name: runtime-code
+              mountPath: /runtime
+              readOnly: true
+
+      volumes:
+        - name: runtime-code
+          configMap:
+            name: pytorch-runtime-code
