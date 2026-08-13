@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: hpc-platform-dev
+
+helmGlobals:
+  chartHome: ../../../helm
+
+helmCharts:
+  - name: pytorch-runtime
+    releaseName: pytorch-runtime
+    namespace: hpc-platform-dev
+    includeCRDs: false
+
+configMapGenerator:
+  - name: pytorch-runtime-code
+    files:
+      - runtime.py=../../../runtime/pytorch/runtime.py
+      - train.py=../../../runtime/pytorch/train.py
+
+generatorOptions:
+  disableNameSuffixHash: true
