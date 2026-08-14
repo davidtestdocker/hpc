@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: vllm
+  template:
+    metadata:
+      labels:
+        app: vllm
+    spec:
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      containers:
+        - name: vllm
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--model"
+            - "{{ .Values.model.name }}"
+            - "--host"
+            - "0.0.0.0"
+            - "--port"
+            - "8000"
+          ports:
+            - containerPort: 8000
+              name: http
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
