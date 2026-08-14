@@ -84,6 +84,14 @@ def main():
 
             # Calculate loss
             loss = loss_function(predictions, labels_batch)
+            # Stop training if the loss becomes NaN or infinite
+            if not torch.isfinite(loss):
+                raise RuntimeError(
+                    f"Non-finite loss detected: "
+                    f"epoch={epoch + 1}, "
+                    f"loss={loss.item()}"
+            )
+
 
             # Calculate gradients
             loss.backward()
