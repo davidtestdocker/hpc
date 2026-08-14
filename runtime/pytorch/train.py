@@ -55,7 +55,7 @@ def main():
     # Create an optimizer for the model parameters
     optimizer = torch.optim.SGD(
         model.parameters(),
-        lr=0.01,
+        lr=0.001,
     )
 
     # Set the number of training epochs
