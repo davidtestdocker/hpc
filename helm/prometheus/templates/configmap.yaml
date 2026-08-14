@@ -74,3 +74,9 @@ data:
           - source_labels: [__meta_kubernetes_endpoint_port_name]
             action: keep
             regex: metrics
+
+        - job_name: vllm-sg
+
+          static_configs:
+            - targets:
+                - 10.148.0.9:30800
