@@ -75,8 +75,8 @@ data:
             action: keep
             regex: metrics
 
-        - job_name: vllm-sg
+      - job_name: vllm-sg
 
-          static_configs:
-            - targets:
-                - 10.148.0.9:30800
+        static_configs:
+          - targets:
+              - 10.148.0.9:30800
