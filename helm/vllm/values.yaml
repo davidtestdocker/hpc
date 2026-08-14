@@ -9,9 +9,9 @@ model:
   name: Qwen/Qwen2.5-0.5B-Instruct
 
 service:
-  type: ClusterIP
+  type: NodePort
   port: 8000
-
+  nodePort: 30800
 resources:
   limits:
     nvidia.com/gpu: 1
