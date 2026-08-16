@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import DataLoader, TensorDataset
+from torch.profiler import profile, ProfilerActivity
 
 
 class SimpleModel(torch.nn.Module):
@@ -8,9 +9,9 @@ class SimpleModel(torch.nn.Module):
 
         # Expand 1024 input features into a larger hidden representation
         self.layer1 = torch.nn.Linear(1024, 4096)
+
         # Convert the hidden representation into one prediction
         self.layer2 = torch.nn.Linear(4096, 1)
-
 
     def forward(self, x):
         # First linear transformation
@@ -21,6 +22,7 @@ class SimpleModel(torch.nn.Module):
 
         # Produce the final prediction
         return self.layer2(x)
+
 
 def main():
     # Verify that CUDA is available
@@ -44,6 +46,7 @@ def main():
         dataset,
         batch_size=512,
         shuffle=True,
+        num_workers=0,
     )
 
     # Create the model and move its parameters to GPU
@@ -58,20 +61,28 @@ def main():
         lr=0.001,
     )
 
-    # Set the number of training epochs
-    epochs = 100
+    # Limit profiling to a small number of representative training steps
+    profile_steps = 5
+    completed_steps = 0
 
     print(f"Training Device: {device}")
     print(f"GPU: {torch.cuda.get_device_name(device)}")
     print(f"Dataset Size: {len(dataset)}")
     print(f"Batches Per Epoch: {len(dataloader)}")
+    print(f"DataLoader Workers: {dataloader.num_workers}")
+    print(f"Profiler Steps: {profile_steps}")
 
-    # Train the model for multiple epochs
-    for epoch in range(epochs):
-        epoch_loss = 0.0
-        # Train all batches in the dataloader
+    # Profile CPU and CUDA activity during representative training steps
+    with profile(
+        activities=[
+            ProfilerActivity.CPU,
+            ProfilerActivity.CUDA,
+        ],
+        record_shapes=True,
+        profile_memory=True,
+    ) as prof:
+
         for features_batch, labels_batch in dataloader:
-
             # Move the current batch to GPU
             features_batch = features_batch.to(device)
             labels_batch = labels_batch.to(device)
@@ -84,14 +95,12 @@ def main():
 
             # Calculate loss
             loss = loss_function(predictions, labels_batch)
+
             # Stop training if the loss becomes NaN or infinite
             if not torch.isfinite(loss):
                 raise RuntimeError(
-                    f"Non-finite loss detected: "
-                    f"epoch={epoch + 1}, "
-                    f"loss={loss.item()}"
-            )
-
+                    f"Non-finite loss detected: loss={loss.item()}"
+                )
 
             # Calculate gradients
             loss.backward()
@@ -99,16 +108,23 @@ def main():
             # Update model parameters
             optimizer.step()
 
-            # Accumulate batch loss
-            epoch_loss += loss.item()
+            # Mark the end of one profiling step
+            prof.step()
 
-            # Calculate the average loss for this epoch
-        average_loss = epoch_loss / len(dataloader)
+            completed_steps += 1
 
-        print(
-            f"Epoch [{epoch + 1}/{epochs}] "
-            f"Average Loss: {average_loss:.6f}"
+            if completed_steps >= profile_steps:
+                break
+
+    print("\n=== PyTorch Profiler: CUDA Time ===")
+
+    print(
+        prof.key_averages().table(
+            sort_by="cuda_time_total",
+            row_limit=20,
         )
+    )
+
 
 if __name__ == "__main__":
     main()

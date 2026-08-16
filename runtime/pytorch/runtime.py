@@ -1,36 +1,67 @@
 import time
-import torch
+
+from runtime.base import Runtime
 
 
-def validate_runtime():
-    # Verify that PyTorch can access CUDA
-    if not torch.cuda.is_available():
-        raise RuntimeError("CUDA is not available")
+class PyTorchRuntime(Runtime):
+    def __init__(self):
+        # Runtime dependencies are loaded only during initialization
+        self.torch = None
+        self.device = None
+        self.gpu_name = None
 
-    # Get the GPU assigned to this runtime
-    device = torch.device("cuda:0")
-    gpu_name = torch.cuda.get_device_name(device)
+    def initialize(self):
+        # Load PyTorch only when this runtime is actually initialized
+        import torch
 
-    # Run a small GPU computation to verify CUDA execution
-    a = torch.randn((2048, 2048), device=device)
-    b = torch.randn((2048, 2048), device=device)
-    c = torch.matmul(a, b)
+        self.torch = torch
 
-    # Wait until the GPU computation is completed
-    torch.cuda.synchronize()
+        # Verify that PyTorch can access CUDA
+        if not torch.cuda.is_available():
+            raise RuntimeError("CUDA is not available")
 
-    print("PyTorch Runtime Ready")
-    print(f"PyTorch Version: {torch.__version__}")
-    print(f"CUDA Available: {torch.cuda.is_available()}")
-    print(f"GPU Device: {gpu_name}")
-    print(f"Result Device: {c.device}")
+        # Get the GPU assigned to this runtime
+        self.device = torch.device("cuda:0")
+        self.gpu_name = torch.cuda.get_device_name(self.device)
+
+    def run(self, request=None):
+        # Ensure the runtime has been initialized
+        if self.torch is None or self.device is None:
+            raise RuntimeError("Runtime is not initialized")
+
+        # Run a small GPU computation
+        a = self.torch.randn((2048, 2048), device=self.device)
+        b = self.torch.randn((2048, 2048), device=self.device)
+        c = self.torch.matmul(a, b)
+
+        # Wait until GPU computation is completed
+        self.torch.cuda.synchronize()
+
+        return {
+            "status": "completed",
+            "result_device": str(c.device),
+        }
+
+    def get_info(self):
+        # Return runtime metadata without requiring initialization
+        return {
+            "name": "pytorch",
+            "type": "compute",
+            "gpu_required": True,
+            "gpu_name": self.gpu_name,
+        }
 
 
 def main():
-    # Validate the runtime when the container starts
-    validate_runtime()
+    runtime = PyTorchRuntime()
 
-    # Keep the runtime process alive
+    runtime.initialize()
+    result = runtime.run()
+
+    print("PyTorch Runtime Ready")
+    print(runtime.get_info())
+    print(result)
+
     while True:
         time.sleep(60)
 
