@@ -46,7 +46,7 @@ def main():
         dataset,
         batch_size=512,
         shuffle=True,
-        num_workers=0,
+        num_workers=2,
     )
 
     # Create the model and move its parameters to GPU
