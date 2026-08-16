@@ -1,6 +1,6 @@
 import torch
 from torch.utils.data import DataLoader, TensorDataset
-from torch.profiler import profile, ProfilerActivity
+from torch.profiler import profile, ProfilerActivity, schedule
 
 
 class SimpleModel(torch.nn.Module):
@@ -61,26 +61,36 @@ def main():
         lr=0.001,
     )
 
-    # Limit profiling to a small number of representative training steps
-    profile_steps = 5
-    completed_steps = 0
+    # Configure profiler phases
+    profiler_schedule = schedule(
+        wait=2,
+        warmup=2,
+        active=5,
+        repeat=1,
+    )
+
+    # Total steps required by the profiler schedule
+    total_steps = 9
 
     print(f"Training Device: {device}")
     print(f"GPU: {torch.cuda.get_device_name(device)}")
     print(f"Dataset Size: {len(dataset)}")
     print(f"Batches Per Epoch: {len(dataloader)}")
     print(f"DataLoader Workers: {dataloader.num_workers}")
-    print(f"Profiler Steps: {profile_steps}")
+    print(f"Profiler Total Steps: {total_steps}")
 
-    # Profile CPU and CUDA activity during representative training steps
+    # Profile representative steady-state training steps
     with profile(
         activities=[
             ProfilerActivity.CPU,
             ProfilerActivity.CUDA,
         ],
+        schedule=profiler_schedule,
         record_shapes=True,
         profile_memory=True,
     ) as prof:
+
+        completed_steps = 0
 
         for features_batch, labels_batch in dataloader:
             # Move the current batch to GPU
@@ -108,12 +118,12 @@ def main():
             # Update model parameters
             optimizer.step()
 
-            # Mark the end of one profiling step
+            # Mark one training step as completed
             prof.step()
 
             completed_steps += 1
 
-            if completed_steps >= profile_steps:
+            if completed_steps >= total_steps:
                 break
 
     print("\n=== PyTorch Profiler: CUDA Time ===")
