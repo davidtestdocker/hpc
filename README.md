@@ -173,7 +173,7 @@ Kubernetes、GKE、GitOps 與 GPU 環境需要額外的 Cluster／Cloud 設定�
 | Week 11–12 | Observability 與 Linux Diagnostics | ✅ 核心完成 |
 | Week 13 | Benchmark Platform v1 | ✅ 完成 |
 | Week 14 | GPU Scheduling 與 GPU Observability | ✅ 核心完成 |
-| Week 15 | PyTorch、vLLM、Benchmark Engine、Analyzer | 🚧 進行至 Day 6 |
+| Week 15 | PyTorch、vLLM、Benchmark Engine、Analyzer  | ✅ 完成 
 
 ## 目前定位與後續方向
 
