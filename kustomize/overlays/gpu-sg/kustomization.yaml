@@ -22,6 +22,7 @@ configMapGenerator:
     files:
       - runtime.py=../../../runtime/pytorch/runtime.py
       - train.py=../../../runtime/pytorch/train.py
+      - ddp_test.py=../../../runtime/pytorch/ddp_test.py  
 
 generatorOptions:
   disableNameSuffixHash: true
