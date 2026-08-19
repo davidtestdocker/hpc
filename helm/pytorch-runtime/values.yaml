@@ -31,9 +31,9 @@ distributedScaling:
   enabled: true
 
   # Current lab runs real CPU/Gloo scaling.
-  workers: 1
+  workers: 2
 
-  cpuRequest: "2"
-  cpuLimit: "2"
+  cpuRequest: "4"
+  cpuLimit: "4"
   memoryRequest: "2Gi"
   memoryLimit: "4Gi"
