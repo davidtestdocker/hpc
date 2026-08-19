@@ -1,0 +1,65 @@
+{{- if .Values.ncclBenchmark.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nccl-benchmark
+  labels:
+    app: nccl-benchmark
+spec:
+  backoffLimit: 1
+
+  template:
+    metadata:
+      labels:
+        app: nccl-benchmark
+
+    spec:
+      restartPolicy: Never
+
+      # Run on the existing GPU node pool.
+      nodeSelector:
+        cloud.google.com/gke-nodepool: {{ index .Values.nodeSelector "cloud.google.com/gke-nodepool" | quote }}
+
+      # Allow scheduling on the tainted GPU node.
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Equal
+          value: present
+          effect: NoSchedule
+
+      containers:
+        - name: nccl-benchmark
+          image: {{ .Values.ncclBenchmark.image | quote }}
+          imagePullPolicy: IfNotPresent
+
+          command:
+            - /bin/bash
+            - -c
+
+          args:
+            - |
+              set -e
+
+              echo "=== Clone nccl-tests ==="
+              git clone --depth 1 https://github.com/NVIDIA/nccl-tests.git /opt/nccl-tests
+
+              cd /opt/nccl-tests
+
+              echo "=== Build nccl-tests ==="
+              make -j"$(nproc)"
+
+              echo "=== Run AllReduce benchmark ==="
+              ./build/all_reduce_perf \
+                -b {{ .Values.ncclBenchmark.beginSize }} \
+                -e {{ .Values.ncclBenchmark.endSize }} \
+                -f {{ .Values.ncclBenchmark.factor }} \
+                -g {{ .Values.ncclBenchmark.gpusPerProcess }}
+
+          env:
+            - name: NCCL_DEBUG
+              value: {{ .Values.ncclBenchmark.ncclDebug | quote }}
+
+          resources:
+            limits:
+              nvidia.com/gpu: {{ .Values.ncclBenchmark.gpuCount }}
+{{- end }}

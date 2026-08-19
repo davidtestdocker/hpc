@@ -10,3 +10,19 @@ gpu:
 
 nodeSelector:
   cloud.google.com/gke-nodepool: gpu-pool
+
+
+ncclBenchmark:
+  enabled: true
+
+  # NVIDIA PyTorch container with CUDA/NCCL runtime.
+  image: nvcr.io/nvidia/pytorch:26.07-py3
+
+  beginSize: 8K
+  endSize: 256M
+  factor: 2
+
+  gpusPerProcess: 1
+  gpuCount: 1
+
+  ncclDebug: INFO
