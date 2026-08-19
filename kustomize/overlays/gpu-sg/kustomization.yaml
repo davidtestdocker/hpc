@@ -16,6 +16,8 @@ helmCharts:
     releaseName: vllm
     namespace: hpc-platform-dev
     includeCRDs: false
+    valuesInline:
+      replicaCount: 0
 
 configMapGenerator:
   - name: pytorch-runtime-code
