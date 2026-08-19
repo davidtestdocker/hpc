@@ -1,0 +1,203 @@
+=== Clone nccl-tests ===
+Cloning into '/opt/nccl-tests'...
+=== Build nccl-tests ===
+make -C src build BUILDDIR=/opt/nccl-tests/build
+make[1]: Entering directory '/opt/nccl-tests/src'
+make[2]: Entering directory '/opt/nccl-tests/os'
+Compiling  timer.cc                            > /opt/nccl-tests/build/timer.o
+Compiling /opt/nccl-tests/build/verifiable/verifiable.o
+Compiling  all_reduce.cu                       > /opt/nccl-tests/build/all_reduce.o
+Compiling  linux.cc                            > /opt/nccl-tests/build/os/linux.o
+Compiling  common.cu                           > /opt/nccl-tests/build/common.o
+Creating archive /opt/nccl-tests/build/os/linux.o    > /opt/nccl-tests/build/os/libnccl_test_os.a
+make[2]: Leaving directory '/opt/nccl-tests/os'
+Compiling  util.cu                             > /opt/nccl-tests/build/util.o
+Compiling  all_gather.cu                       > /opt/nccl-tests/build/all_gather.o
+Compiling  broadcast.cu                        > /opt/nccl-tests/build/broadcast.o
+Compiling  reduce_scatter.cu                   > /opt/nccl-tests/build/reduce_scatter.o
+Compiling  reduce.cu                           > /opt/nccl-tests/build/reduce.o
+Compiling  alltoall.cu                         > /opt/nccl-tests/build/alltoall.o
+Compiling  alltoallv.cu                        > /opt/nccl-tests/build/alltoallv.o
+Compiling  scatter.cu                          > /opt/nccl-tests/build/scatter.o
+Compiling  gather.cu                           > /opt/nccl-tests/build/gather.o
+Compiling  sendrecv.cu                         > /opt/nccl-tests/build/sendrecv.o
+Compiling  hypercube.cu                        > /opt/nccl-tests/build/hypercube.o
+Linking  /opt/nccl-tests/build/all_reduce.o  > /opt/nccl-tests/build/all_reduce_perf
+Linking  /opt/nccl-tests/build/all_gather.o  > /opt/nccl-tests/build/all_gather_perf
+Linking  /opt/nccl-tests/build/broadcast.o   > /opt/nccl-tests/build/broadcast_perf
+Linking  /opt/nccl-tests/build/reduce_scatter.o > /opt/nccl-tests/build/reduce_scatter_perf
+Linking  /opt/nccl-tests/build/reduce.o      > /opt/nccl-tests/build/reduce_perf
+Linking  /opt/nccl-tests/build/alltoallv.o   > /opt/nccl-tests/build/alltoallv_perf
+Linking  /opt/nccl-tests/build/scatter.o     > /opt/nccl-tests/build/scatter_perf
+Linking  /opt/nccl-tests/build/gather.o      > /opt/nccl-tests/build/gather_perf
+Linking  /opt/nccl-tests/build/sendrecv.o    > /opt/nccl-tests/build/sendrecv_perf
+Linking  /opt/nccl-tests/build/hypercube.o   > /opt/nccl-tests/build/hypercube_perf
+Linking  /opt/nccl-tests/build/alltoall.o    > /opt/nccl-tests/build/alltoall_perf
+make[1]: Leaving directory '/opt/nccl-tests/src'
+=== Run AllReduce benchmark ===
+# nccl-tests version 2.19.7 nccl-headers=23007 nccl-library=23007
+# Collective test starting: all_reduce_perf
+# nThread 1 nGpus 1 minBytes 8192 maxBytes 268435456 step: 2(factor) warmup iters: 1 iters: 20 agg iters: 1 validation: 1 graph: 0 unalign: 0
+#
+# Using devices
+#  Rank  0 Group  0 Pid      1 on nccl-benchmark-csgjr device  0 [0000:00:03] NVIDIA L4
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO ncclOsDlopen(libnccl-env.so) failed: libnccl-env.so: cannot open shared object file: No such file or directory
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO ENV/Plugin: Could not find: libnccl-env.so
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Bootstrap: Using eth0:10.56.0.6<0>
+nccl-benchmark-csgjr:1:1291 [0] NCCL INFO Socket handshake magic 0x564ab9f2fc4b9d6c (built-in default)
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO cudaDriverVersion 13030
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO NCCL version 2.30.7+cuda13.3
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO NCCL git version HEAD a5187fa2e
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Comm config nvlinkCentricSched set to 1
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO NCCL_NET_PLUGIN set by environment to spcx
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO ncclOsDlopen(spcx) failed: spcx: cannot open shared object file: No such file or directory
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO NET/Plugin: Loaded net plugin SPCX (v12)
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO NET/Plugin: Loaded collnet plugin SPCX (v12)
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Successfully loaded external network plugin /opt/hpcx/nccl_spectrum-x_plugin/lib/libnccl-net-spcx.so
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Plugin Path : /opt/hpcx/nccl_spectrum-x_plugin/lib/libnccl-net-spcx.so (SPCX Ver. 1.4-0)
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO NET/IB : No device found.
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO NET/IB : Using [RO]; OOB eth0:10.56.0.6<0>
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Failed to initialize NET plugin SPCX
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO NET/IB : No device found.
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO NET/IB : Using [RO]; OOB eth0:10.56.0.6<0>
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Failed to initialize NET plugin IB
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO NET/Socket : Using [0]eth0:10.56.0.6<0>
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Initialized NET plugin Socket
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Assigned NET plugin Socket to comm
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO ncclOsDlopen(libnccl-rma.so) failed: libnccl-rma.so: cannot open shared object file: No such file or directory
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO RMA/Plugin: Could not find: libnccl-rma.so
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO RMA/Plugin: Failed to load external plugin /opt/hpcx/nccl_spectrum-x_plugin/lib/libnccl-net-spcx.so, dlHandle: (nil), ncclRma: (nil)
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO RMA/Plugin: Loaded rma plugin SPCX_RMA (v13)
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO RMA/Plugin: Successfully loaded external plugin /opt/hpcx/nccl_spectrum-x_plugin/lib/libnccl-net-spcx.so
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Plugin Path : /opt/hpcx/nccl_spectrum-x_plugin/lib/libnccl-net-spcx.so (SPCX Ver. 1.4-0)
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO plugin/rma/rma_v13.cc:18 (ncclRma_init) -> 3
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO RMA/Plugin: Failed to initialize any plugin
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO ncclOsDlopen(libnccl-gin.so) failed: libnccl-gin.so: cannot open shared object file: No such file or directory
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO GIN/Plugin: Could not find: libnccl-gin.so
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO GIN/Plugin: Failed to load external plugin /opt/hpcx/nccl_spectrum-x_plugin/lib/libnccl-net-spcx.so, dlHandle: (nil), ncclGin: (nil)
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO GIN/Plugin: Loaded gin plugin SPCX_GIN (v13)
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO GIN/Plugin: Successfully loaded external plugin /opt/hpcx/nccl_spectrum-x_plugin/lib/libnccl-net-spcx.so
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Plugin Path : /opt/hpcx/nccl_spectrum-x_plugin/lib/libnccl-net-spcx.so (SPCX Ver. 1.4-0)
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO GIN/Plugin: Failed to initialize any GIN plugin
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Using network Socket
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Loaded NVML from libnvidia-ml.so.1
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO [Rank 0] ncclCommInitRankConfig comm 0x59e6b47a3b40 rank 0 nranks 1 cudaDev 0 nvmlDev 0 busId 30 commId 0xa3c39faff10c2201 - Init START
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO RAS client listening socket at 127.0.0.1<28028>
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Bootstrap timings total 0.002254 (create 0.000076, send 0.000168, recv 0.000189, ring 0.000002, delay 0.000002)
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO ncclTopoGetCpuAffinity: Affinity for GPU 0 is 0-3. (GPU affinity = 0-3 ; CPU affinity = 0-3).
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Rank 0: 1 Net devices
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Rank 0: 0 CollNet devices
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Local Net device counts across ranks: min 1 max 1
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Local CollNet device counts across ranks: min 0 max 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO comm 0x59e6b47a3b40 rank 0 nRanks 1 nNodes 1 localRanks 1 localRank 0 MNNVL 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 00/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 01/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 02/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 03/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 04/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 05/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 06/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 07/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 08/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 09/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 10/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 11/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 12/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 13/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 14/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 15/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 16/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 17/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 18/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 19/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 20/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 21/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 22/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 23/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 24/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 25/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 26/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 27/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 28/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 29/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 30/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 31/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 32/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 33/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 34/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 35/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 36/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 37/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 38/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 39/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 40/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 41/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 42/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 43/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 44/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 45/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 46/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 47/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 48/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 49/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 50/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 51/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 52/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 53/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 54/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 55/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 56/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 57/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 58/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 59/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 60/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 61/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 62/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Channel 63/64 : 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Trees [0] -1/-1/-1->0->-1 [1] -1/-1/-1->0->-1 [2] -1/-1/-1->0->-1 [3] -1/-1/-1->0->-1 [4] -1/-1/-1->0->-1 [5] -1/-1/-1->0->-1 [6] -1/-1/-1->0->-1 [7] -1/-1/-1->0->-1 [8] -1/-1/-1->0->-1 [9] -1/-1/-1->0->-1 [10] -1/-1/-1->0->-1 [11] -1/-1/-1->0->-1 [12] -1/-1/-1->0->-1 [13] -1/-1/-1->0->-1 [14] -1/-1/-1->0->-1 [15] -1/-1/-1->0->-1 [16] -1/-1/-1->0->-1 [17] -1/-1/-1->0->-1 [18] -1/-1/-1->0->-1 [19] -1/-1/-1->0->-1 [20] -1/-1/-1->0->-1 [21] -1/-1/-1->0->-1 [22] -1/-1/-1->0->-1 [23] -1/-1/-1->0->-1 [24] -1/-1/-1->0->-1 [25] -1/-1/-1->0->-1 [26] -1/-1/-1->0->-1 [27] -1/-1/-1->0->-1 [28] -1/-1/-1->0->-1 [29] -1/-1/-1->0->-1 [30] -1/-1/-1->0->-1 [31] -1/-1/-1->0->-1 [32] -1/-1/-1->0->-1 [33] -1/-1/-1->0->-1 [34] -1/-1/-1->0->-1 [35] -1/-1/-1->0->-1 [36] -1/-1/-1->0->-1 [37] -1/-1/-1->0->-1 [38] -1/-1/-1->0->-1 [39] -1/-1/-1->0->-1 [40] -1/-1/-1->0->-1 [41] -1/-1/-1->0->-1 [42] -1/-1/-1->0->-1 [43] -1/-1/-1->0->-1 [44] -1/-1/-1->0->-1 [45] -1/-1/-1->0->-1 [46] -1/-1/-1->0->-1 [47] -1/-1/-1->0->-1 [48] -1/-1/-1->0->-1 [4
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO P2P Chunksize set to 524288
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO ncclOsDlopen(libnccl-profiler.so) failed: libnccl-profiler.so: cannot open shared object file: No such file or directory
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO PROFILER/Plugin: Could not find: libnccl-profiler.so
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO ncclOsDlsym(ncclProfiler_v6) failed: /opt/hpcx/nccl_spectrum-x_plugin/lib/libnccl-net-spcx.so: undefined symbol: ncclProfiler_v6
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO ncclOsDlsym(ncclProfiler_v5) failed: /opt/hpcx/nccl_spectrum-x_plugin/lib/libnccl-net-spcx.so: undefined symbol: ncclProfiler_v5
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO ncclOsDlsym(ncclProfiler_v4) failed: /opt/hpcx/nccl_spectrum-x_plugin/lib/libnccl-net-spcx.so: undefined symbol: ncclProfiler_v4
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO ncclOsDlsym(ncclProfiler_v3) failed: /opt/hpcx/nccl_spectrum-x_plugin/lib/libnccl-net-spcx.so: undefined symbol: ncclProfiler_v3
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO ncclOsDlsym(ncclProfiler_v2) failed: /opt/hpcx/nccl_spectrum-x_plugin/lib/libnccl-net-spcx.so: undefined symbol: ncclProfiler_v2
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO ncclOsDlsym(ncclProfiler_v1) failed: /opt/hpcx/nccl_spectrum-x_plugin/lib/libnccl-net-spcx.so: undefined symbol: ncclProfiler_v1
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Check P2P Type isAllDirectP2p 1 directMode 0 isAllCudaP2p 1
+nccl-benchmark-csgjr:1:1296 [0] NCCL INFO [Proxy Service] Device 0 CPU core 3
+nccl-benchmark-csgjr:1:1296 [0] NCCL INFO proxy listening socket at 10.56.0.6<46259>
+nccl-benchmark-csgjr:1:1297 [0] NCCL INFO [Proxy Service UDS] Device 0 CPU core 1
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO ncclOsDlopen(libnccl-tuner.so) failed: libnccl-tuner.so: cannot open shared object file: No such file or directory
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO TUNER/Plugin: Could not find: libnccl-tuner.so
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO TUNER/Plugin: Using SPCX (v5)
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO 64 coll channels, 64 collnet channels, 0 nvls channels, 64 p2p channels, 64 p2p channels per peer
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO CC Off, workFifoBytes 1048576
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO ncclCommInitRankConfig comm 0x59e6b47a3b40 rank 0 nranks 1 cudaDev 0 nvmlDev 0 busId 30 commId 0xa3c39faff10c2201 - Init COMPLETE
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Init timings - ncclCommInitRankConfig: rank 0 nranks 1 total 0.64 (kernels 0.44, alloc 0.16, bootstrap 0.00, allgathers 0.00, topo 0.01, graphs 0.00, connections 0.03, rest 0.00)
+#
+#                                                              out-of-place                       in-place          
+#       size         count      type   redop    root     time   algbw   busbw  #wrong     time   algbw   busbw  #wrong 
+#        (B)    (elements)                               (us)  (GB/s)  (GB/s)             (us)  (GB/s)  (GB/s)         
+        8192          2048     float     sum      -1     4.57    1.79    0.00       0     0.26   31.21    0.00       0
+       16384          4096     float     sum      -1    15.27    1.07    0.00       0     0.26   62.57    0.00       0
+       32768          8192     float     sum      -1    14.14    2.32    0.00       0     0.25  128.98    0.00       0
+       65536         16384     float     sum      -1    10.21    6.42    0.00       0     0.26  254.95    0.00       0
+      131072         32768     float     sum      -1     8.18   16.02    0.00       0     0.26  514.01    0.00       0
+      262144         65536     float     sum      -1     9.54   27.48    0.00       0     0.27  969.29    0.00       0
+      524288        131072     float     sum      -1     7.17   73.12    0.00       0     0.28  1902.0    0.00       0
+     1048576        262144     float     sum      -1     9.96  105.33    0.00       0     0.49  2120.9    0.00       0
+     2097152        524288     float     sum      -1    11.17  187.73    0.00       0     0.55  3818.9    0.00       0
+     4194304       1048576     float     sum      -1    31.63  132.60    0.00       0     0.43  9792.9    0.00       0
+     8388608       2097152     float     sum      -1    67.16  124.90    0.00       0     0.46   18422    0.00       0
+    16777216       4194304     float     sum      -1   137.77  121.78    0.00       0     0.47   35715    0.00       0
+    33554432       8388608     float     sum      -1   286.95  116.93    0.00       0     0.54   62012    0.00       0
+    67108864      16777216     float     sum      -1   580.32  115.64    0.00       0     0.43  154986    0.00       0
+   134217728      33554432     float     sum      -1  1159.49  115.76    0.00       0     0.44  303420    0.00       0
+   268435456      67108864     float     sum      -1  2318.28  115.79    0.00       0     0.29  910568    0.00       0
+# Out of bounds values : 0 OK
+# Avg bus bandwidth    : 0 
+#
+# Collective test concluded: all_reduce_perf
+#
+

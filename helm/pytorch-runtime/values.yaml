@@ -26,3 +26,14 @@ ncclBenchmark:
   gpuCount: 1
 
   ncclDebug: INFO
+
+distributedScaling:
+  enabled: true
+
+  # Current lab runs real CPU/Gloo scaling.
+  workers: 1
+
+  cpuRequest: "2"
+  cpuLimit: "2"
+  memoryRequest: "2Gi"
+  memoryLimit: "4Gi"

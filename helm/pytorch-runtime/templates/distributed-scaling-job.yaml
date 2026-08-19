@@ -1,0 +1,62 @@
+{{- if .Values.distributedScaling.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: distributed-scaling
+  labels:
+    app: distributed-scaling
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app: distributed-scaling
+    spec:
+      restartPolicy: Never
+
+      nodeSelector:
+        cloud.google.com/gke-nodepool: {{ index .Values.nodeSelector "cloud.google.com/gke-nodepool" | quote }}
+
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Equal
+          value: present
+          effect: NoSchedule
+
+      containers:
+        - name: distributed-scaling
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          # Launch the scaling workload with torchrun.
+          command:
+            - torchrun
+
+          args:
+            - --standalone
+            - --nproc-per-node={{ .Values.distributedScaling.workers }}
+            - /runtime/distributed_scaling.py
+
+          env:
+            # Force CPU/Gloo for the current scaling lab.
+            - name: CUDA_VISIBLE_DEVICES
+              value: ""
+
+          resources:
+            requests:
+              cpu: {{ .Values.distributedScaling.cpuRequest | quote }}
+              memory: {{ .Values.distributedScaling.memoryRequest | quote }}
+            limits:
+              cpu: {{ .Values.distributedScaling.cpuLimit | quote }}
+              memory: {{ .Values.distributedScaling.memoryLimit | quote }}
+
+          volumeMounts:
+            - name: runtime-code
+              mountPath: /runtime
+              readOnly: true
+
+      volumes:
+        - name: runtime-code
+          configMap:
+            name: pytorch-runtime-code
+{{- end }}
