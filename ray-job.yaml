@@ -1,0 +1,31 @@
+apiVersion: ray.io/v1
+kind: RayJob
+metadata:
+  name: hpc-ray-job
+  namespace: ray-system
+
+spec:
+  # Submit the workload to the existing Ray cluster.
+  clusterSelector:
+    ray.io/cluster: hpc-ray
+
+  # Command executed by the Ray Jobs API.
+  entrypoint: |
+    python -c '
+    import socket
+    import ray
+
+    ray.init()
+
+    @ray.remote(num_cpus=1)
+    def work(task_id):
+        return {
+            "task_id": task_id,
+            "hostname": socket.gethostname()
+        }
+
+    results = ray.get([work.remote(i) for i in range(6)])
+
+    for result in results:
+        print(result)
+    '

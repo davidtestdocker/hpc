@@ -1,0 +1,17 @@
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: gpu-low
+value: 100
+globalDefault: false
+preemptionPolicy: PreemptLowerPriority
+description: "Low priority GPU workloads"
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: gpu-high
+value: 1000
+globalDefault: false
+preemptionPolicy: PreemptLowerPriority
+description: "High priority GPU workloads"

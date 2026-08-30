@@ -1,0 +1,50 @@
+apiVersion: ray.io/v1
+kind: RayCluster
+metadata:
+  name: hpc-ray
+  namespace: ray-system
+
+spec:
+  rayVersion: "2.47.1"
+
+  # Ray head node configuration
+  headGroupSpec:
+    rayStartParams:
+      dashboard-host: "0.0.0.0"
+
+    template:
+      spec:
+        containers:
+          - name: ray-head
+            image: rayproject/ray:2.47.1
+            resources:
+              requests:
+                cpu: "500m"
+                memory: "1Gi"
+              limits:
+                cpu: "1"
+                memory: "2Gi"
+
+  # Ray worker group
+  workerGroupSpecs:
+    - groupName: cpu-workers
+
+      # Start with two Ray workers.
+      replicas: 2
+      minReplicas: 2
+      maxReplicas: 2
+
+      rayStartParams: {}
+
+      template:
+        spec:
+          containers:
+            - name: ray-worker
+              image: rayproject/ray:2.47.1
+              resources:
+                requests:
+                  cpu: "500m"
+                  memory: "1Gi"
+                limits:
+                  cpu: "1"
+                  memory: "2Gi"
