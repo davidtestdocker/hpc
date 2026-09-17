@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gpu-failure-test
+  namespace: hpc-platform-dev
+  labels:
+    kueue.x-k8s.io/queue-name: gpu-local-queue
+spec:
+  suspend: true
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: gpu
+          image: nvcr.io/nvidia/pytorch:26.07-py3
+          command:
+            - bash
+            - -lc
+            - |
+              nvidia-smi
+              sleep 300
+          resources:
+            limits:
+              nvidia.com/gpu: 1

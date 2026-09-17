@@ -1,0 +1,43 @@
+apiVersion: ray.io/v1
+kind: RayJob
+metadata:
+  name: ray-worker-recovery
+  namespace: ray-system
+spec:
+  clusterSelector:
+    ray.io/cluster: hpc-ray
+
+  entrypoint: |
+    python -c '
+    import time
+    import socket
+    import ray
+    from ray.util.scheduling_strategies import NodeAffinitySchedulingStrategy
+
+    ray.init()
+
+    workers = [
+        n for n in ray.nodes()
+        if n["Alive"] and "node:__internal_head__" not in n["Resources"]
+    ]
+
+    target = workers[0]
+
+    print("TARGET_NODE_ID=" + target["NodeID"], flush=True)
+    print("TARGET_IP=" + target["NodeManagerAddress"], flush=True)
+
+    @ray.remote(max_retries=2)
+    def long_task():
+        print("TASK_HOST=" + socket.gethostname(), flush=True)
+        time.sleep(900)
+        return socket.gethostname()
+
+    ref = long_task.options(
+        scheduling_strategy=NodeAffinitySchedulingStrategy(
+            node_id=target["NodeID"],
+            soft=True
+        )
+    ).remote()
+
+    print("RESULT=" + ray.get(ref), flush=True)
+    '

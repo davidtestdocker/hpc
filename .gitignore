@@ -50,3 +50,6 @@ override.tf.json
 # Vim
 # =========================
 *.swp
+
+# Kubernetes local secrets
+k8s/postgres-secret.yaml

@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rbac-api-test
+  namespace: hpc-platform-dev
+spec:
+  serviceAccountName: benchmark-runner
+  restartPolicy: Never
+
+  securityContext:
+    seccompProfile:
+      type: RuntimeDefault
+
+  containers:
+    - name: api-test
+      image: curlimages/curl@sha256:94e9e444bcba979c2ea12e27ae39bee4cd10bc7041a472c4727a558e213744e6
+
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - ALL
+
+      command:
+        - sh
+        - -c
+        - |
+          TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+          CACERT=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          API=https://kubernetes.default.svc
+
+          echo "=== GET PODS ==="
+          curl -s \
+            --cacert "$CACERT" \
+            -H "Authorization: Bearer $TOKEN" \
+            "$API/api/v1/namespaces/hpc-platform-dev/pods" \
+            -o /tmp/pods.json \
+            -w "HTTP %{http_code}\n"
+
+          echo "=== GET SECRETS ==="
+          curl -s \
+            --cacert "$CACERT" \
+            -H "Authorization: Bearer $TOKEN" \
+            "$API/api/v1/namespaces/hpc-platform-dev/secrets" \
+            -o /tmp/secrets.json \
+            -w "HTTP %{http_code}\n"
+
+          echo "=== DELETE POD ==="
+          curl -s \
+            --cacert "$CACERT" \
+            -X DELETE \
+            -H "Authorization: Bearer $TOKEN" \
+            "$API/api/v1/namespaces/hpc-platform-dev/pods/nonexistent-test" \
+            -o /tmp/delete.json \
+            -w "HTTP %{http_code}\n"
+
+      volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+
+  volumes:
+    - name: tmp
+      emptyDir: {}

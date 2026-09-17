@@ -8,6 +8,13 @@ metadata:
 spec:
   suspend: true
 
+  failurePolicy:
+    maxRestarts: 1
+    restartStrategy: Recreate
+    rules:
+      - name: restart_on_child_job_failure
+        action: RestartJobSet
+
   network:
     enableDNSHostnames: true
 
@@ -16,6 +23,7 @@ spec:
       replicas: 1
       template:
         spec:
+          backoffLimit: 0
           template:
             spec:
               restartPolicy: Never
@@ -46,6 +54,9 @@ spec:
                   securityContext:
                     runAsUser: 1000
                     runAsGroup: 1000
+                  resources:
+                    requests:
+                      cpu: 250m
                   command:
                     - /bin/sh
                     - -lc
@@ -74,7 +85,7 @@ spec:
                         -np 3 \
                         --host \
                         mpi-real-worker-0-0.mpi-real,mpi-real-worker-1-0.mpi-real,mpi-real-worker-2-0.mpi-real \
-                        /bin/sh -lc 'echo "RANK=$OMPI_COMM_WORLD_RANK HOST=$(hostname)"'
+                        /bin/sh -lc 'echo "RANK=$OMPI_COMM_WORLD_RANK HOST=$(hostname)"; sleep 900'
                   volumeMounts:
                     - name: ssh-work
                       mountPath: /home/mpiuser/.ssh
@@ -90,6 +101,7 @@ spec:
       replicas: 3
       template:
         spec:
+          backoffLimit: 0
           template:
             spec:
               restartPolicy: Never
@@ -122,11 +134,26 @@ spec:
                   securityContext:
                     runAsUser: 1000
                     runAsGroup: 1000
+                  resources:
+                    requests:
+                      cpu: 250m
                   command:
-                    - /usr/sbin/sshd
-                    - -De
-                    - -f
-                    - /home/mpiuser/.sshd_config
+                    - /bin/sh
+                    - -lc
+                    - |
+                      /usr/sbin/sshd -De -f /home/mpiuser/.sshd_config &
+                      sshd_pid=$!
+
+                      while kill -0 "$sshd_pid" 2>/dev/null; do
+                        if [ -f /tmp/fail-worker ]; then
+                          echo "Injected worker failure"
+                          kill "$sshd_pid" 2>/dev/null || true
+                          exit 42
+                        fi
+                        sleep 1
+                      done
+
+                      wait "$sshd_pid" 
                   volumeMounts:
                     - name: ssh-work
                       mountPath: /home/mpiuser/.ssh

@@ -5,16 +5,17 @@ metadata:
 spec:
   namespaceSelector: {}
 
-  queueingStrategy: BestEffortFIFO
-
   preemption:
     withinClusterQueue: LowerPriority
 
   resourceGroups:
     - coveredResources:
+        - cpu
         - nvidia.com/gpu
       flavors:
         - name: l4-timesharing-tas
           resources:
+            - name: cpu
+              nominalQuota: "3"
             - name: nvidia.com/gpu
-              nominalQuota: 4
+              nominalQuota: "4"

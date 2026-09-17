@@ -1,0 +1,22 @@
+apiVersion: ray.io/v1
+kind: RayJob
+metadata:
+  name: ray-resource-mismatch
+  namespace: ray-system
+spec:
+  clusterSelector:
+    ray.io/cluster: hpc-ray
+
+  entrypoint: |
+    python -c '
+    import ray
+
+    ray.init()
+
+    @ray.remote(num_gpus=1)
+    def gpu_task():
+        return "GPU task completed"
+
+    result = ray.get(gpu_task.remote())
+    print(result)
+    '
