@@ -1,5 +1,5 @@
 image:
-  tag: a1103d7e7ff84eb457e2e72ee3337729a02c3962
+  tag: jobset-dispatch-v4
 
 service:
   type: ClusterIP

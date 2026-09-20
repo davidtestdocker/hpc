@@ -12,6 +12,7 @@ from redis.exceptions import ConnectionError
 
 from api.database.models import Job
 from api.database.session import SessionLocal
+from api.workloads.dispatcher import submit_mpi_jobset
 
 logging.basicConfig(level=logging.INFO)
 
@@ -79,7 +80,8 @@ def list_benchmarks():
         "benchmarks": [
             "cpu",
             "memory",
-            "disk_io"
+            "disk_io",
+            "mpi"
         ]
     }
 
@@ -129,7 +131,7 @@ def create_benchmark(request: BenchmarkRequest):
         "job_id": job_id,
         "benchmark": request.benchmark,
         "status": "accepted",
-        "next_step": "job status API will be added next"
+        "next_step": f"Check job status at GET /jobs/{job_id}"
     }
 
 #第八週要改成scan而不是keys方式
@@ -220,10 +222,19 @@ def process_next_job():
             "job_id": job_id
         }
 
-    job["status"] = "completed"
-    job["result"] = {
-        "message": "benchmark simulated"
-    }
+    if job["benchmark"] == "mpi":
+        jobset_name = submit_mpi_jobset(job_id)
+
+        job["status"] = "submitted"
+        job["result"] = {
+            "message": "MPI JobSet submitted",
+            "jobset_name": jobset_name
+        }
+    else:
+        job["status"] = "completed"
+        job["result"] = {
+            "message": "benchmark simulated"
+        }
 
     redis_client.set(
         f"job:{job_id}",

@@ -1,0 +1,176 @@
+apiVersion: jobset.x-k8s.io/v1alpha2
+kind: JobSet
+metadata:
+  name: __JOBSET_NAME__
+  namespace: hpc-platform-dev
+  labels:
+    kueue.x-k8s.io/queue-name: gpu-local-queue
+spec:
+  suspend: true
+
+  failurePolicy:
+    maxRestarts: 1
+    restartStrategy: Recreate
+    rules:
+      - name: restart_on_child_job_failure
+        action: RestartJobSet
+
+  network:
+    enableDNSHostnames: true
+
+  replicatedJobs:
+    - name: launcher
+      replicas: 1
+      template:
+        spec:
+          backoffLimit: 0
+          template:
+            spec:
+              restartPolicy: Never
+              tolerations:
+                - key: nvidia.com/gpu
+                  operator: Equal
+                  value: present
+                  effect: NoSchedule
+
+              initContainers:
+                - name: prepare-ssh
+                  image: mpioperator/mpi-pi:openmpi
+                  securityContext:
+                    runAsUser: 0
+                  command:
+                    - /bin/sh
+                    - -lc
+                    - |
+                      set -e
+                      cp /ssh-secret/id_ed25519 /ssh-work/id_ed25519
+                      chown 1000:1000 /ssh-work/id_ed25519
+                      chmod 600 /ssh-work/id_ed25519
+                  volumeMounts:
+                    - name: ssh-secret
+                      mountPath: /ssh-secret
+                      readOnly: true
+                    - name: ssh-work
+                      mountPath: /ssh-work
+
+              containers:
+                - name: launcher
+                  image: mpioperator/mpi-pi:openmpi
+                  securityContext:
+                    runAsUser: 1000
+                    runAsGroup: 1000
+                  resources:
+                    requests:
+                      cpu: 250m
+                  command:
+                    - /bin/sh
+                    - -lc
+                    - |
+                      set -e
+
+                      for host in \
+                        __JOBSET_NAME__-worker-0-0.__JOBSET_NAME__ \
+                        __JOBSET_NAME__-worker-1-0.__JOBSET_NAME__ \
+                        __JOBSET_NAME__-worker-2-0.__JOBSET_NAME__
+                      do
+                        until ssh \
+                          -o StrictHostKeyChecking=no \
+                          -o UserKnownHostsFile=/dev/null \
+                          -o ConnectTimeout=2 \
+                          -i /home/mpiuser/.ssh/id_ed25519 \
+                          "$host" true 2>/dev/null
+                        do
+                          sleep 2
+                        done
+                      done
+
+                      mpirun \
+                        --mca plm_rsh_agent \
+                        "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /home/mpiuser/.ssh/id_ed25519" \
+                        -np 3 \
+                        --host \
+                        __JOBSET_NAME__-worker-0-0.__JOBSET_NAME__,__JOBSET_NAME__-worker-1-0.__JOBSET_NAME__,__JOBSET_NAME__-worker-2-0.__JOBSET_NAME__ \
+                        /bin/sh -lc 'echo "RANK=$OMPI_COMM_WORLD_RANK HOST=$(hostname)"; sleep 900'
+                  volumeMounts:
+                    - name: ssh-work
+                      mountPath: /home/mpiuser/.ssh
+
+              volumes:
+                - name: ssh-secret
+                  secret:
+                    secretName: mpi-ssh-key
+                - name: ssh-work
+                  emptyDir: {}
+
+    - name: worker
+      replicas: 3
+      template:
+        spec:
+          backoffLimit: 0
+          template:
+            spec:
+              restartPolicy: Never
+              tolerations:
+                - key: nvidia.com/gpu
+                  operator: Equal
+                  value: present
+                  effect: NoSchedule
+
+              initContainers:
+                - name: prepare-ssh
+                  image: mpioperator/mpi-pi:openmpi
+                  securityContext:
+                    runAsUser: 0
+                  command:
+                    - /bin/sh
+                    - -lc
+                    - |
+                      set -e
+                      cp /ssh-secret/authorized_keys /ssh-work/authorized_keys
+                      cp /ssh-secret/id_rsa /ssh-work/id_rsa
+                      chown -R 1000:1000 /ssh-work
+                      chmod 600 /ssh-work/authorized_keys
+                      chmod 600 /ssh-work/id_rsa
+                  volumeMounts:
+                    - name: ssh-secret
+                      mountPath: /ssh-secret
+                      readOnly: true
+                    - name: ssh-work
+                      mountPath: /ssh-work
+
+              containers:
+                - name: worker
+                  image: mpioperator/mpi-pi:openmpi
+                  securityContext:
+                    runAsUser: 1000
+                    runAsGroup: 1000
+                  resources:
+                    requests:
+                      cpu: 250m
+                  command:
+                    - /bin/sh
+                    - -lc
+                    - |
+                      /usr/sbin/sshd -De -f /home/mpiuser/.sshd_config &
+                      sshd_pid=$!
+
+                      while kill -0 "$sshd_pid" 2>/dev/null; do
+                        if [ -f /tmp/fail-worker ]; then
+                          echo "Injected worker failure"
+                          kill "$sshd_pid" 2>/dev/null || true
+                          exit 42
+                        fi
+                        sleep 1
+                      done
+
+                      wait "$sshd_pid"
+                  volumeMounts:
+                    - name: ssh-work
+                      mountPath: /home/mpiuser/.ssh
+
+              volumes:
+                - name: ssh-secret
+                  secret:
+                    secretName: mpi-ssh-key
+                - name: ssh-work
+                  emptyDir: {}

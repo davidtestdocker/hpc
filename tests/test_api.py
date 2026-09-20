@@ -29,6 +29,7 @@ def test_benchmarks():
         "cpu",
         "memory",
         "disk_io",
+        "mpi",
     ]
 
 def test_submit_benchmark():
@@ -47,6 +48,5 @@ def test_submit_benchmark():
     assert "job_id" in body
     assert body["benchmark"] == "cpu"
     assert body["status"] == "accepted"
-    assert body["next_step"] == "job status API will be added next"
-
+    assert body["next_step"] == f"Check job status at GET /jobs/{body['job_id']}"
 
