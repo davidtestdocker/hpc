@@ -1,5 +1,15 @@
 # Week20 Day6 — AI/HPC Platform 技術選型與架構比較
 
+## 對應檔案
+
+文中的 `job.slurm` 是示意檔名；OpenStack、HTCondor、LSF、DLRover 的選型討論未對應獨立部署檔案。
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[platform-architecture](../architecture/platform-architecture.md)。
+
+---
+
 ## 今日目標
 
 今天不做大量安裝與實作，重點是建立 AI/HPC Platform 的技術分層與選型能力。

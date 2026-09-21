@@ -1,5 +1,14 @@
 # Week 3 Day 5－Docker Compose 與 Container 生命週期
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [compose.yaml](../../compose.yaml)：本機服務組合
+- [docker/Dockerfile](../../docker/Dockerfile)：容器映像建置
+
+---
+
 ## 今日目標
 
 理解 Docker Compose 的用途，以及 Container 為什麼會持續執行或停止。

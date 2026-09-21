@@ -1,5 +1,26 @@
 # Week8 Day2 - Helm Foundation
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [helm/api/Chart.yaml](../../helm/api/Chart.yaml)
+- [helm/api/templates/_helpers.tpl](../../helm/api/templates/_helpers.tpl)
+- [helm/api/templates/configmap.yaml](../../helm/api/templates/configmap.yaml)
+- [helm/api/templates/deployment.yaml](../../helm/api/templates/deployment.yaml)
+- [helm/api/templates/hpa.yaml](../../helm/api/templates/hpa.yaml)
+- [helm/api/templates/ingress.yaml](../../helm/api/templates/ingress.yaml)
+- [helm/api/templates/service.yaml](../../helm/api/templates/service.yaml)
+- [helm/api/values-dev.yaml](../../helm/api/values-dev.yaml)
+- [helm/api/values-prod.yaml](../../helm/api/values-prod.yaml)
+- [helm/api/values-stage.yaml](../../helm/api/values-stage.yaml)
+- [helm/api/values.yaml](../../helm/api/values.yaml)
+- [k8s/api-deployment.yaml](../../k8s/api-deployment.yaml)
+- [k8s/api-ingress.yaml](../../k8s/api-ingress.yaml)
+- [k8s/api-service.yaml](../../k8s/api-service.yaml)
+
+---
+
 ## 本週成果
 
 平台開始導入 Helm。

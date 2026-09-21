@@ -1,5 +1,19 @@
 # Week20 Day2 — Pod / Image / Secret Security
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [docker/Dockerfile](../../docker/Dockerfile)：容器映像建置
+- [k8s/postgres-secret.example.yaml](../../k8s/postgres-secret.example.yaml)
+- [k8s/postgres-statefulset.yaml](../../k8s/postgres-statefulset.yaml)
+- [k8s/security/rbac-api-test.yaml](../../k8s/security/rbac-api-test.yaml)
+- [k8s/security/role.yaml](../../k8s/security/role.yaml)
+- [k8s/security/rolebinding.yaml](../../k8s/security/rolebinding.yaml)
+- [k8s/security/serviceaccount.yaml](../../k8s/security/serviceaccount.yaml)
+
+---
+
 ## 今日完成
 
 完成 workload runtime security、image integrity、secret hygiene。

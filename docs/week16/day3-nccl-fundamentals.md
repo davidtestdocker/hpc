@@ -1,5 +1,17 @@
 # Week16 Day3 — NCCL Fundamentals
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+下方 NCCL 原始結果為單 GPU／單 rank 紀錄，供對照概念，並非多 GPU 效能證據。
+
+- [benchmark/results/week16-day4-nccl-single-gpu.txt](../../benchmark/results/week16-day4-nccl-single-gpu.txt)：單 GPU NCCL 原始結果
+- [helm/pytorch-runtime/templates/nccl-benchmark-job.yaml](../../helm/pytorch-runtime/templates/nccl-benchmark-job.yaml)
+- [helm/pytorch-runtime/values.yaml](../../helm/pytorch-runtime/values.yaml)
+
+---
+
 ## 今日重點
 
 NCCL（NVIDIA Collective Communications Library）是 NVIDIA 的 GPU collective communication library。

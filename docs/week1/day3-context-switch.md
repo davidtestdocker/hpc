@@ -1,5 +1,13 @@
 # Week 1 Day 3－Context Switch（上下文切換）
 
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[Day1-Linux-CPU-Performance-Analysis](../week12/Day1-Linux-CPU-Performance-Analysis.md)。
+
+---
+
 ## 今日目標
 
 理解 Context Switch 是什麼，以及它為什麼會影響系統效能。

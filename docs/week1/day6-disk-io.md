@@ -1,5 +1,13 @@
 # Week 1 Day 6－Disk I/O（磁碟輸入/輸出）
 
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[Day3-Linux-Disk-Performance-Analysis](../week12/Day3-Linux-Disk-Performance-Analysis.md)。
+
+---
+
 ## 今日目標
 
 理解 Disk I/O 的概念，以及如何判斷系統是否因為磁碟而變慢。

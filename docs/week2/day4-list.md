@@ -1,5 +1,13 @@
 # Week 2 Day 4－List（串列）
 
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[day6-subprocess](day6-subprocess.md)。
+
+---
+
 ## 今日目標
 
 理解為什麼 Monitoring Framework 必須使用 List 儲存 Process，而不是使用大量獨立變數。

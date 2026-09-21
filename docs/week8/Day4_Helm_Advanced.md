@@ -1,5 +1,16 @@
 # Week8 Day4 - Helm Advanced
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [helm/api/Chart.yaml](../../helm/api/Chart.yaml)
+- [helm/api/templates/_helpers.tpl](../../helm/api/templates/_helpers.tpl)
+- [helm/api/templates/deployment.yaml](../../helm/api/templates/deployment.yaml)
+- [helm/api/values.yaml](../../helm/api/values.yaml)
+
+---
+
 ## 本日成果
 
 完成 Helm Release 管理與 Helm Helper（`_helpers.tpl`）的學習，平台正式具備企業級 Helm Chart 的基本架構。

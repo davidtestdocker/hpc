@@ -1,3 +1,4 @@
+{{/* 中文說明：api 的 Helm 模板（_helpers.tpl）：經 Helm 渲染後產生部署內容。 define 定義具名模板；include 呼叫模板；管線 | 將結果交給下一函式；default 提供空值時的備用值；trunc 截斷長度，trimSuffix 移除尾綴。 */}}
 {{/*
 Expand the name of the chart.
 */}}

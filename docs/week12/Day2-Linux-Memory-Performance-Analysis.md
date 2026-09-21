@@ -1,5 +1,13 @@
 # Week12 Day2 - Linux Memory Performance Analysis
 
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[performance-report](../performance/performance-report.md)。
+
+---
+
 ## 目標
 
 本章節學習 Linux Memory 的運作方式，了解 Memory、Page Cache、Buffer、Swap、OOM 的概念，建立 Linux 記憶體效能分析能力。

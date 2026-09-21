@@ -1,5 +1,13 @@
 # Week4 Day4 - Memory Queue
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [api/main.py](../../api/main.py)：API、工作狀態與佇列處理
+
+---
+
 ## 今日平台增加什麼？
 
 今天平台加入 **Memory Queue** 與 **Consumer**。

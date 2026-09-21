@@ -1,14 +1,23 @@
+# grafana 的 Helm 模板（ingress.yaml）：經 Helm 渲染後產生部署內容。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# Helm：點號 Values 路徑讀取設定；include 呼叫模板，nindent 縮排；模板左界帶減號會移除前方空白。
 {{- if .Values.ingress.enabled -}}
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: networking.k8s.io/v1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: Ingress
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: {{ include "grafana.fullname" . }}
+  # 鍵值標籤，供 selector、監控或排程控制器識別資源。
   labels:
     {{- include "grafana.labels" . | nindent 4 }}
   {{- with .Values.ingress.annotations }}
+  # 附加設定或提示，由對應控制器解讀，不等同 selector 標籤。
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
+# 期望狀態；控制器據此建立或調整實際資源。
 spec:
   {{- with .Values.ingress.className }}
   ingressClassName: {{ . }}
@@ -23,6 +32,7 @@ spec:
       secretName: {{ .secretName }}
     {{- end }}
   {{- end }}
+  # 規則清單；RBAC 中定義 API 存取權限，Ingress 中定義路由。
   rules:
     {{- range .Values.ingress.hosts }}
     - host: {{ .host | quote }}

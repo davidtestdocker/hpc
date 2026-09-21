@@ -1,22 +1,32 @@
+# grafana 的 Helm 輸入設定；由模板以 .Values 讀取，可由環境設定覆寫。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
 # Default values for grafana.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 # This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+# 工作負載副本數；是否生效取決於模板與 autoscaling 設定。
 replicaCount: 1
 
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
+# 容器映像及標籤，決定執行的檔案系統與程式版本。
 image:
+  # 容器映像倉庫路徑，與 tag 組成完整映像名稱。
   repository: nginx
   # This sets the pull policy for images.
+  # 映像拉取政策；IfNotPresent 在節點已有映像時使用快取。
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
+  # 映像版本標籤；latest 是可變標籤，不代表固定映像內容。
   tag: ""
 
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+# 存取私人映像倉庫使用的 Secret 名稱清單。
 imagePullSecrets: []
 # This is to override the chart name.
+# 覆寫 Chart 的簡短名稱；實際命名規則由 helpers 模板決定。
 nameOverride: ""
+# 覆寫資源完整名稱，避免使用 release 與 chart 的預設組合。
 fullnameOverride: ""
 
 # This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
@@ -26,6 +36,7 @@ serviceAccount:
   # Automatically mount a ServiceAccount's API credentials?
   automount: true
   # Annotations to add to the service account
+  # 附加設定或提示，由對應控制器解讀，不等同 selector 標籤。
   annotations: {}
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
@@ -33,14 +44,18 @@ serviceAccount:
 
 # This is for setting Kubernetes Annotations to a Pod.
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+# 加到 Pod metadata 的附加資訊。
 podAnnotations: {}
 # This is for setting Kubernetes Labels to a Pod.
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+# 加到 Pod metadata 的識別標籤。
 podLabels: {}
 
+# Pod 共用安全設定，例如 volume 存取群組。
 podSecurityContext: {}
   # fsGroup: 2000
 
+# 程序身分、權限與作業系統安全設定。
 securityContext: {}
   # capabilities:
   #   drop:
@@ -57,7 +72,9 @@ service:
   port: 80
 
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
+# 入站規則或 Ingress 設定，含義由所屬資源／Chart 決定。
 ingress:
+  # 功能開關；只有引用此欄位的模板條件會受影響。
   enabled: false
   className: ""
   annotations: {}
@@ -78,6 +95,7 @@ ingress:
 # (see: https://gateway-api.sigs.k8s.io/guides/)
 httpRoute:
   # HTTPRoute enabled.
+  # 功能開關；只有引用此欄位的模板條件會受影響。
   enabled: false
   # HTTPRoute annotations.
   annotations: {}
@@ -90,6 +108,7 @@ httpRoute:
   hostnames:
   - chart-example.local
   # List of rules and filters applied.
+  # 規則清單；RBAC 中定義 API 存取權限，Ingress 中定義路由。
   rules:
   - matches:
     - path:
@@ -111,6 +130,7 @@ httpRoute:
   #     - name: version
   #       value: v2
 
+# 資源設定；Pod 中是 requests／limits，Kustomize 中是待組合的檔案清單。
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
@@ -124,24 +144,33 @@ resources: {}
   #   memory: 128Mi
 
 # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+# 存活探針失敗達門檻時，kubelet 會重啟容器。
 livenessProbe:
+  # 以 HTTP GET 檢查指定路徑與埠號。
   httpGet:
     path: /
     port: http
+# 就緒探針决定 Pod 是否可接收 Service 流量。
 readinessProbe:
   httpGet:
     path: /
     port: http
 
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
+# HPA 自動擴縮設定；依引用此設定的模板產生資源。
 autoscaling:
+  # 功能開關；只有引用此欄位的模板條件會受影響。
   enabled: false
+  # 允許的最少副本數。
   minReplicas: 1
+  # 允許的最多副本數。
   maxReplicas: 100
+  # CPU 使用率目標，以 requests.cpu 為計算基準。
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
 # Additional volumes on the output Deployment definition.
+# Pod 可掛載的儲存來源，例如 Secret、ConfigMap 或 PVC。
 volumes: []
 # - name: foo
 #   secret:
@@ -149,13 +178,17 @@ volumes: []
 #     optional: false
 
 # Additional volumeMounts on the output Deployment definition.
+# 把已宣告的 volume 掛載到容器中的指定路徑。
 volumeMounts: []
 # - name: foo
 #   mountPath: "/etc/foo"
 #   readOnly: true
 
+# 要求節點具有指定標籤，限制 Pod 可排入的節點。
 nodeSelector: {}
 
+# 容忍節點 taint；只解除排程限制，不保證會選中該節點。
 tolerations: []
 
+# 節點或 Pod 的親和性規則，可表達必要條件與偏好。
 affinity: {}

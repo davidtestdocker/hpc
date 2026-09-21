@@ -1,39 +1,60 @@
+# pytorch-runtime 的 Helm 輸入設定；由模板以 .Values 讀取，可由環境設定覆寫。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 工作負載副本數；是否生效取決於模板與 autoscaling 設定。
 replicaCount: 0
 
+# 容器映像及標籤，決定執行的檔案系統與程式版本。
 image:
+  # 容器映像倉庫路徑，與 tag 組成完整映像名稱。
   repository: pytorch/pytorch
+  # 映像版本標籤；latest 是可變標籤，不代表固定映像內容。
   tag: 2.12.0-cuda12.6-cudnn9-runtime
+  # 映像拉取政策；IfNotPresent 在節點已有映像時使用快取。
   pullPolicy: IfNotPresent
 
 gpu:
   count: 1
 
+# 要求節點具有指定標籤，限制 Pod 可排入的節點。
 nodeSelector:
   cloud.google.com/gke-nodepool: gpu-pool
 
 
 ncclBenchmark:
+  # 功能開關；只有引用此欄位的模板條件會受影響。
   enabled: true
 
   # NVIDIA PyTorch container with CUDA/NCCL runtime.
   image: nvcr.io/nvidia/pytorch:26.07-py3
 
+  # NCCL 測試起始訊息大小，傳給 all_reduce_perf 的 -b。
   beginSize: 8K
+  # NCCL 測試最大訊息大小，傳給 -e。
   endSize: 256M
+  # 每輪訊息大小的倍率，傳給 -f；2 表示逐次倍增。
   factor: 2
 
+  # 每個 nccl-tests 程序使用的 GPU 數量，傳給 -g。
   gpusPerProcess: 1
+  # 向 Kubernetes 申請的 GPU 資源量。
   gpuCount: 1
 
+  # NCCL 日誌詳細度，INFO 可觀察初始化與通訊傳輸選擇。
   ncclDebug: INFO
 
 distributedScaling:
+  # 功能開關；只有引用此欄位的模板條件會受影響。
   enabled: true
 
   # Current lab runs real CPU/Gloo scaling.
+  # torchrun 啟動的程序數；目前 scaling 設定是 CPU／Gloo 實驗。
   workers: 2
 
+  # Pod 排程時預留的 CPU 需求。
   cpuRequest: "2"
+  # 容器 CPU 使用上限。
   cpuLimit: "4"
+  # Pod 排程時預留的記憶體需求。
   memoryRequest: "2Gi"
+  # 容器記憶體上限。
   memoryLimit: "4Gi"

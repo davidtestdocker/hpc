@@ -1,5 +1,16 @@
 # Week15 Day2 — PyTorch Training Runtime
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [helm/pytorch-runtime/templates/training-job.yaml](../../helm/pytorch-runtime/templates/training-job.yaml)
+- [helm/pytorch-runtime/values.yaml](../../helm/pytorch-runtime/values.yaml)
+- [kustomize/overlays/dev/kustomization.yaml](../../kustomize/overlays/dev/kustomization.yaml)
+- [runtime/pytorch/train.py](../../runtime/pytorch/train.py)：GPU 訓練與 profiler
+
+---
+
 ## 今日目標
 
 在既有的 **HPC AI Performance Engineering Platform** 上新增正式的 PyTorch Training Capability。

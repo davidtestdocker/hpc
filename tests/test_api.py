@@ -1,3 +1,5 @@
+# 以 FastAPI TestClient 驗證 HTTP 回應、benchmark 清單與工作提交格式。
+# Python 語法：縮排界定區塊；def 定義函式，冒號後接區塊；型別註記說明預期型別。
 from fastapi.testclient import TestClient
 
 from api.main import app
@@ -5,6 +7,7 @@ from api.main import app
 client = TestClient(app)
 
 
+# 定義測試案例，以 assert 驗證實際結果符合預期。
 def test_root():
     response = client.get("/")
 
@@ -16,6 +19,7 @@ def test_root():
     assert body["status"] == "running"
 
 
+# 定義測試案例，以 assert 驗證實際結果符合預期。
 def test_benchmarks():
     response = client.get("/benchmarks")
 
@@ -32,6 +36,7 @@ def test_benchmarks():
         "mpi",
     ]
 
+# 定義測試案例，以 assert 驗證實際結果符合預期。
 def test_submit_benchmark():
 
     response = client.post(

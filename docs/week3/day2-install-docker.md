@@ -1,5 +1,13 @@
 # Week 3 Day 2－安裝 Docker Engine
 
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[day4-dockerfile](day4-dockerfile.md)。
+
+---
+
 ## 今日目標
 
 在 Ubuntu VM 安裝 Docker 官方版本（Docker CE），讓平台具備 Container Runtime。

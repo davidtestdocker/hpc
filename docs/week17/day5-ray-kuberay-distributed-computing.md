@@ -1,5 +1,14 @@
 # Week17 Day5 — Ray / KubeRay Distributed Computing
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [ray-cluster.yaml](../../ray-cluster.yaml)：Ray 叢集
+- [ray-job.yaml](../../ray-job.yaml)：Ray task 範例
+
+---
+
 ## 今日完成
 
 在既有 GKE `hpc-dev` 上建立正式 KubeRay / Ray distributed computing capability：

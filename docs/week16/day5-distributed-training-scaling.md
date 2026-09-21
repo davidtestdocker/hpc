@@ -1,5 +1,16 @@
 # Week16 Day5 — Distributed Training Scaling
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [helm/pytorch-runtime/templates/distributed-scaling-job.yaml](../../helm/pytorch-runtime/templates/distributed-scaling-job.yaml)
+- [helm/pytorch-runtime/values.yaml](../../helm/pytorch-runtime/values.yaml)
+- [kustomize/overlays/gpu-sg/kustomization.yaml](../../kustomize/overlays/gpu-sg/kustomization.yaml)
+- [runtime/pytorch/distributed_scaling.py](../../runtime/pytorch/distributed_scaling.py)：分散式訓練擴展性量測
+
+---
+
 ## 今日成果
 
 建立正式 distributed scaling workload：

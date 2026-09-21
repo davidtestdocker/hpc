@@ -1,5 +1,13 @@
 # Week14 Day2 - Kubernetes GPU Scheduling
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [benchmark/k8s/pytorch-gpu-pod.yaml](../../benchmark/k8s/pytorch-gpu-pod.yaml)
+
+---
+
 # 今天平台增加了什麼？
 
 本日建立 Kubernetes GPU Scheduling Foundation。

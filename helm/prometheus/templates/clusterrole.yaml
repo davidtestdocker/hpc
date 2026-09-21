@@ -1,6 +1,12 @@
+# prometheus 的 Helm 模板（clusterrole.yaml）：經 Helm 渲染後產生部署內容。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# Helm：點號 Values 路徑讀取設定；include 呼叫模板，nindent 縮排；模板左界帶減號會移除前方空白。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: rbac.authorization.k8s.io/v1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: ClusterRole
 
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: prometheus
 
@@ -20,14 +26,18 @@ metadata:
 # Prometheus 使用 kubernetes_sd_configs 時，
 # 需要 list/watch 這些資源，才能透過 Kubernetes API
 # 自動發現所有 Scrape Targets。
+# 規則清單；RBAC 中定義 API 存取權限，Ingress 中定義路由。
 rules:
+  # RBAC 規則適用的 API 群組；空字串代表核心 API。
   - apiGroups: [""]
+    # 資源設定；Pod 中是 requests／limits，Kustomize 中是待組合的檔案清單。
     resources:
       - nodes
       - nodes/proxy
       - services
       - endpoints
       - pods
+    # 允許的 API 動作，例如 get、list、create。
     verbs:
       - get
       - list

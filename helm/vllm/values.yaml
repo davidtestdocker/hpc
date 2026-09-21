@@ -1,8 +1,15 @@
+# vllm 的 Helm 輸入設定；由模板以 .Values 讀取，可由環境設定覆寫。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 工作負載副本數；是否生效取決於模板與 autoscaling 設定。
 replicaCount: 1
 
+# 容器映像及標籤，決定執行的檔案系統與程式版本。
 image:
+  # 容器映像倉庫路徑，與 tag 組成完整映像名稱。
   repository: vllm/vllm-openai
+  # 映像版本標籤；latest 是可變標籤，不代表固定映像內容。
   tag: latest
+  # 映像拉取政策；IfNotPresent 在節點已有映像時使用快取。
   pullPolicy: IfNotPresent
 
 model:
@@ -11,10 +18,15 @@ model:
 service:
   type: NodePort
   port: 8000
+  # 經節點 IP 開放的 Service 埠號，適用 NodePort／部分 LoadBalancer 配置。
   nodePort: 30800
+# 資源設定；Pod 中是 requests／limits，Kustomize 中是待組合的檔案清單。
 resources:
+  # 容器可使用的資源上限；GPU 份額的實際意義取決於裝置外掛設定。
   limits:
+    # NVIDIA 裝置外掛提供的 GPU 資源單位；time-slicing 時不等同實體卡數。
     nvidia.com/gpu: 1
 
+# 要求節點具有指定標籤，限制 Pod 可排入的節點。
 nodeSelector:
   cloud.google.com/gke-nodepool: gpu-pool

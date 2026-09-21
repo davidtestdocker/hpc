@@ -1,5 +1,27 @@
 # Week9 Day7 - Terraform Multi Environment
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [terraform/environments/dev/main.tf](../../terraform/environments/dev/main.tf)
+- [terraform/environments/dev/outputs.tf](../../terraform/environments/dev/outputs.tf)
+- [terraform/environments/dev/providers.tf](../../terraform/environments/dev/providers.tf)
+- [terraform/environments/dev/variables.tf](../../terraform/environments/dev/variables.tf)
+- [terraform/environments/dev/versions.tf](../../terraform/environments/dev/versions.tf)
+- [terraform/environments/prod/main.tf](../../terraform/environments/prod/main.tf)
+- [terraform/environments/prod/outputs.tf](../../terraform/environments/prod/outputs.tf)
+- [terraform/environments/prod/providers.tf](../../terraform/environments/prod/providers.tf)
+- [terraform/environments/prod/variables.tf](../../terraform/environments/prod/variables.tf)
+- [terraform/environments/prod/versions.tf](../../terraform/environments/prod/versions.tf)
+- [terraform/environments/stage/main.tf](../../terraform/environments/stage/main.tf)
+- [terraform/environments/stage/outputs.tf](../../terraform/environments/stage/outputs.tf)
+- [terraform/environments/stage/providers.tf](../../terraform/environments/stage/providers.tf)
+- [terraform/environments/stage/variables.tf](../../terraform/environments/stage/variables.tf)
+- [terraform/environments/stage/versions.tf](../../terraform/environments/stage/versions.tf)
+
+---
+
 ## 今日目標
 
 - 完成 Terraform Multi Environment

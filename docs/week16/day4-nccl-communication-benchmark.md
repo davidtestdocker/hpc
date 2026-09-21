@@ -1,5 +1,15 @@
 # Week16 Day4 — NCCL Communication Benchmark
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [benchmark/results/week16-day4-nccl-single-gpu.txt](../../benchmark/results/week16-day4-nccl-single-gpu.txt)：單 GPU NCCL 原始結果
+- [helm/pytorch-runtime/templates/nccl-benchmark-job.yaml](../../helm/pytorch-runtime/templates/nccl-benchmark-job.yaml)
+- [helm/pytorch-runtime/values.yaml](../../helm/pytorch-runtime/values.yaml)
+
+---
+
 ## 今日成果
 
 平台新增正式 NCCL benchmark Job：

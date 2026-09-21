@@ -1,17 +1,25 @@
+# Kustomize dev 環境設定：組合資源或覆寫部署欄位；相對路徑以此檔所在目錄為準。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: kustomize.config.k8s.io/v1beta1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: Kustomization
 
+# 資源所屬命名空間；叢集層級資源不使用此欄位。
 namespace: hpc-platform-dev
 
 
+# Kustomize 的 Helm 全域設定，例如本機 Chart 所在目錄。
 helmGlobals:
   chartHome: ../../../helm
 
+# 由 Kustomize 呼叫 Helm 渲染並加入輸出的 Charts。
 helmCharts:
   #name api 代表 helm/api
   - name: api
     releaseName: api
     namespace: hpc-platform-dev
+    # 覆寫 Helm values 的設定檔路徑。
     valuesFile: ../../../helm/api/values-dev.yaml
     includeCRDs: false
 
@@ -48,18 +56,22 @@ helmCharts:
     namespace: hpc-platform-dev
 
     #valuesInline 就是直接在 kustomization.yaml 裡設定 Helm Chart 的 values.yaml 參數
+    # 直接寫在此檔案內的 Helm values 覆寫值。
     valuesInline:
+      # 要求節點具有指定標籤，限制 Pod 可排入的節點。
       nodeSelector:
         workload: observability
 
       persistence:
         enabled: true
+        # 指定動態配置儲存使用的 StorageClass。
         storageClassName: standard-rwo
         size: 10Gi
 
       adminUser: admin
       adminPassword: admin123
 
+# 把指定檔案或字串轉成 ConfigMap。
 configMapGenerator:
   - name: pytorch-runtime-code
     files:
@@ -67,8 +79,10 @@ configMapGenerator:
       - train.py=../../../runtime/pytorch/train.py
 
 generatorOptions:
+  # 停用內容雜湊名稱後綴；內容變更不會因名稱改變自動觸發 rollout。
   disableNameSuffixHash: true
 
+# 對選定資源套用局部修改。
 patches:
   - path: deployment-patch.yaml
 

@@ -1,5 +1,15 @@
 # Week17 Day2 — MPI Performance Benchmarking
 
+## 對應檔案
+
+OSU micro-benchmarks 的原始碼與執行檔由外部安裝，未保存在此儲存庫；實驗指令與結果保留於本文。
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[day1-mpi-fundamentals](day1-mpi-fundamentals.md)。
+
+---
+
 ## 今日平台新增能力
 
 今天從「會使用 MPI」進一步進入：

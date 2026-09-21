@@ -1,10 +1,16 @@
+# api 的 Helm 輸入設定；由模板以 .Values 讀取，可由環境設定覆寫。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 容器映像及標籤，決定執行的檔案系統與程式版本。
 image:
+  # 映像版本標籤；latest 是可變標籤，不代表固定映像內容。
   tag: stage
 
 service:
   type: ClusterIP
   port: 8000
+  # Service 將流量轉送至 Pod 的目標埠號或命名埠。
   targetPort: 8000
 
+# 入站規則或 Ingress 設定，含義由所屬資源／Chart 決定。
 ingress:
   host: api-stage.hpc.local

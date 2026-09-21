@@ -1,5 +1,13 @@
 # Week6 Day5 - K3s Foundation
 
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[Day6_Deploy_API_and_Redis](Day6_Deploy_API_and_Redis.md)。
+
+---
+
 ## 今日平台增加什麼
 
 今天平台正式新增：

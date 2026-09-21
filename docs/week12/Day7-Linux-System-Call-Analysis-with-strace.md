@@ -1,5 +1,13 @@
 # Week12 Day7 - Linux System Call Analysis with strace
 
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[performance-report](../performance/performance-report.md)。
+
+---
+
 ## 目標
 
 本章節學習使用 Linux `strace` 分析程式與 Linux Kernel 的互動，了解 System Call 的運作方式，並學會利用 `strace` 分析 File I/O、Network I/O 與 Production 問題。

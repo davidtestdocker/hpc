@@ -1,23 +1,36 @@
+# api 的 Helm 模板（deployment.yaml）：經 Helm 渲染後產生部署內容。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# Helm：點號 Values 路徑讀取設定；include 呼叫模板，nindent 縮排；模板左界帶減號會移除前方空白。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: apps/v1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: Deployment
 
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: {{ include "api.fullname" . }}
+  # 資源所屬命名空間；叢集層級資源不使用此欄位。
   namespace: {{ .Release.Namespace }}
+  # 鍵值標籤，供 selector、監控或排程控制器識別資源。
   labels:
     {{- include "api.labels" . | nindent 4 }}
 
 
+# 期望狀態；控制器據此建立或調整實際資源。
 spec:
   {{- if not .Values.autoscaling.enabled }}
+  # 期望副本數；設定為 0 表示不維持執行中的副本。
   replicas: {{ .Values.replicaCount }}
   {{- end }}
 
 
+  # 選取要關聯的物件；不同資源種類支援的 selector 格式不同。
   selector:
+    # 以完全相等的標籤鍵值選取物件。
     matchLabels:
       {{- include "api.selectorLabels" . | nindent 6 }}
 
+  # 子物件模板；控制器以此內容建立 Pod 或相關工作資源。
   template:
 
     metadata:
@@ -26,23 +39,31 @@ spec:
 
     spec:
 
+      # Pod 內的容器清單；同一 Pod 的容器共用網路。
       containers:
       - name: api
+        # 容器映像及標籤，決定執行的檔案系統與程式版本。
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        # 映像拉取政策，例如 IfNotPresent 允許使用節點快取。
         imagePullPolicy: {{ .Values.image.pullPolicy }}
 
+        # 連接埠設定清單；容器宣告埠號本身不會自動對外公開。
         ports:
         - containerPort: {{ .Values.containerPort }}
 
+        # 從 ConfigMap 或 Secret 批次載入環境變數。
         envFrom:
           - configMapRef:
               name: {{ include "api.fullname" . }}-config
           - secretRef:
               name: postgres-secret
 
+        # 資源設定；Pod 中是 requests／limits，Kustomize 中是待組合的檔案清單。
         resources:
 {{- toYaml .Values.resources | nindent 10 }}
+        # 就緒探針决定 Pod 是否可接收 Service 流量。
         readinessProbe:
 {{- toYaml .Values.readinessProbe | nindent 10 }}
+        # 存活探針失敗達門檻時，kubelet 會重啟容器。
         livenessProbe:
 {{- toYaml .Values.livenessProbe | nindent 10 }}

@@ -1,5 +1,16 @@
 # Week20 Day1 — RBAC / ServiceAccount / Least Privilege
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [k8s/security/rbac-api-test.yaml](../../k8s/security/rbac-api-test.yaml)
+- [k8s/security/role.yaml](../../k8s/security/role.yaml)
+- [k8s/security/rolebinding.yaml](../../k8s/security/rolebinding.yaml)
+- [k8s/security/serviceaccount.yaml](../../k8s/security/serviceaccount.yaml)
+
+---
+
 ## 今日完成
 
 完成 Kubernetes workload 身分與最小權限控制：

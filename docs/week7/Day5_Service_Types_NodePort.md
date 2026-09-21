@@ -1,5 +1,14 @@
 # Week7 Day5 - Service Types and NodePort
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [k8s/api-service.yaml](../../k8s/api-service.yaml)
+- [loadtest/benchmark.js](../../loadtest/benchmark.js)：k6 API 壓測
+
+---
+
 ## 今日平台增加什麼
 
 今天平台完成 Kubernetes Service Type 的學習。

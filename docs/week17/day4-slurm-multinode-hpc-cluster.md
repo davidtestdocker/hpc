@@ -1,5 +1,17 @@
 # Week17 Day4 — Slurm Multi-node HPC Cluster
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [cpu-hold.slurm](../../cpu-hold.slurm)
+- [hello.slurm](../../hello.slurm)
+- [mpi-multinode.slurm](../../mpi-multinode.slurm)
+- [mpi_hello.c](../../mpi_hello.c)
+- [multi-node.slurm](../../multi-node.slurm)
+
+---
+
 ## 今日平台新增能力
 
 今天從單機 Slurm Lab 升級成真正的 Multi-node HPC Cluster。

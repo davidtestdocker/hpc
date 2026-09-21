@@ -1,25 +1,40 @@
+# Kustomize stage 環境設定：組合資源或覆寫部署欄位；相對路徑以此檔所在目錄為準。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: apps/v1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: Deployment
 
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: api
+  # 資源所屬命名空間；叢集層級資源不使用此欄位。
   namespace: hpc-platform-stage
+# 期望狀態；控制器據此建立或調整實際資源。
 spec:
 
+  # 子物件模板；控制器以此內容建立 Pod 或相關工作資源。
   template:
     spec:
+      # Pod 內的容器清單；同一 Pod 的容器共用網路。
       containers:
         - name: api
 
+          # 環境變數清單，提供程式啟動時的設定。
           env:
             - name: APP_ENV
               value: stage
 
+          # 資源設定；Pod 中是 requests／limits，Kustomize 中是待組合的檔案清單。
           resources:
+            # 排程器計算需求時採用的資源量；500m CPU 等於 0.5 顆核心。
             requests:
+              # CPU 數量：1 代表一顆核心，m 表示千分之一核心。
               cpu: "100m"
+              # 記憶體容量；Mi／Gi 是以 1024 為基底的單位。
               memory: "128Mi"
 
+            # 容器可使用的資源上限；GPU 份額的實際意義取決於裝置外掛設定。
             limits:
               cpu: "300m"
               memory: "384Mi"

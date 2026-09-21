@@ -1,5 +1,13 @@
 # Week 1 Day 4－CPU Utilization（CPU 使用率）
 
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[Day1-Linux-CPU-Performance-Analysis](../week12/Day1-Linux-CPU-Performance-Analysis.md)。
+
+---
+
 ## 今日目標
 
 理解 CPU 使用率的真正意義，以及 User、Kernel、Idle 三種 CPU 時間的差異。

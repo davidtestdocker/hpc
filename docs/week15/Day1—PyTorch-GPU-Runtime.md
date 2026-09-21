@@ -1,5 +1,19 @@
 # Week15 Day1 — PyTorch GPU Runtime
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [docker/Dockerfile](../../docker/Dockerfile)：容器映像建置
+- [helm/pytorch-runtime/Chart.yaml](../../helm/pytorch-runtime/Chart.yaml)
+- [helm/pytorch-runtime/templates/deployment.yaml](../../helm/pytorch-runtime/templates/deployment.yaml)
+- [helm/pytorch-runtime/values.yaml](../../helm/pytorch-runtime/values.yaml)
+- [kustomize/overlays/dev/kustomization.yaml](../../kustomize/overlays/dev/kustomization.yaml)
+- [kustomize/overlays/gpu-sg/kustomization.yaml](../../kustomize/overlays/gpu-sg/kustomization.yaml)
+- [runtime/pytorch/runtime.py](../../runtime/pytorch/runtime.py)：PyTorch runtime
+
+---
+
 ## 今日目標
 
 在既有的 **HPC AI Performance Engineering Platform** 上新增 PyTorch GPU Runtime Capability。

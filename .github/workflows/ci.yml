@@ -1,3 +1,5 @@
+# GitHub Actions 流程：檢查程式、測試、建置與推送映像，再更新 GitOps image tag。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
 name: CI
 
 on:
@@ -9,19 +11,23 @@ on:
     branches:
       - master
 
+# 授予工作流程 token 的權限；id-token 可用於雲端身分交換。
 permissions:
   contents: write
   id-token: write
 
+# GitHub Actions 的工作清單，每個 job 可有自己的 runner。
 jobs:
 
   test:
 
     runs-on: ubuntu-latest
 
+    # 依序執行的步驟清單。
     steps:
 
       - name: Checkout Repository
+        # 引用現成 GitHub Action，@ 後方是版本或提交。
         uses: actions/checkout@v4
         with:
           persist-credentials: true
@@ -42,6 +48,7 @@ jobs:
 
       - name: Install Dependencies
 
+        # 在 runner 上執行 Shell 指令；| 表示保留多行。
         run: |
 
           python -m pip install --upgrade pip

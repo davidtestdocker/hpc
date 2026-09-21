@@ -1,15 +1,25 @@
+# Kubernetes 資源（nvidia-dcgm-service）：宣告服務、工作負載或實驗設定，需套用到對應叢集才會生效。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: v1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: Service
 
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: nvidia-dcgm
+  # 資源所屬命名空間；叢集層級資源不使用此欄位。
   namespace: hpc-platform-dev
 
+# 期望狀態；控制器據此建立或調整實際資源。
 spec:
+  # 選取要關聯的物件；不同資源種類支援的 selector 格式不同。
   selector:
     app: nvidia-dcgm
 
+  # 連接埠設定清單；容器宣告埠號本身不會自動對外公開。
   ports:
     - name: dcgm
       port: 5555
+      # Service 將流量轉送至 Pod 的目標埠號或命名埠。
       targetPort: 5555

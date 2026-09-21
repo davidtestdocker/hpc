@@ -1,55 +1,82 @@
+# Kubernetes 資源（api-deployment）：宣告服務、工作負載或實驗設定，需套用到對應叢集才會生效。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: apps/v1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: Deployment
 
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: api
+  # 資源所屬命名空間；叢集層級資源不使用此欄位。
   namespace: hpc-platform
 
+# 期望狀態；控制器據此建立或調整實際資源。
 spec:
+  # 期望副本數；設定為 0 表示不維持執行中的副本。
   replicas: 1
 
+  # 選取要關聯的物件；不同資源種類支援的 selector 格式不同。
   selector:
+    # 以完全相等的標籤鍵值選取物件。
     matchLabels:
       app: api
 
+  # 子物件模板；控制器以此內容建立 Pod 或相關工作資源。
   template:
 
     metadata:
+      # 鍵值標籤，供 selector、監控或排程控制器識別資源。
       labels:
         app: api
 
     spec:
 
+      # Pod 內的容器清單；同一 Pod 的容器共用網路。
       containers:
       - name: api
+        # 容器映像及標籤，決定執行的檔案系統與程式版本。
         image: hpc-ai-benchmark-platform-api
+        # 映像拉取政策，例如 IfNotPresent 允許使用節點快取。
         imagePullPolicy: Never
 
+        # 連接埠設定清單；容器宣告埠號本身不會自動對外公開。
         ports:
         - containerPort: 8000
 
+        # 從 ConfigMap 或 Secret 批次載入環境變數。
         envFrom:
           - configMapRef:
               name: api-config
           - secretRef:
               name: postgres-secret
 
+        # 資源設定；Pod 中是 requests／limits，Kustomize 中是待組合的檔案清單。
         resources:
+          # 排程器計算需求時採用的資源量；500m CPU 等於 0.5 顆核心。
           requests:
+            # CPU 數量：1 代表一顆核心，m 表示千分之一核心。
             cpu: "100m"
+            # 記憶體容量；Mi／Gi 是以 1024 為基底的單位。
             memory: "128Mi"
+          # 容器可使用的資源上限；GPU 份額的實際意義取決於裝置外掛設定。
           limits:
             cpu: "500m"
             memory: "512Mi"
 
+        # 就緒探針决定 Pod 是否可接收 Service 流量。
         readinessProbe:
+          # 以 HTTP GET 檢查指定路徑與埠號。
           httpGet:
             path: /health/redis
             port: 8000
 
+          # 容器啟動後等待多少秒才開始探測。
           initialDelaySeconds: 5
+          # 探針的執行間隔秒數。
           periodSeconds: 10
 
+        # 存活探針失敗達門檻時，kubelet 會重啟容器。
         livenessProbe:
           httpGet:
             path: /health

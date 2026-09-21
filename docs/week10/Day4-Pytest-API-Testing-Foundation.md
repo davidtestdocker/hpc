@@ -1,5 +1,18 @@
 # Week10 Day4 - Pytest API Testing Foundation
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [.github/workflows/ci.yml](../../.github/workflows/ci.yml)：CI／映像建置與 GitOps 更新
+- [api/main.py](../../api/main.py)：API、工作狀態與佇列處理
+- [requirements-dev.txt](../../requirements-dev.txt)
+- [requirements.txt](../../requirements.txt)
+- [tests/conftest.py](../../tests/conftest.py)
+- [tests/test_api.py](../../tests/test_api.py)
+
+---
+
 ## 今日目標
 
 - 建立 Python Virtual Environment

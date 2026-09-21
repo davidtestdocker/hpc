@@ -1,5 +1,13 @@
 # Week12 Day5 - Linux CPU Benchmark with sysbench
 
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[performance-report](../performance/performance-report.md)。
+
+---
+
 ## 目標
 
 本章節學習使用 `sysbench` 建立可重現的 CPU Benchmark，了解 Benchmark 的概念，並學會分析 Throughput、Latency、Scaling 與 Baseline，建立 Performance Engineering 的基本思維。

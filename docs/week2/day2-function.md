@@ -1,5 +1,15 @@
 # Week 2 Day 2－Function（函式）
 
+## 對應檔案
+
+文中的 `system_monitor.py` 為規劃中的整合模組，目前沒有可連結的實作。
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[day6-subprocess](day6-subprocess.md)。
+
+---
+
 ## 今日目標
 
 理解 Function 的用途，以及為什麼 Monitoring Framework 必須使用 Function 來設計程式。

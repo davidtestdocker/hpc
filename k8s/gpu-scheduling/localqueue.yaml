@@ -1,7 +1,15 @@
+# GPU 排程設定（localqueue）：搭配 Kueue 管理工作准入、配額、優先序或節點拓撲。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: kueue.x-k8s.io/v1beta2
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: LocalQueue
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: gpu-local-queue
+  # 資源所屬命名空間；叢集層級資源不使用此欄位。
   namespace: hpc-platform-dev
+# 期望狀態；控制器據此建立或調整實際資源。
 spec:
+  # LocalQueue 對應的叢集配額佇列名稱。
   clusterQueue: gpu-cluster-queue

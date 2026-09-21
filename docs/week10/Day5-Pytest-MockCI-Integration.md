@@ -1,5 +1,15 @@
 # Week10 Day5 - Pytest Mock & CI Integration
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [.github/workflows/ci.yml](../../.github/workflows/ci.yml)：CI／映像建置與 GitOps 更新
+- [tests/conftest.py](../../tests/conftest.py)
+- [tests/test_api.py](../../tests/test_api.py)
+
+---
+
 ## 今日目標
 
 - 學習 Unit Test 與 Integration Test 的差異

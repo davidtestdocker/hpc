@@ -1,5 +1,13 @@
 # Week18 Day6 — GPU / NIC / NUMA Topology & Locality
 
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[day6-topology-aware-gpu-scheduling](../week19/day6-topology-aware-gpu-scheduling.md)。
+
+---
+
 ## 今日完成內容
 
 今天重點是理解：

@@ -1,37 +1,58 @@
+# KubeRay CPU 叢集：Head 負責協調，Worker 提供工作執行資源。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: ray.io/v1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: RayCluster
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: hpc-ray
+  # 資源所屬命名空間；叢集層級資源不使用此欄位。
   namespace: ray-system
 
+# 期望狀態；控制器據此建立或調整實際資源。
 spec:
   rayVersion: "2.47.1"
 
   # Ray head node configuration
+  # Ray Head Pod 的設定，負責叢集協調與工作入口。
   headGroupSpec:
+    # 傳給 ray start 的參數。
     rayStartParams:
       dashboard-host: "0.0.0.0"
 
+    # 子物件模板；控制器以此內容建立 Pod 或相關工作資源。
     template:
       spec:
+        # Pod 內的容器清單；同一 Pod 的容器共用網路。
         containers:
           - name: ray-head
+            # 容器映像及標籤，決定執行的檔案系統與程式版本。
             image: rayproject/ray:2.47.1
+            # 資源設定；Pod 中是 requests／limits，Kustomize 中是待組合的檔案清單。
             resources:
+              # 排程器計算需求時採用的資源量；500m CPU 等於 0.5 顆核心。
               requests:
+                # CPU 數量：1 代表一顆核心，m 表示千分之一核心。
                 cpu: "500m"
+                # 記憶體容量；Mi／Gi 是以 1024 為基底的單位。
                 memory: "1Gi"
+              # 容器可使用的資源上限；GPU 份額的實際意義取決於裝置外掛設定。
               limits:
                 cpu: "1"
                 memory: "2Gi"
 
   # Ray worker group
+  # Ray Worker 群組與副本需求。
   workerGroupSpecs:
     - groupName: cpu-workers
 
       # Start with two Ray workers.
+      # 期望副本數；設定為 0 表示不維持執行中的副本。
       replicas: 2
+      # 允許的最少副本數。
       minReplicas: 2
+      # 允許的最多副本數。
       maxReplicas: 2
 
       rayStartParams: {}

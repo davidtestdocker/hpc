@@ -1,5 +1,16 @@
 # Week4 Day1 - Platform API Design
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [api/main.py](../../api/main.py)：API、工作狀態與佇列處理
+- [docker/Dockerfile](../../docker/Dockerfile)：容器映像建置
+- [monitoring/process_monitor.py](../../monitoring/process_monitor.py)：程序資訊收集
+- [requirements.txt](../../requirements.txt)
+
+---
+
 ## 今日目標
 
 建立 **HPC AI Performance Engineering Platform** 的第一個 API 入口。

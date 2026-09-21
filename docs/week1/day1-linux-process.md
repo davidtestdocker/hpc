@@ -1,5 +1,15 @@
 # Week 1 Day 1－Linux Process（程序）
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+文中的 `benchmark.py` 是示意檔名，儲存庫未保存該檔案；下方監控程式是程序查詢的現有對照。
+
+- [monitoring/process_monitor.py](../../monitoring/process_monitor.py)：程序資訊收集
+
+---
+
 ## 今日目標
 
 理解 Linux 如何執行程式，以及 CPU 如何透過 Scheduler（排程器）分配 Process（程序）到 CPU Core 執行。

@@ -1,5 +1,16 @@
 # Week 2 Day 1－Python 與 Monitoring Framework
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+目前保存的是 hello 與 process monitor 範例；目錄樹中的其他 monitor 模組尚未保存。
+
+- [examples/hello.py](../../examples/hello.py)：Python 入門範例
+- [monitoring/process_monitor.py](../../monitoring/process_monitor.py)：程序資訊收集
+
+---
+
 ## 今日目標
 
 建立 Monitoring Framework 的第一支 Python 程式，理解 Python 在整個平台中的角色。

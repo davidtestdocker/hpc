@@ -1,15 +1,15 @@
-apiVersion: v1
-kind: ConfigMap
+apiVersion: v1{{/* Prometheus ConfigMap；使用 Helm 註解避免變更 checksum/config，觸發非必要 rollout。 */}}
+kind: ConfigMap{{/* 資源種類，決定由哪個 Kubernetes 控制器或工具處理。 */}}
 
-metadata:
+metadata:{{/* 資源識別資訊；name 與 namespace 決定命名空間內的身分。 */}}
   name: {{ include "prometheus.fullname" . }}
-  labels:
+  labels:{{/* 鍵值標籤，供 selector、監控或排程控制器識別資源。 */}}
     {{- include "prometheus.labels" . | nindent 4 }}
 
-data:
+data:{{/* 鍵值資料；Secret 的 data 使用 Base64 編碼，ConfigMap 通常是純文字。 */}}
 
   # 建立 Prometheus 主設定檔
-  prometheus.yml: |
+  prometheus.yml: |{{/* 多行純量：| 保留換行，> 折疊換行；內容由接收程式解讀。 */}}
 
     global:
       # 每 15 秒抓取一次 Metrics

@@ -1,5 +1,15 @@
 # Week 3 Day 7－Docker Integration
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [compose.yaml](../../compose.yaml)：本機服務組合
+- [docker/Dockerfile](../../docker/Dockerfile)：容器映像建置
+- [monitoring/process_monitor.py](../../monitoring/process_monitor.py)：程序資訊收集
+
+---
+
 ## 今日目標
 
 整合 Week 3 Docker 學到的內容，確認 Docker 已經能支撐後續 FastAPI、Monitoring、Benchmark Worker、Prometheus、Grafana 等平台元件。

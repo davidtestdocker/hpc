@@ -1,5 +1,16 @@
 # Week11 Day3 - FastAPI Application Metrics
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [api/main.py](../../api/main.py)：API、工作狀態與佇列處理
+- [helm/api/values-dev.yaml](../../helm/api/values-dev.yaml)
+- [helm/prometheus/templates/configmap.yaml](../../helm/prometheus/templates/configmap.yaml)
+- [requirements.txt](../../requirements.txt)
+
+---
+
 ---
 
 # 今日目標

@@ -1,11 +1,19 @@
+# Kubernetes 資源（dcgm-exporter）：宣告服務、工作負載或實驗設定，需套用到對應叢集才會生效。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: v1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: ConfigMap
 
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: nvidia-dcgm-exporter-metrics
+  # 資源所屬命名空間；叢集層級資源不使用此欄位。
   namespace: hpc-platform-dev
 
+# 鍵值資料；Secret 的 data 使用 Base64 編碼，ConfigMap 通常是純文字。
 data:
+  # 多行純量：| 保留換行，> 折疊換行；內容由接收程式解讀。
   counters.csv: |
     # GPU utilization
     DCGM_FI_DEV_GPU_UTIL, gauge, GPU utilization percentage.
@@ -27,28 +35,36 @@ metadata:
   name: nvidia-dcgm-exporter
   namespace: hpc-platform-dev
 
+# 期望狀態；控制器據此建立或調整實際資源。
 spec:
+  # 選取要關聯的物件；不同資源種類支援的 selector 格式不同。
   selector:
+    # 以完全相等的標籤鍵值選取物件。
     matchLabels:
       app: nvidia-dcgm-exporter
 
+  # 子物件模板；控制器以此內容建立 Pod 或相關工作資源。
   template:
     metadata:
+      # 鍵值標籤，供 selector、監控或排程控制器識別資源。
       labels:
         app: nvidia-dcgm-exporter
 
     spec:
       # Run only on our GPU node pool
+      # 要求節點具有指定標籤，限制 Pod 可排入的節點。
       nodeSelector:
         cloud.google.com/gke-nodepool: gpu-pool
 
       # Allow scheduling on GPU node taint
+      # 容忍節點 taint；只解除排程限制，不保證會選中該節點。
       tolerations:
         - key: nvidia.com/gpu
           operator: Equal
           value: present
           effect: NoSchedule
 
+      # Pod 可掛載的儲存來源，例如 Secret、ConfigMap 或 PVC。
       volumes:
         # Metrics configuration
         - name: dcgm-metrics
@@ -67,15 +83,19 @@ spec:
             path: /var/lib/kubelet/pod-resources
             type: Directory
 
+      # Pod 內的容器清單；同一 Pod 的容器共用網路。
       containers:
         - name: nvidia-dcgm-exporter
+          # 容器映像及標籤，決定執行的檔案系統與程式版本。
           image: nvcr.io/nvidia/k8s/dcgm-exporter:3.3.0-3.2.0-ubuntu22.04
 
           # Connect to nv-hostengine running on this same GPU node
+          # 覆寫容器入口指令；多行字串中的 Shell 語法由指定的 shell 解讀。
           command:
             - /bin/bash
             - -c
 
+          # 傳給入口程式的參數；YAML 清單的每個元素是一個參數。
           args:
             - >
               hostname $NODE_NAME;
@@ -83,17 +103,21 @@ spec:
               --remote-hostengine-info $(NODE_IP)
               --collectors /etc/dcgm-exporter/counters.csv
 
+          # 連接埠設定清單；容器宣告埠號本身不會自動對外公開。
           ports:
             - name: metrics
               containerPort: 9400
 
           # Google reference deployment uses privileged mode
+          # 程序身分、權限與作業系統安全設定。
           securityContext:
             privileged: true
 
+          # 環境變數清單，提供程式啟動時的設定。
           env:
             # Kubernetes node name
             - name: NODE_NAME
+              # 從其他資源或 Pod 欄位取得環境變數值。
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
@@ -114,9 +138,12 @@ spec:
             - name: DCGM_EXPORTER_LISTEN
               value: ":9400"
 
+          # 把已宣告的 volume 掛載到容器中的指定路徑。
           volumeMounts:
             - name: dcgm-metrics
+              # 容器內可見的掛載路徑。
               mountPath: /etc/dcgm-exporter
+              # 是否以唯讀方式掛載，限制容器透過此掛載點寫入。
               readOnly: true
 
             - name: nvidia-install-dir-host

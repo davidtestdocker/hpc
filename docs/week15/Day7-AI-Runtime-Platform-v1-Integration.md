@@ -1,5 +1,21 @@
 # Week15 Day7 - AI Runtime Platform v1 Integration
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [analysis/performance_analyzer.py](../../analysis/performance_analyzer.py)：效能結果分析
+- [benchmark/results/day7-vllm.json](../../benchmark/results/day7-vllm.json)
+- [helm/pytorch-runtime/values.yaml](../../helm/pytorch-runtime/values.yaml)
+- [helm/vllm/values.yaml](../../helm/vllm/values.yaml)
+- [runtime/base.py](../../runtime/base.py)：runtime 抽象介面
+- [runtime/manager.py](../../runtime/manager.py)：runtime 選擇入口
+- [runtime/pytorch/runtime.py](../../runtime/pytorch/runtime.py)：PyTorch runtime
+- [runtime/pytorch/train.py](../../runtime/pytorch/train.py)：GPU 訓練與 profiler
+- [runtime/vllm/runtime.py](../../runtime/vllm/runtime.py)：vLLM HTTP runtime
+
+---
+
 ## 今日目標
 
 完成：

@@ -1,32 +1,51 @@
+# Kubernetes 資源（benchmark-runner）：宣告服務、工作負載或實驗設定，需套用到對應叢集才會生效。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: v1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: Pod
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: benchmark
+  # 資源所屬命名空間；叢集層級資源不使用此欄位。
   namespace: hpc-platform-dev
+  # 鍵值標籤，供 selector、監控或排程控制器識別資源。
   labels:
     app: benchmark
 
+# 期望狀態；控制器據此建立或調整實際資源。
 spec:
+  # Pod 內容器退出後的重啟政策。
   restartPolicy: Never
 
+  # 要求節點具有指定標籤，限制 Pod 可排入的節點。
   nodeSelector:
     cloud.google.com/gke-nodepool: primary-pool
 
+  # Pod 內的容器清單；同一 Pod 的容器共用網路。
   containers:
   - name: benchmark
+    # 容器映像及標籤，決定執行的檔案系統與程式版本。
     image: debian:12
 
+    # 覆寫容器入口指令；多行字串中的 Shell 語法由指定的 shell 解讀。
     command:
       - tail
+    # 傳給入口程式的參數；YAML 清單的每個元素是一個參數。
     args:
       - -f
       - /dev/null
 
+    # 資源設定；Pod 中是 requests／limits，Kustomize 中是待組合的檔案清單。
     resources:
+      # 排程器計算需求時採用的資源量；500m CPU 等於 0.5 顆核心。
       requests:
+        # CPU 數量：1 代表一顆核心，m 表示千分之一核心。
         cpu: "1"
+        # 記憶體容量；Mi／Gi 是以 1024 為基底的單位。
         memory: "512Mi"
 
+      # 容器可使用的資源上限；GPU 份額的實際意義取決於裝置外掛設定。
       limits:
         cpu: "4"
         memory: "2Gi"

@@ -1,5 +1,19 @@
 # Week9 Day6 - Terraform Network Module
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [terraform/environments/dev/main.tf](../../terraform/environments/dev/main.tf)
+- [terraform/modules/firewall/main.tf](../../terraform/modules/firewall/main.tf)
+- [terraform/modules/firewall/outputs.tf](../../terraform/modules/firewall/outputs.tf)
+- [terraform/modules/firewall/variables.tf](../../terraform/modules/firewall/variables.tf)
+- [terraform/modules/network/main.tf](../../terraform/modules/network/main.tf)
+- [terraform/modules/network/outputs.tf](../../terraform/modules/network/outputs.tf)
+- [terraform/modules/network/variables.tf](../../terraform/modules/network/variables.tf)
+
+---
+
 ## 今日目標
 
 - 建立 Network Module

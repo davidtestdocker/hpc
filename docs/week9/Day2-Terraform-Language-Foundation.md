@@ -1,5 +1,17 @@
 # Week9 Day2 - Terraform Language Foundation
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [terraform/environments/dev/main.tf](../../terraform/environments/dev/main.tf)
+- [terraform/environments/dev/variables.tf](../../terraform/environments/dev/variables.tf)
+- [terraform/modules/compute/main.tf](../../terraform/modules/compute/main.tf)
+- [terraform/modules/compute/outputs.tf](../../terraform/modules/compute/outputs.tf)
+- [terraform/modules/compute/variables.tf](../../terraform/modules/compute/variables.tf)
+
+---
+
 ## 學習目標
 
 理解 Terraform Language 的核心概念。

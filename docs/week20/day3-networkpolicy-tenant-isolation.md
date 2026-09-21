@@ -1,5 +1,15 @@
 # Week20 Day3 — NetworkPolicy / Tenant Isolation
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [k8s/security/network-policy/allow-dns.yaml](../../k8s/security/network-policy/allow-dns.yaml)
+- [k8s/security/network-policy/allow-same-namespace.yaml](../../k8s/security/network-policy/allow-same-namespace.yaml)
+- [k8s/security/network-policy/default-deny.yaml](../../k8s/security/network-policy/default-deny.yaml)
+
+---
+
 ## 今日完成
 
 建立 Kubernetes multi-tenant network isolation policy：

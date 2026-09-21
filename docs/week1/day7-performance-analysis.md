@@ -1,5 +1,15 @@
 # Week 1 Day 7－Performance Analysis（效能分析）
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+規劃中的 `cpu_monitor.py`、`memory_monitor.py`、`disk_monitor.py`、`system_monitor.py` 尚未保存為獨立檔案。
+
+- [monitoring/process_monitor.py](../../monitoring/process_monitor.py)：程序資訊收集
+
+---
+
 ## 今日目標
 
 建立 Performance Engineer 的分析思維。

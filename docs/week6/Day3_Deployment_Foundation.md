@@ -1,5 +1,14 @@
 # Week6 Day3 - Deployment Foundation
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [k8s/api-deployment.yaml](../../k8s/api-deployment.yaml)
+- [k8s/redis-deployment.yaml](../../k8s/redis-deployment.yaml)
+
+---
+
 ## 今日平台增加什麼
 
 今天建立 Kubernetes 最重要的控制器（Controller）：

@@ -1,5 +1,14 @@
 # Week13 Day2 - Redis Benchmark
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [k8s/redis-deployment.yaml](../../k8s/redis-deployment.yaml)
+- [k8s/redis-service.yaml](../../k8s/redis-service.yaml)
+
+---
+
 # 今天平台增加了什麼？
 
 今天平台新增 **Redis Benchmark 能力**。

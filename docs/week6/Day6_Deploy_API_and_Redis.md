@@ -1,5 +1,19 @@
 # Week6 Day6 - Deploy API and Redis to Kubernetes
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+文中的舊稱 `docker-compose.yml`，目前儲存庫檔名為 `compose.yaml`。
+
+- [compose.yaml](../../compose.yaml)：本機服務組合
+- [k8s/api-deployment.yaml](../../k8s/api-deployment.yaml)
+- [k8s/api-service.yaml](../../k8s/api-service.yaml)
+- [k8s/redis-deployment.yaml](../../k8s/redis-deployment.yaml)
+- [k8s/redis-service.yaml](../../k8s/redis-service.yaml)
+
+---
+
 ## 今日平台增加什麼
 
 今天正式開始將 HPC AI Benchmark Platform 從 Docker Compose 遷移到 Kubernetes。

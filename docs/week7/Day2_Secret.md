@@ -1,5 +1,19 @@
 # Week7 Day2 - Secret
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+實際 `postgres-secret.yaml` 不納入版本控制，提供可追蹤的 example 與 Helm 模板連結。
+
+- [api/database/connection.py](../../api/database/connection.py)：資料庫連線
+- [docker/Dockerfile](../../docker/Dockerfile)：容器映像建置
+- [helm/postgres/templates/secret.yaml](../../helm/postgres/templates/secret.yaml)
+- [k8s/api-deployment.yaml](../../k8s/api-deployment.yaml)
+- [k8s/postgres-secret.example.yaml](../../k8s/postgres-secret.example.yaml)
+
+---
+
 ## 今日平台增加什麼
 
 今天平台新增：

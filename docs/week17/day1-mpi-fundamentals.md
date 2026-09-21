@@ -1,5 +1,17 @@
 # Week17 Day1 — MPI Fundamentals
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [mpi_allreduce.c](../../mpi_allreduce.c)
+- [mpi_broadcast.c](../../mpi_broadcast.c)
+- [mpi_hello.c](../../mpi_hello.c)
+- [mpi_reduce.c](../../mpi_reduce.c)
+- [mpi_send_recv.c](../../mpi_send_recv.c)
+
+---
+
 ## 今日平台新增能力
 
 今天正式進入 HPC Distributed Computing，建立 MPI 基礎能力：

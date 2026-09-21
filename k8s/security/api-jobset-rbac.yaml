@@ -1,7 +1,13 @@
+# Kubernetes 安全設定（api-jobset-rbac）：身分與權限或網路隔離實驗，實際效果取決於引用身分及叢集控制器。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: v1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: ServiceAccount
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: api-jobset-runner
+  # 資源所屬命名空間；叢集層級資源不使用此欄位。
   namespace: hpc-platform-dev
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -9,11 +15,15 @@ kind: Role
 metadata:
   name: api-jobset-runner
   namespace: hpc-platform-dev
+# 規則清單；RBAC 中定義 API 存取權限，Ingress 中定義路由。
 rules:
+  # RBAC 規則適用的 API 群組；空字串代表核心 API。
   - apiGroups:
       - jobset.x-k8s.io
+    # 資源設定；Pod 中是 requests／limits，Kustomize 中是待組合的檔案清單。
     resources:
       - jobsets
+    # 允許的 API 動作，例如 get、list、create。
     verbs:
       - get
       - list
@@ -25,10 +35,12 @@ kind: RoleBinding
 metadata:
   name: api-jobset-runner
   namespace: hpc-platform-dev
+# RoleBinding 或 ClusterRoleBinding 要授權的使用者／群組／ServiceAccount。
 subjects:
   - kind: ServiceAccount
     name: api-jobset-runner
     namespace: hpc-platform-dev
+# 要綁定的 Role 或 ClusterRole。
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role

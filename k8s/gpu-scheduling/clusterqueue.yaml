@@ -1,21 +1,31 @@
+# GPU 排程設定（clusterqueue）：搭配 Kueue 管理工作准入、配額、優先序或節點拓撲。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: kueue.x-k8s.io/v1beta2
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: ClusterQueue
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: gpu-cluster-queue
+# 期望狀態；控制器據此建立或調整實際資源。
 spec:
   namespaceSelector: {}
 
+  # 資源不足時可否搶占其他已准入工作及其範圍。
   preemption:
     withinClusterQueue: LowerPriority
 
+  # Kueue 管理的資源群組與可用 ResourceFlavor。
   resourceGroups:
     - coveredResources:
         - cpu
         - nvidia.com/gpu
       flavors:
         - name: l4-timesharing-tas
+          # 資源設定；Pod 中是 requests／limits，Kustomize 中是待組合的檔案清單。
           resources:
             - name: cpu
+              # 佇列的名義資源配額，准入時計入使用量。
               nominalQuota: "3"
             - name: nvidia.com/gpu
               nominalQuota: "4"

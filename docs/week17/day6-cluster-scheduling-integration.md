@@ -1,5 +1,16 @@
 # Week17 Day6 — Cluster Scheduling Comparison & Integration
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [helm/pytorch-runtime/templates/ddp-test-job.yaml](../../helm/pytorch-runtime/templates/ddp-test-job.yaml)
+- [mpi-multinode.slurm](../../mpi-multinode.slurm)
+- [ray-cluster.yaml](../../ray-cluster.yaml)：Ray 叢集
+- [ray-job.yaml](../../ray-job.yaml)：Ray task 範例
+
+---
+
 ## 今日完成
 
 把 Week17 已實作的 Slurm、Kubernetes、Ray 三種 scheduler 整合成同一套 scheduling model，並實際驗證不同層級的 resource contention 與 Pending 行為。

@@ -1,24 +1,41 @@
+# Kubernetes 資源（gpu-node-failure-test）：宣告服務、工作負載或實驗設定，需套用到對應叢集才會生效。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: batch/v1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: Job
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: gpu-failure-test
+  # 資源所屬命名空間；叢集層級資源不使用此欄位。
   namespace: hpc-platform-dev
+  # 鍵值標籤，供 selector、監控或排程控制器識別資源。
   labels:
     kueue.x-k8s.io/queue-name: gpu-local-queue
+# 期望狀態；控制器據此建立或調整實際資源。
 spec:
+  # 是否暫停啟動工作；Kueue 可在准入後解除暫停。
   suspend: true
+  # 子物件模板；控制器以此內容建立 Pod 或相關工作資源。
   template:
     spec:
+      # Pod 內容器退出後的重啟政策。
       restartPolicy: Never
+      # Pod 內的容器清單；同一 Pod 的容器共用網路。
       containers:
         - name: gpu
+          # 容器映像及標籤，決定執行的檔案系統與程式版本。
           image: nvcr.io/nvidia/pytorch:26.07-py3
+          # 覆寫容器入口指令；多行字串中的 Shell 語法由指定的 shell 解讀。
           command:
             - bash
             - -lc
             - |
               nvidia-smi
               sleep 300
+          # 資源設定；Pod 中是 requests／limits，Kustomize 中是待組合的檔案清單。
           resources:
+            # 容器可使用的資源上限；GPU 份額的實際意義取決於裝置外掛設定。
             limits:
+              # NVIDIA 裝置外掛提供的 GPU 資源單位；time-slicing 時不等同實體卡數。
               nvidia.com/gpu: 1

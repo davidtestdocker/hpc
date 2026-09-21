@@ -1,5 +1,15 @@
 # Week5 Day1 - Redis Foundation
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [api/main.py](../../api/main.py)：API、工作狀態與佇列處理
+- [compose.yaml](../../compose.yaml)：本機服務組合
+- [requirements.txt](../../requirements.txt)
+
+---
+
 ## 今日平台增加什麼？
 
 今天平台從 Memory State 演進成 Redis External State。

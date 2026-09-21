@@ -1,20 +1,32 @@
+# api 的 Helm 模板（hpa.yaml）：經 Helm 渲染後產生部署內容。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# Helm：點號 Values 路徑讀取設定；include 呼叫模板，nindent 縮排；模板左界帶減號會移除前方空白。
 {{- if .Values.autoscaling.enabled }}
 
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: autoscaling/v2
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: HorizontalPodAutoscaler
 
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: api-hpa
+  # 資源所屬命名空間；叢集層級資源不使用此欄位。
   namespace: {{ .Release.Namespace }}
+# 期望狀態；控制器據此建立或調整實際資源。
 spec:
+  # HPA 要調整副本數的工作負載。
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
     name: api
 
+  # 允許的最少副本數。
   minReplicas: {{ .Values.autoscaling.minReplicas }}
+  # 允許的最多副本數。
   maxReplicas: {{ .Values.autoscaling.maxReplicas }}
 
+  # 自動擴縮採用的指標及目標值。
   metrics:
     - type: Resource
       resource:

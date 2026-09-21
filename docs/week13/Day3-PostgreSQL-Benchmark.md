@@ -1,5 +1,15 @@
 # Week13 Day3 - PostgreSQL Benchmark
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [benchmark/postgres/run_pgbench.sh](../../benchmark/postgres/run_pgbench.sh)：PostgreSQL 壓測
+- [k8s/postgres-service.yaml](../../k8s/postgres-service.yaml)
+- [k8s/postgres-statefulset.yaml](../../k8s/postgres-statefulset.yaml)
+
+---
+
 # 今天平台增加了什麼？
 
 今天平台新增 **PostgreSQL Benchmark 能力**。

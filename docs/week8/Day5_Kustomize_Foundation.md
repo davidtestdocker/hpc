@@ -1,5 +1,20 @@
 # Week8 Day5 - Kustomize Foundation
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+文中的 `base/`、`ingress-patch.yaml` 與 `/tmp/*.yaml` 為歷史結構或產物；目前可追蹤的是以下 overlays。
+
+- [kustomize/overlays/dev/deployment-patch.yaml](../../kustomize/overlays/dev/deployment-patch.yaml)
+- [kustomize/overlays/dev/kustomization.yaml](../../kustomize/overlays/dev/kustomization.yaml)
+- [kustomize/overlays/prod/deployment-patch.yaml](../../kustomize/overlays/prod/deployment-patch.yaml)
+- [kustomize/overlays/prod/kustomization.yaml](../../kustomize/overlays/prod/kustomization.yaml)
+- [kustomize/overlays/stage/deployment-patch.yaml](../../kustomize/overlays/stage/deployment-patch.yaml)
+- [kustomize/overlays/stage/kustomization.yaml](../../kustomize/overlays/stage/kustomization.yaml)
+
+---
+
 ## 本日成果
 
 完成 Kustomize 基礎架構，建立 Base / Overlay 多環境管理模式，並完成 dev、stage、prod 三個環境的 Render 與驗證。

@@ -1,5 +1,15 @@
 # Week13 Day5 - Benchmark Resource Monitoring
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [benchmark/k8s/benchmark-runner.yaml](../../benchmark/k8s/benchmark-runner.yaml)
+- [benchmark/postgres/run_pgbench.sh](../../benchmark/postgres/run_pgbench.sh)：PostgreSQL 壓測
+- [k8s/postgres-statefulset.yaml](../../k8s/postgres-statefulset.yaml)
+
+---
+
 ## 今天平台增加了什麼？
 
 今天將 Benchmark 與 Kubernetes Resource Monitoring 整合。

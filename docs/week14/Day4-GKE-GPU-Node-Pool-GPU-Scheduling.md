@@ -1,5 +1,15 @@
 # Week14 Day4 - GKE GPU Node Pool & GPU Scheduling
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+文中的 `benchmark/k8s/gpu-test-pod.yaml` 未保存在儲存庫；下方 PyTorch Pod 是現有 GPU 請求範例，並非該歷史檔案。
+
+- [benchmark/k8s/pytorch-gpu-pod.yaml](../../benchmark/k8s/pytorch-gpu-pod.yaml)
+
+---
+
 ## 今天平台增加了什麼？
 
 今天平台正式具備 **GPU Workload 執行能力**。

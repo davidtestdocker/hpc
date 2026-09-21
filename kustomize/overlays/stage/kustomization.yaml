@@ -1,15 +1,23 @@
+# Kustomize stage 環境設定：組合資源或覆寫部署欄位；相對路徑以此檔所在目錄為準。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: kustomize.config.k8s.io/v1beta1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: Kustomization
 
+# 資源所屬命名空間；叢集層級資源不使用此欄位。
 namespace: hpc-platform-stage
 
+# Kustomize 的 Helm 全域設定，例如本機 Chart 所在目錄。
 helmGlobals:
   chartHome: ../../../helm
 
+# 由 Kustomize 呼叫 Helm 渲染並加入輸出的 Charts。
 helmCharts:
   - name: api
     releaseName: api
     namespace: hpc-platform-stage
+    # 覆寫 Helm values 的設定檔路徑。
     valuesFile: ../../../helm/api/values-stage.yaml
     includeCRDs: false
 
@@ -23,5 +31,6 @@ helmCharts:
     namespace: hpc-platform-stage
     includeCRDs: false
 
+# 對選定資源套用局部修改。
 patches:
   - path: deployment-patch.yaml

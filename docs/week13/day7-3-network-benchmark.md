@@ -1,5 +1,15 @@
 # Week13 Day7-3 - Network Benchmark
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [benchmark/network/results/iperf3_20260810.md](../../benchmark/network/results/iperf3_20260810.md)
+- [benchmark/network/run_iperf3.sh](../../benchmark/network/run_iperf3.sh)：網路吞吐測試
+- [benchmark/run_all.sh](../../benchmark/run_all.sh)：benchmark 整合入口
+
+---
+
 ## 今天平台增加了什麼？
 
 本次加入 Network Benchmark Module。

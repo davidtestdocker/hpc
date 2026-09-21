@@ -1,5 +1,13 @@
 # Week17 Day3 — HPC Communication Stack
 
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[day5-nccl-transport-debugging](../week18/day5-nccl-transport-debugging.md)。
+
+---
+
 ## 今日平台新增能力
 
 今天建立 HPC / AI Cluster 的 Communication Stack 觀念與 Troubleshooting 能力。

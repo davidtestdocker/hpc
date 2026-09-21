@@ -1,5 +1,13 @@
 # Week12 Day3：Linux Disk Performance Analysis
 
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[performance-report](../performance/performance-report.md)。
+
+---
+
 ## 今日目標
 
 學習 Linux Disk Performance Analysis，了解如何判斷磁碟是否為系統瓶頸，並熟悉 Linux 常用的磁碟效能分析工具。

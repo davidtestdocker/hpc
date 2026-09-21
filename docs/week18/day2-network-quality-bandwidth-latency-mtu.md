@@ -1,5 +1,15 @@
 # Week18 Day2 — Bandwidth / Latency / Packet Loss / MTU
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [benchmark/k8s/iperf3-server.yaml](../../benchmark/k8s/iperf3-server.yaml)
+- [benchmark/k8s/iperf3-service.yaml](../../benchmark/k8s/iperf3-service.yaml)
+- [benchmark/network/run_iperf3.sh](../../benchmark/network/run_iperf3.sh)：網路吞吐測試
+
+---
+
 ## 今日完成內容
 
 建立 `hpc-demo ↔ net-test-01` 的 cluster network quality baseline，實際量測：

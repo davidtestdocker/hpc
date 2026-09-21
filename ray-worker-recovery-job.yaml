@@ -1,12 +1,24 @@
+# Worker 故障實驗：先偏好指定節點，允許失敗重試；soft=True 允許改用其他節點。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: ray.io/v1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: RayJob
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: ray-worker-recovery
+  # 資源所屬命名空間；叢集層級資源不使用此欄位。
   namespace: ray-system
+# 期望狀態；控制器據此建立或調整實際資源。
 spec:
+  # 依標籤選取已存在的 RayCluster。
   clusterSelector:
     ray.io/cluster: hpc-ray
 
+  # Ray Jobs API 執行的命令；| 保留換行，下方整段是字串而非 YAML 欄位。
+  # 列表生成式挑選 Alive 且不是 Head 的節點；workers[0] 假設至少有一個存活 Worker。
+  # max_retries=2 允許 task 故障後最多重試兩次；soft affinity 在目標不可用時允許換節點。
+  # time.sleep(900) 留出故障注入時間；flush=True 立即輸出日誌；ray.get 等待最終結果。
   entrypoint: |
     python -c '
     import time

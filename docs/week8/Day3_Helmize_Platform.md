@@ -1,5 +1,38 @@
 # Week8 Day3 - Helmize HPC AI Performance Engineering Platform
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [helm/api/Chart.yaml](../../helm/api/Chart.yaml)
+- [helm/api/templates/_helpers.tpl](../../helm/api/templates/_helpers.tpl)
+- [helm/api/templates/configmap.yaml](../../helm/api/templates/configmap.yaml)
+- [helm/api/templates/deployment.yaml](../../helm/api/templates/deployment.yaml)
+- [helm/api/templates/hpa.yaml](../../helm/api/templates/hpa.yaml)
+- [helm/api/templates/ingress.yaml](../../helm/api/templates/ingress.yaml)
+- [helm/api/templates/service.yaml](../../helm/api/templates/service.yaml)
+- [helm/api/values-dev.yaml](../../helm/api/values-dev.yaml)
+- [helm/api/values-prod.yaml](../../helm/api/values-prod.yaml)
+- [helm/api/values-stage.yaml](../../helm/api/values-stage.yaml)
+- [helm/api/values.yaml](../../helm/api/values.yaml)
+- [helm/postgres/Chart.yaml](../../helm/postgres/Chart.yaml)
+- [helm/postgres/templates/pvc.yaml](../../helm/postgres/templates/pvc.yaml)
+- [helm/postgres/templates/secret.yaml](../../helm/postgres/templates/secret.yaml)
+- [helm/postgres/templates/service.yaml](../../helm/postgres/templates/service.yaml)
+- [helm/postgres/templates/statefulset.yaml](../../helm/postgres/templates/statefulset.yaml)
+- [helm/postgres/values.yaml](../../helm/postgres/values.yaml)
+- [helm/redis/Chart.yaml](../../helm/redis/Chart.yaml)
+- [helm/redis/templates/deployment.yaml](../../helm/redis/templates/deployment.yaml)
+- [helm/redis/templates/service.yaml](../../helm/redis/templates/service.yaml)
+- [helm/redis/values.yaml](../../helm/redis/values.yaml)
+- [k8s/api-configmap.yaml](../../k8s/api-configmap.yaml)
+- [k8s/api-deployment.yaml](../../k8s/api-deployment.yaml)
+- [k8s/api-hpa.yaml](../../k8s/api-hpa.yaml)
+- [k8s/api-ingress.yaml](../../k8s/api-ingress.yaml)
+- [k8s/api-service.yaml](../../k8s/api-service.yaml)
+
+---
+
 ## 本日成果
 
 將原本以 `k8s/` 管理的 Kubernetes YAML，正式轉換為 Helm Chart。

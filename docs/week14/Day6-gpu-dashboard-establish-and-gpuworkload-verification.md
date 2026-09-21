@@ -1,5 +1,15 @@
 # Week14 Day6：GPU Dashboard 建立與 GPU Workload 驗證
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [benchmark/k8s/dcgm-exporter-remote.yaml](../../benchmark/k8s/dcgm-exporter-remote.yaml)
+- [helm/grafana-10.5.15/grafana/dashboards/custom-dashboard.json](../../helm/grafana-10.5.15/grafana/dashboards/custom-dashboard.json)
+- [helm/prometheus/templates/configmap.yaml](../../helm/prometheus/templates/configmap.yaml)
+
+---
+
 ## 今日目標
 
 今天將 GPU Metrics 建立為 Grafana Dashboard，並透過實際 GPU Workload 驗證 Dashboard 是否能即時反映 GPU 狀態。

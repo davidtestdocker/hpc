@@ -1,5 +1,13 @@
 # Week18 Day3 — Packet-level Network Failure Troubleshooting
 
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[day4-kubernetes-network-troubleshooting](day4-kubernetes-network-troubleshooting.md)。
+
+---
+
 ## 今日完成內容
 
 建立一套可從 client 連線失敗一路定位到 root cause 的 packet-level network troubleshooting 流程，實際驗證：

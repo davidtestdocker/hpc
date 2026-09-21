@@ -1,60 +1,88 @@
+# pytorch-runtime 的 Helm 模板（distributed-scaling-job.yaml）：經 Helm 渲染後產生部署內容。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# Helm：點號 Values 路徑讀取設定；include 呼叫模板，nindent 縮排；模板左界帶減號會移除前方空白。
 {{- if .Values.distributedScaling.enabled }}
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: batch/v1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: Job
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: distributed-scaling
+  # 鍵值標籤，供 selector、監控或排程控制器識別資源。
   labels:
     app: distributed-scaling
+# 期望狀態；控制器據此建立或調整實際資源。
 spec:
+  # Job 失敗後的重試上限。
   backoffLimit: 1
+  # 子物件模板；控制器以此內容建立 Pod 或相關工作資源。
   template:
     metadata:
       labels:
         app: distributed-scaling
     spec:
+      # Pod 內容器退出後的重啟政策。
       restartPolicy: Never
 
+      # 要求節點具有指定標籤，限制 Pod 可排入的節點。
       nodeSelector:
         cloud.google.com/gke-nodepool: {{ index .Values.nodeSelector "cloud.google.com/gke-nodepool" | quote }}
 
+      # 容忍節點 taint；只解除排程限制，不保證會選中該節點。
       tolerations:
         - key: nvidia.com/gpu
           operator: Equal
           value: present
           effect: NoSchedule
 
+      # Pod 內的容器清單；同一 Pod 的容器共用網路。
       containers:
         - name: distributed-scaling
+          # 容器映像及標籤，決定執行的檔案系統與程式版本。
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          # 映像拉取政策，例如 IfNotPresent 允許使用節點快取。
           imagePullPolicy: {{ .Values.image.pullPolicy }}
 
           # Launch the scaling workload with torchrun.
+          # 覆寫容器入口指令；多行字串中的 Shell 語法由指定的 shell 解讀。
           command:
             - torchrun
 
+          # 傳給入口程式的參數；YAML 清單的每個元素是一個參數。
           args:
             - --standalone
             - --nproc-per-node={{ .Values.distributedScaling.workers }}
             - /runtime/distributed_scaling.py
 
+          # 環境變數清單，提供程式啟動時的設定。
           env:
             # Force CPU/Gloo for the current scaling lab.
             - name: CUDA_VISIBLE_DEVICES
               value: ""
 
+          # 資源設定；Pod 中是 requests／limits，Kustomize 中是待組合的檔案清單。
           resources:
+            # 排程器計算需求時採用的資源量；500m CPU 等於 0.5 顆核心。
             requests:
+              # CPU 數量：1 代表一顆核心，m 表示千分之一核心。
               cpu: {{ .Values.distributedScaling.cpuRequest | quote }}
+              # 記憶體容量；Mi／Gi 是以 1024 為基底的單位。
               memory: {{ .Values.distributedScaling.memoryRequest | quote }}
+            # 容器可使用的資源上限；GPU 份額的實際意義取決於裝置外掛設定。
             limits:
               cpu: {{ .Values.distributedScaling.cpuLimit | quote }}
               memory: {{ .Values.distributedScaling.memoryLimit | quote }}
 
+          # 把已宣告的 volume 掛載到容器中的指定路徑。
           volumeMounts:
             - name: runtime-code
+              # 容器內可見的掛載路徑。
               mountPath: /runtime
+              # 是否以唯讀方式掛載，限制容器透過此掛載點寫入。
               readOnly: true
 
+      # Pod 可掛載的儲存來源，例如 Secret、ConfigMap 或 PVC。
       volumes:
         - name: runtime-code
           configMap:

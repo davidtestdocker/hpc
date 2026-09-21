@@ -1,5 +1,16 @@
 # Week14 Day5：GPU Metrics 監控整合（DCGM Exporter + Prometheus + Grafana）
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [benchmark/k8s/dcgm-exporter-remote.yaml](../../benchmark/k8s/dcgm-exporter-remote.yaml)
+- [benchmark/k8s/nvidia-dcgm-exporter-service.yaml](../../benchmark/k8s/nvidia-dcgm-exporter-service.yaml)
+- [benchmark/k8s/nvidia-dcgm.yaml](../../benchmark/k8s/nvidia-dcgm.yaml)
+- [helm/prometheus/templates/configmap.yaml](../../helm/prometheus/templates/configmap.yaml)
+
+---
+
 ## 今日目標
 
 今天將 GKE GPU Node 的 GPU Metrics 正式整合進既有 Observability 平台。

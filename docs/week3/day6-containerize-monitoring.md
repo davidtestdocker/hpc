@@ -1,5 +1,15 @@
 # Week 3 Day 6－Container 化 Monitoring Framework
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [compose.yaml](../../compose.yaml)：本機服務組合
+- [docker/Dockerfile](../../docker/Dockerfile)：容器映像建置
+- [monitoring/process_monitor.py](../../monitoring/process_monitor.py)：程序資訊收集
+
+---
+
 ## 今日目標
 
 將 `monitoring/process_monitor.py` 打包進 Docker Image，並透過 Docker Compose 在 Container 中執行。

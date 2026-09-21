@@ -1,5 +1,13 @@
 # Week12 Day6 - Linux CPU Profiling with perf
 
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[performance-report](../performance/performance-report.md)。
+
+---
+
 ## 目標
 
 本章節學習使用 Linux `perf` 進行 CPU Profiling，了解 CPU Time 實際花費的位置，並學會判讀 `perf stat`、`perf record`、`perf report` 的結果，建立 Linux Performance Profiling 的基本能力。

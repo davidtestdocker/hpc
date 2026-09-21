@@ -1,36 +1,55 @@
+# prometheus 的 Helm 輸入設定；由模板以 .Values 讀取，可由環境設定覆寫。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 工作負載副本數；是否生效取決於模板與 autoscaling 設定。
 replicaCount: 1
 
+# 容器映像及標籤，決定執行的檔案系統與程式版本。
 image:
+  # 容器映像倉庫路徑，與 tag 組成完整映像名稱。
   repository: prom/prometheus
+  # 映像版本標籤；latest 是可變標籤，不代表固定映像內容。
   tag: v3.7.3
+  # 映像拉取政策；IfNotPresent 在節點已有映像時使用快取。
   pullPolicy: IfNotPresent
 
 service:
   type: ClusterIP
   port: 9090
+  # Service 將流量轉送至 Pod 的目標埠號或命名埠。
   targetPort: 9090
 
+# 資源設定；Pod 中是 requests／limits，Kustomize 中是待組合的檔案清單。
 resources:
+  # 排程器計算需求時採用的資源量；500m CPU 等於 0.5 顆核心。
   requests:
+    # CPU 數量：1 代表一顆核心，m 表示千分之一核心。
     cpu: 250m
+    # 記憶體容量；Mi／Gi 是以 1024 為基底的單位。
     memory: 512Mi
+  # 容器可使用的資源上限；GPU 份額的實際意義取決於裝置外掛設定。
   limits:
     cpu: 500m
     memory: 1Gi
 # 讓Prometheus Pod 只能排到剛建立的 Observability Node
+# 要求節點具有指定標籤，限制 Pod 可排入的節點。
 nodeSelector:
   workload: observability
 # enabled: true  Pod 重建後歷史 metrics 全部還在
 # storageClassName 指定要使用哪個 StorageClass 建立磁碟
 # ReadWriteOnce 一台 Node 可以讀寫
 persistence:
+  # 功能開關；只有引用此欄位的模板條件會受影響。
   enabled: true
+  # 指定動態配置儲存使用的 StorageClass。
   storageClassName: standard-rwo
+  # 儲存卷要求的存取模式，例如 ReadWriteOnce 限制為單節點讀寫掛載。
   accessModes:
     - ReadWriteOnce
   size: 10Gi
 # scrapeInterval 15 秒抓一次所有 Metrics
 # evaluationInterval 15 秒重新計算一次 Rules
 config:
+  # Prometheus 抓取指標的時間間隔。
   scrapeInterval: 15s
+  # Prometheus 評估規則的時間間隔。
   evaluationInterval: 15s

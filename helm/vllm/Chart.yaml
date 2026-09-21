@@ -1,3 +1,6 @@
+# vllm 的 Helm Chart 中繼資料：描述套件名稱、類型與版本。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: v2
 name: vllm
 description: vLLM inference runtime for HPC AI platform

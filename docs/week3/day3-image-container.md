@@ -1,5 +1,13 @@
 # Week 3 Day 3－Image 與 Container
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [docker/Dockerfile](../../docker/Dockerfile)：容器映像建置
+
+---
+
 ## 今日目標
 
 理解 Docker Image 與 Docker Container 的差異，以及 Container 的生命週期。

@@ -1,5 +1,13 @@
 # Week12 Day4 - Linux Historical Performance Analysis
 
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[performance-report](../performance/performance-report.md)。
+
+---
+
 ## 目標
 
 本章節學習使用 `sar`（System Activity Reporter）分析 Linux 系統歷史效能資料，了解 `sar` 的工作原理，以及如何查看 CPU、Memory、Disk、Network 的歷史資訊。

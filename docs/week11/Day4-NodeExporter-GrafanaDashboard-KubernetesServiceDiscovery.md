@@ -1,5 +1,21 @@
 # Week11 Day4 - Node Exporter、Grafana Dashboard、Kubernetes Service Discovery
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+Node Exporter／Grafana 連結包含保存的第三方 Chart 設定及 dashboard，供對照當時監控實驗。
+
+- [helm/grafana-10.5.15/grafana/dashboards/custom-dashboard.json](../../helm/grafana-10.5.15/grafana/dashboards/custom-dashboard.json)
+- [helm/grafana-10.5.15/grafana/values.yaml](../../helm/grafana-10.5.15/grafana/values.yaml)
+- [helm/prometheus-node-exporter-4.56.1/prometheus-node-exporter/values.yaml](../../helm/prometheus-node-exporter-4.56.1/prometheus-node-exporter/values.yaml)
+- [helm/prometheus/templates/clusterrole.yaml](../../helm/prometheus/templates/clusterrole.yaml)
+- [helm/prometheus/templates/clusterrolebinding.yaml](../../helm/prometheus/templates/clusterrolebinding.yaml)
+- [helm/prometheus/templates/configmap.yaml](../../helm/prometheus/templates/configmap.yaml)
+- [helm/prometheus/templates/serviceaccount.yaml](../../helm/prometheus/templates/serviceaccount.yaml)
+
+---
+
 ## 今日新增
 
 建立完整 Kubernetes Node Monitoring。

@@ -1,19 +1,32 @@
+# grafana 的 Helm 模板（deployment.yaml）：經 Helm 渲染後產生部署內容。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# Helm：點號 Values 路徑讀取設定；include 呼叫模板，nindent 縮排；模板左界帶減號會移除前方空白。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: apps/v1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: Deployment
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: {{ include "grafana.fullname" . }}
+  # 鍵值標籤，供 selector、監控或排程控制器識別資源。
   labels:
     {{- include "grafana.labels" . | nindent 4 }}
+# 期望狀態；控制器據此建立或調整實際資源。
 spec:
   {{- if not .Values.autoscaling.enabled }}
+  # 期望副本數；設定為 0 表示不維持執行中的副本。
   replicas: {{ .Values.replicaCount }}
   {{- end }}
+  # 選取要關聯的物件；不同資源種類支援的 selector 格式不同。
   selector:
+    # 以完全相等的標籤鍵值選取物件。
     matchLabels:
       {{- include "grafana.selectorLabels" . | nindent 6 }}
+  # 子物件模板；控制器以此內容建立 Pod 或相關工作資源。
   template:
     metadata:
       {{- with .Values.podAnnotations }}
+      # 附加設定或提示，由對應控制器解讀，不等同 selector 標籤。
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -27,52 +40,66 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      # Pod 使用的 ServiceAccount；RBAC 依此身分授予 API 權限。
       serviceAccountName: {{ include "grafana.serviceAccountName" . }}
       {{- with .Values.podSecurityContext }}
+      # 程序身分、權限與作業系統安全設定。
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      # Pod 內的容器清單；同一 Pod 的容器共用網路。
       containers:
         - name: {{ .Chart.Name }}
           {{- with .Values.securityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          # 容器映像及標籤，決定執行的檔案系統與程式版本。
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          # 映像拉取政策，例如 IfNotPresent 允許使用節點快取。
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # 連接埠設定清單；容器宣告埠號本身不會自動對外公開。
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
           {{- with .Values.livenessProbe }}
+          # 存活探針失敗達門檻時，kubelet 會重啟容器。
           livenessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           {{- with .Values.readinessProbe }}
+          # 就緒探針决定 Pod 是否可接收 Service 流量。
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           {{- with .Values.resources }}
+          # 資源設定；Pod 中是 requests／limits，Kustomize 中是待組合的檔案清單。
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           {{- with .Values.volumeMounts }}
+          # 把已宣告的 volume 掛載到容器中的指定路徑。
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
       {{- with .Values.volumes }}
+      # Pod 可掛載的儲存來源，例如 Secret、ConfigMap 或 PVC。
       volumes:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.nodeSelector }}
+      # 要求節點具有指定標籤，限制 Pod 可排入的節點。
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.affinity }}
+      # 節點或 Pod 的親和性規則，可表達必要條件與偏好。
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.tolerations }}
+      # 容忍節點 taint；只解除排程限制，不保證會選中該節點。
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

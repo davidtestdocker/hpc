@@ -1,5 +1,15 @@
 # Week9 Day1 - Terraform Foundation
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [terraform/environments/dev/.terraform.lock.hcl](../../terraform/environments/dev/.terraform.lock.hcl)
+- [terraform/environments/dev/providers.tf](../../terraform/environments/dev/providers.tf)
+- [terraform/environments/dev/versions.tf](../../terraform/environments/dev/versions.tf)
+
+---
+
 ## 學習目標
 
 正式開始 Infrastructure as Code（IaC）。

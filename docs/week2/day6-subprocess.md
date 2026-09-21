@@ -1,5 +1,13 @@
 # Week 2 Day 6－subprocess 執行 Linux 指令
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [monitoring/process_monitor.py](../../monitoring/process_monitor.py)：程序資訊收集
+
+---
+
 ## 今日目標
 
 理解 Python 如何透過 `subprocess` 執行 Linux 指令，開始將 Python 與 Linux 系統資訊連接起來。

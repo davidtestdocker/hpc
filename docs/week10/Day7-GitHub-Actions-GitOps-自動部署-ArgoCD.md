@@ -1,5 +1,17 @@
 # Week10 Day7 - GitHub Actions + GitOps 自動部署
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [.github/workflows/ci.yml](../../.github/workflows/ci.yml)：CI／映像建置與 GitOps 更新
+- [argocd/application-dev.yaml](../../argocd/application-dev.yaml)
+- [helm/api/values-dev.yaml](../../helm/api/values-dev.yaml)
+- [kustomize/overlays/dev/deployment-patch.yaml](../../kustomize/overlays/dev/deployment-patch.yaml)
+- [kustomize/overlays/dev/kustomization.yaml](../../kustomize/overlays/dev/kustomization.yaml)
+
+---
+
 ## 今日新增
 
 今天完成整套 GitOps CI/CD Pipeline。

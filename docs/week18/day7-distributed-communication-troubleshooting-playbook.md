@@ -1,5 +1,15 @@
 # Week18 Day7 — End-to-End Distributed Communication Troubleshooting Playbook
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [benchmark/network/run_iperf3.sh](../../benchmark/network/run_iperf3.sh)：網路吞吐測試
+- [helm/pytorch-runtime/templates/nccl-benchmark-job.yaml](../../helm/pytorch-runtime/templates/nccl-benchmark-job.yaml)
+- [runtime/pytorch/ddp_test.py](../../runtime/pytorch/ddp_test.py)：CPU／Gloo DDP 實驗
+
+---
+
 ## 今日完成內容
 
 今天把 Week18 Day1～Day6 串成一套完整的 AI/HPC distributed communication troubleshooting 流程。

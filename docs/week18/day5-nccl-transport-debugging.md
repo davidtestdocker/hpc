@@ -1,5 +1,17 @@
 # Week18 Day5 — NCCL Transport Debugging：Socket / RDMA Fallback
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+`/tmp/all.yaml`、`/tmp/nccl-benchmark.yaml` 是渲染產物；請從下方 Helm 模板與 values 查看來源。
+
+- [benchmark/results/week16-day4-nccl-single-gpu.txt](../../benchmark/results/week16-day4-nccl-single-gpu.txt)：單 GPU NCCL 原始結果
+- [helm/pytorch-runtime/templates/nccl-benchmark-job.yaml](../../helm/pytorch-runtime/templates/nccl-benchmark-job.yaml)
+- [helm/pytorch-runtime/values.yaml](../../helm/pytorch-runtime/values.yaml)
+
+---
+
 ## 今日完成內容
 
 建立 NCCL distributed communication 的 transport troubleshooting 流程，實際驗證：

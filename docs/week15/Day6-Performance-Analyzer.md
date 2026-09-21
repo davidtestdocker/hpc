@@ -1,5 +1,17 @@
 # Week15 Day6 - Performance Analyzer
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [analysis/performance_analyzer.py](../../analysis/performance_analyzer.py)：效能結果分析
+- [benchmark/results/vllm-c16-fixed.json](../../benchmark/results/vllm-c16-fixed.json)
+- [benchmark/results/vllm-c32-fixed.json](../../benchmark/results/vllm-c32-fixed.json)
+- [benchmark/results/vllm-c64.json](../../benchmark/results/vllm-c64.json)
+- [runtime/pytorch/train.py](../../runtime/pytorch/train.py)：GPU 訓練與 profiler
+
+---
+
 ## 今日目標
 
 建立 AI Performance Analyzer。

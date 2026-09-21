@@ -1,5 +1,17 @@
 # Week9 Day4 - Terraform Output & Resource Reference
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+早期 VM output 已重構至 compute module；stage outputs 提供模組輸出的引用範例，dev 現況則偏向 GKE。
+
+- [terraform/environments/stage/outputs.tf](../../terraform/environments/stage/outputs.tf)
+- [terraform/modules/compute/main.tf](../../terraform/modules/compute/main.tf)
+- [terraform/modules/compute/outputs.tf](../../terraform/modules/compute/outputs.tf)
+
+---
+
 ## 今日目標
 
 今天的目標是理解 Terraform 如何取得已建立 Resource 的資訊，並學會使用 Output 與 Resource Reference，讓不同 Resource 可以互相引用，而不需要將 IP、ID 或 Name 寫死在程式中。

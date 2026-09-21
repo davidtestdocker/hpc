@@ -1,5 +1,16 @@
 # Week20 Day5 — AI/HPC Production Troubleshooting
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [ray-cluster.yaml](../../ray-cluster.yaml)：Ray 叢集
+- [ray-resource-mismatch-job.yaml](../../ray-resource-mismatch-job.yaml)：Ray 資源不匹配實驗
+- [ray-worker-recovery-job.yaml](../../ray-worker-recovery-job.yaml)：Ray worker 重試實驗
+- [slurm/pending-cpu-test.sbatch](../../slurm/pending-cpu-test.sbatch)
+
+---
+
 ## 今日新增內容
 
 今天不重複 Week17 的 Slurm 基礎操作，重點放在：

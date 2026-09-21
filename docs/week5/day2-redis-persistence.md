@@ -1,5 +1,16 @@
 # Week5 Day2 - Redis Persistence
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+本文記錄 Redis persistence 實驗；目前 Compose 設定不代表已保留當時所有持久化選項。
+
+- [api/main.py](../../api/main.py)：API、工作狀態與佇列處理
+- [compose.yaml](../../compose.yaml)：本機服務組合
+
+---
+
 ## 今日平台增加什麼
 
 今天的平台正式從：

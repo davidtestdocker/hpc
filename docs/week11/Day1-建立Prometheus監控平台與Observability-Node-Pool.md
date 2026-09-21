@@ -1,5 +1,25 @@
 # Week11 Day1 - 建立 Prometheus 監控平台與 Observability Node Pool
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [helm/prometheus/Chart.yaml](../../helm/prometheus/Chart.yaml)
+- [helm/prometheus/templates/_helpers.tpl](../../helm/prometheus/templates/_helpers.tpl)
+- [helm/prometheus/templates/clusterrole.yaml](../../helm/prometheus/templates/clusterrole.yaml)
+- [helm/prometheus/templates/clusterrolebinding.yaml](../../helm/prometheus/templates/clusterrolebinding.yaml)
+- [helm/prometheus/templates/configmap.yaml](../../helm/prometheus/templates/configmap.yaml)
+- [helm/prometheus/templates/deployment.yaml](../../helm/prometheus/templates/deployment.yaml)
+- [helm/prometheus/templates/pvc.yaml](../../helm/prometheus/templates/pvc.yaml)
+- [helm/prometheus/templates/service.yaml](../../helm/prometheus/templates/service.yaml)
+- [helm/prometheus/templates/serviceaccount.yaml](../../helm/prometheus/templates/serviceaccount.yaml)
+- [helm/prometheus/values.yaml](../../helm/prometheus/values.yaml)
+- [kustomize/overlays/dev/deployment-patch.yaml](../../kustomize/overlays/dev/deployment-patch.yaml)
+- [kustomize/overlays/dev/kustomization.yaml](../../kustomize/overlays/dev/kustomization.yaml)
+- [terraform/modules/gke/main.tf](../../terraform/modules/gke/main.tf)
+
+---
+
 ---
 
 # 今日目標

@@ -1,5 +1,13 @@
 # Week12 Day1 - Linux CPU Performance Analysis
 
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[performance-report](../performance/performance-report.md)。
+
+---
+
 ## 目標
 
 本章節學習 Linux CPU 效能分析的基本工具，了解 CPU 架構、整體 CPU 使用率、每顆 CPU 負載以及各 Process 的 CPU 使用情況。

@@ -1,5 +1,15 @@
 # Week14 Day3 - GPU Monitoring Architecture
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [benchmark/k8s/dcgm-exporter.yaml](../../benchmark/k8s/dcgm-exporter.yaml)
+- [benchmark/k8s/nvidia-dcgm-exporter-service.yaml](../../benchmark/k8s/nvidia-dcgm-exporter-service.yaml)
+- [helm/prometheus/templates/configmap.yaml](../../helm/prometheus/templates/configmap.yaml)
+
+---
+
 # 今天平台增加了什麼？
 
 本日建立 GPU Monitoring Foundation。

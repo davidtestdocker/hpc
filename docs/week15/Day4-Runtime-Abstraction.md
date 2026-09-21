@@ -1,5 +1,17 @@
 # Week15 Day4 - Runtime Abstraction
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [runtime/base.py](../../runtime/base.py)：runtime 抽象介面
+- [runtime/manager.py](../../runtime/manager.py)：runtime 選擇入口
+- [runtime/pytorch/runtime.py](../../runtime/pytorch/runtime.py)：PyTorch runtime
+- [runtime/pytorch/train.py](../../runtime/pytorch/train.py)：GPU 訓練與 profiler
+- [runtime/vllm/runtime.py](../../runtime/vllm/runtime.py)：vLLM HTTP runtime
+
+---
+
 ## 今日目標
 
 建立 AI Runtime Abstraction，讓平台不再直接綁死單一 Runtime，而是透過統一介面與 Runtime Manager 選擇不同 Backend。

@@ -1,5 +1,21 @@
 # Week6 Day7 - Complete Platform on Kubernetes
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [k8s/api-configmap.yaml](../../k8s/api-configmap.yaml)
+- [k8s/api-deployment.yaml](../../k8s/api-deployment.yaml)
+- [k8s/api-service.yaml](../../k8s/api-service.yaml)
+- [k8s/postgres-pvc.yaml](../../k8s/postgres-pvc.yaml)
+- [k8s/postgres-secret.example.yaml](../../k8s/postgres-secret.example.yaml)
+- [k8s/postgres-service.yaml](../../k8s/postgres-service.yaml)
+- [k8s/postgres-statefulset.yaml](../../k8s/postgres-statefulset.yaml)
+- [k8s/redis-deployment.yaml](../../k8s/redis-deployment.yaml)
+- [k8s/redis-service.yaml](../../k8s/redis-service.yaml)
+
+---
+
 ## 今日平台增加什麼
 
 今天完成 HPC AI Benchmark Platform 的 Kubernetes 化。

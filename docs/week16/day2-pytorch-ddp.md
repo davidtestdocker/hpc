@@ -1,4 +1,16 @@
 
+
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [helm/pytorch-runtime/templates/ddp-test-job.yaml](../../helm/pytorch-runtime/templates/ddp-test-job.yaml)
+- [helm/pytorch-runtime/values.yaml](../../helm/pytorch-runtime/values.yaml)
+- [kustomize/overlays/gpu-sg/kustomization.yaml](../../kustomize/overlays/gpu-sg/kustomization.yaml)
+- [runtime/pytorch/ddp_test.py](../../runtime/pytorch/ddp_test.py)：CPU／Gloo DDP 實驗
+- [runtime/pytorch/train.py](../../runtime/pytorch/train.py)：GPU 訓練與 profiler
+
+---
 # Week16 Day2 — PyTorch DDP
 
 ## 1. Day Goal

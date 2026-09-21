@@ -1,5 +1,13 @@
 # Week18 Day1 — Linux / Cluster Network Troubleshooting Baseline
 
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[day2-network-quality-bandwidth-latency-mtu](day2-network-quality-bandwidth-latency-mtu.md)。
+
+---
+
 ## 今日完成內容
 
 建立 HPC / AI Cluster Linux 網路排障基線，實際驗證：

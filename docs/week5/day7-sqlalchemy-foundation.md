@@ -1,5 +1,17 @@
 # Week5 Day7 - SQLAlchemy Foundation
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [api/database/connection.py](../../api/database/connection.py)：資料庫連線
+- [api/database/init_db.py](../../api/database/init_db.py)：資料表初始化
+- [api/database/models.py](../../api/database/models.py)：ORM 資料表模型
+- [api/database/session.py](../../api/database/session.py)：資料庫 Session
+- [api/main.py](../../api/main.py)：API、工作狀態與佇列處理
+
+---
+
 ## 今日平台增加什麼
 
 今天的平台新增：

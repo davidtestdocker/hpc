@@ -1,5 +1,17 @@
 # Week8 Day6 - Helm + Kustomize Integration
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [helm/api/Chart.yaml](../../helm/api/Chart.yaml)
+- [helm/api/values-dev.yaml](../../helm/api/values-dev.yaml)
+- [helm/api/values.yaml](../../helm/api/values.yaml)
+- [kustomize/overlays/dev/deployment-patch.yaml](../../kustomize/overlays/dev/deployment-patch.yaml)
+- [kustomize/overlays/dev/kustomization.yaml](../../kustomize/overlays/dev/kustomization.yaml)
+
+---
+
 ## 學習目標
 
 完成 Helm 與 Kustomize 整合，建立可支援 Dev / Stage / Prod 的多環境部署流程。

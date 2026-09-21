@@ -1,30 +1,42 @@
+# Argo CD 設定（application-dev）：用於 GitOps 部署；既有 dev Application 指向舊 overlays/dev。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: argoproj.io/v1alpha1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: Application
 
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: hpc-dev
+  # 資源所屬命名空間；叢集層級資源不使用此欄位。
   namespace: argocd
 
+# 期望狀態；控制器據此建立或調整實際資源。
 spec:
   #決定吃哪個project，這project有限制只能部屬到哪個namespace
   project: hpc-platform
 
+  # Argo CD 讀取的 Git 或 Chart 來源。
   source:
     repoURL: https://github.com/davidtestdocker/hpc.git
     targetRevision: master
     path: kustomize/overlays/dev
 
+  # Argo CD 同步目標叢集與 namespace。
   destination:
     #Kubernetes API Server 的DNS，意思部屬到目前這個Cluster
     server: https://kubernetes.default.svc
     namespace: hpc-platform-dev
 
+  # Argo CD 自動同步與資源管理政策。
   syncPolicy:
   #automated 是不用手動按sync只要有差異(push完)就會同步
   #prune true 如果git沒有這檔案但cluster 有的話檔案也會刪除變成跟git一樣
   #selfHeal 假設有人編輯了replicas數量 但是git沒變的話 argocd會發現差異自動改回git上的數量 (不用等push)
     automated:
+      # 同步時是否刪除 Git 中已移除的受管資源。
       prune: true
+      # 是否自動修正叢集狀態與 Git 宣告之間的偏差。
       selfHeal: true
     syncOptions:
       - CreateNamespace=true

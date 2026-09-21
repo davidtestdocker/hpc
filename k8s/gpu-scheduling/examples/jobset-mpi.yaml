@@ -1,16 +1,34 @@
+# MPI JobSet：launcher 透過 SSH 啟動 workers 上的 MPI ranks；Kueue 先決定工作是否可准入。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: jobset.x-k8s.io/v1alpha2
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: JobSet
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: mpi-real
+  # 資源所屬命名空間；叢集層級資源不使用此欄位。
   namespace: hpc-platform-dev
+  # 鍵值標籤，供 selector、監控或排程控制器識別資源。
   labels:
     kueue.x-k8s.io/queue-name: gpu-local-queue
+# 期望狀態；控制器據此建立或調整實際資源。
+# JobSet 的 suspend 等待 Kueue 准入；failurePolicy 決定子 Job 失敗後是否整組重建。
+# 內嵌 Shell：cp 複製 SSH 金鑰，chown 設為 UID/GID 1000，chmod 600 僅允許擁有者讀寫。
+# launcher 的 for 遍歷 worker DNS，until ssh 等待連線成功；-i 選私鑰，ConnectTimeout 控制等待秒數。
+# mpirun 的 -np 指定 rank 數，--host 指定主機；OMPI_COMM_WORLD_RANK 是 Open MPI 注入的程序編號。
+# worker 的 & 背景執行 sshd，$! 記錄 PID；kill -0 檢查程序是否存在，wait 等待並取得退出狀態。
+# /tmp/fail-worker 存在時退出 42，供故障恢復實驗使用；|| true 容忍清理時 kill 失敗。
 spec:
+  # 是否暫停啟動工作；Kueue 可在准入後解除暫停。
   suspend: true
 
+  # 工作失敗時由控制器採用的處理策略。
   failurePolicy:
+    # JobSet 層級允許的重新啟動次數上限。
     maxRestarts: 1
     restartStrategy: Recreate
+    # 規則清單；RBAC 中定義 API 存取權限，Ingress 中定義路由。
     rules:
       - name: restart_on_child_job_failure
         action: RestartJobSet
@@ -18,21 +36,30 @@ spec:
   network:
     enableDNSHostnames: true
 
+  # JobSet 管理的子 Job 群組，例如 launcher 與 worker。
   replicatedJobs:
     - name: launcher
+      # 期望副本數；設定為 0 表示不維持執行中的副本。
       replicas: 1
+      # 子物件模板；控制器以此內容建立 Pod 或相關工作資源。
       template:
         spec:
+          # Job 失敗後的重試上限。
           backoffLimit: 0
           template:
             spec:
+              # Pod 內容器退出後的重啟政策。
               restartPolicy: Never
 
+              # 在主要容器啟動前依序完成的初始化容器。
               initContainers:
                 - name: prepare-ssh
+                  # 容器映像及標籤，決定執行的檔案系統與程式版本。
                   image: mpioperator/mpi-pi:openmpi
+                  # 程序身分、權限與作業系統安全設定。
                   securityContext:
                     runAsUser: 0
+                  # 覆寫容器入口指令；多行字串中的 Shell 語法由指定的 shell 解讀。
                   command:
                     - /bin/sh
                     - -lc
@@ -41,21 +68,28 @@ spec:
                       cp /ssh-secret/id_ed25519 /ssh-work/id_ed25519
                       chown 1000:1000 /ssh-work/id_ed25519
                       chmod 600 /ssh-work/id_ed25519
+                  # 把已宣告的 volume 掛載到容器中的指定路徑。
                   volumeMounts:
                     - name: ssh-secret
+                      # 容器內可見的掛載路徑。
                       mountPath: /ssh-secret
+                      # 是否以唯讀方式掛載，限制容器透過此掛載點寫入。
                       readOnly: true
                     - name: ssh-work
                       mountPath: /ssh-work
 
+              # Pod 內的容器清單；同一 Pod 的容器共用網路。
               containers:
                 - name: launcher
                   image: mpioperator/mpi-pi:openmpi
                   securityContext:
                     runAsUser: 1000
                     runAsGroup: 1000
+                  # 資源設定；Pod 中是 requests／limits，Kustomize 中是待組合的檔案清單。
                   resources:
+                    # 排程器計算需求時採用的資源量；500m CPU 等於 0.5 顆核心。
                     requests:
+                      # CPU 數量：1 代表一顆核心，m 表示千分之一核心。
                       cpu: 250m
                   command:
                     - /bin/sh
@@ -90,6 +124,7 @@ spec:
                     - name: ssh-work
                       mountPath: /home/mpiuser/.ssh
 
+              # Pod 可掛載的儲存來源，例如 Secret、ConfigMap 或 PVC。
               volumes:
                 - name: ssh-secret
                   secret:

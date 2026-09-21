@@ -1,5 +1,13 @@
 # Week 1 Day 5－Memory（記憶體）
 
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[Day2-Linux-Memory-Performance-Analysis](../week12/Day2-Linux-Memory-Performance-Analysis.md)。
+
+---
+
 ## 今日目標
 
 理解 Process 與 Memory 的關係，以及如何找出哪一個 Process 正在使用最多記憶體。

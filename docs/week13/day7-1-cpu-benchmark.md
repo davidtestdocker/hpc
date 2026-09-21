@@ -1,5 +1,15 @@
 # Week13 Day7-1 - CPU Benchmark
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [benchmark/cpu/results/cpu_benchmark_20260810.md](../../benchmark/cpu/results/cpu_benchmark_20260810.md)
+- [benchmark/cpu/run_stress_ng.sh](../../benchmark/cpu/run_stress_ng.sh)：CPU 壓測
+- [benchmark/run_all.sh](../../benchmark/run_all.sh)：benchmark 整合入口
+
+---
+
 ## 今天平台增加了什麼？
 
 本次加入 CPU Benchmark Module。

@@ -1,5 +1,17 @@
 # Week19 Day1 — GPU Sharing Models：Dedicated / Time-Slicing / MPS / MIG
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+下方 Kueue 設定可對照 GPU 配額與資源風味；GKE time-sharing 開關本身不由這些檔案設定。
+
+- [k8s/gpu-scheduling/clusterqueue.yaml](../../k8s/gpu-scheduling/clusterqueue.yaml)
+- [k8s/gpu-scheduling/localqueue.yaml](../../k8s/gpu-scheduling/localqueue.yaml)
+- [k8s/gpu-scheduling/resourceflavor.yaml](../../k8s/gpu-scheduling/resourceflavor.yaml)
+
+---
+
 ## 今日完成內容
 
 今天建立 GPU sharing 的基礎模型，理解：

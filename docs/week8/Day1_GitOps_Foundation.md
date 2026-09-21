@@ -1,5 +1,17 @@
 # Week8 Day1 - GitOps Foundation
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [argocd/application-dev.yaml](../../argocd/application-dev.yaml)
+- [argocd/project.yaml](../../argocd/project.yaml)
+- [k8s/api-deployment.yaml](../../k8s/api-deployment.yaml)
+- [k8s/api-ingress.yaml](../../k8s/api-ingress.yaml)
+- [k8s/api-service.yaml](../../k8s/api-service.yaml)
+
+---
+
 ## 本週成果
 
 建立 Production Deployment Pipeline。

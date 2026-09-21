@@ -1,5 +1,14 @@
 # Week4 Day6 - Monitoring Integration
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [api/main.py](../../api/main.py)：API、工作狀態與佇列處理
+- [monitoring/process_monitor.py](../../monitoring/process_monitor.py)：程序資訊收集
+
+---
+
 ## 今日平台增加什麼？
 
 今天平台加入最基本的 **Observability（可觀測性）** 能力。

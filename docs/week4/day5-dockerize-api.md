@@ -1,5 +1,16 @@
 # Week4 Day5 - Dockerize API
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [api/main.py](../../api/main.py)：API、工作狀態與佇列處理
+- [compose.yaml](../../compose.yaml)：本機服務組合
+- [docker/Dockerfile](../../docker/Dockerfile)：容器映像建置
+- [requirements.txt](../../requirements.txt)
+
+---
+
 ## 今日平台增加什麼？
 
 今天平台完成 **Docker 化部署** 的最後一塊，建立可配置（Configuration）與可攜帶（Portable）的 API。

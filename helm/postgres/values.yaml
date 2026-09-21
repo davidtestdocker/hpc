@@ -1,8 +1,15 @@
+# postgres 的 Helm 輸入設定；由模板以 .Values 讀取，可由環境設定覆寫。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 工作負載副本數；是否生效取決於模板與 autoscaling 設定。
 replicaCount: 1
 
+# 容器映像及標籤，決定執行的檔案系統與程式版本。
 image:
+  # 容器映像倉庫路徑，與 tag 組成完整映像名稱。
   repository: postgres
+  # 映像版本標籤；latest 是可變標籤，不代表固定映像內容。
   tag: 16-alpine
+  # 映像拉取政策；IfNotPresent 在節點已有映像時使用快取。
   pullPolicy: IfNotPresent
 
 service:
@@ -18,4 +25,5 @@ persistence:
   claimName: postgres-pvc
   accessMode: ReadWriteOnce
   size: 1Gi
+  # 容器內可見的掛載路徑。
   mountPath: /var/lib/postgresql/data

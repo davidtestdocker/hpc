@@ -1,5 +1,16 @@
 # Week9 Day5 - Terraform Module Refactor
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [terraform/environments/dev/main.tf](../../terraform/environments/dev/main.tf)
+- [terraform/modules/compute/main.tf](../../terraform/modules/compute/main.tf)
+- [terraform/modules/compute/outputs.tf](../../terraform/modules/compute/outputs.tf)
+- [terraform/modules/compute/variables.tf](../../terraform/modules/compute/variables.tf)
+
+---
+
 ## 今日目標
 
 - 建立第一個 Terraform Module

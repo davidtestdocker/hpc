@@ -1,5 +1,18 @@
 # Week19 Day7 — GPU Scheduling Platform Integration
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [k8s/gpu-scheduling/clusterqueue.yaml](../../k8s/gpu-scheduling/clusterqueue.yaml)
+- [k8s/gpu-scheduling/examples/jobset-mpi.yaml](../../k8s/gpu-scheduling/examples/jobset-mpi.yaml)：固定名稱的 MPI JobSet 實驗
+- [k8s/gpu-scheduling/localqueue.yaml](../../k8s/gpu-scheduling/localqueue.yaml)
+- [k8s/gpu-scheduling/priorityclasses.yaml](../../k8s/gpu-scheduling/priorityclasses.yaml)
+- [k8s/gpu-scheduling/resourceflavor.yaml](../../k8s/gpu-scheduling/resourceflavor.yaml)
+- [k8s/gpu-scheduling/topology.yaml](../../k8s/gpu-scheduling/topology.yaml)
+
+---
+
 ## 本週整合目標
 
 Week19 最後整合成一條完整 GPU scheduling pipeline：

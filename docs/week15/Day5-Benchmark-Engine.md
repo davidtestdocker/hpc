@@ -1,5 +1,19 @@
 # Week15 Day5 - Benchmark Engine
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [benchmark/results/vllm-c1.json](../../benchmark/results/vllm-c1.json)
+- [benchmark/results/vllm-c16.json](../../benchmark/results/vllm-c16.json)
+- [benchmark/results/vllm-c32.json](../../benchmark/results/vllm-c32.json)
+- [benchmark/results/vllm-c4.json](../../benchmark/results/vllm-c4.json)
+- [benchmark/results/vllm-c64.json](../../benchmark/results/vllm-c64.json)
+- [benchmark/results/vllm-c8.json](../../benchmark/results/vllm-c8.json)
+- [helm/vllm/values.yaml](../../helm/vllm/values.yaml)
+
+---
+
 ## 今日目標
 
 建立正式的 AI Inference Benchmark 流程。

@@ -1,5 +1,25 @@
 # Week8 Day7 - GitOps Multi Environment Integration
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [argocd/application-dev.yaml](../../argocd/application-dev.yaml)
+- [argocd/application-prod.yaml](../../argocd/application-prod.yaml)
+- [argocd/application-stage.yaml](../../argocd/application-stage.yaml)
+- [argocd/project.yaml](../../argocd/project.yaml)
+- [helm/api/values-dev.yaml](../../helm/api/values-dev.yaml)
+- [helm/api/values-prod.yaml](../../helm/api/values-prod.yaml)
+- [helm/api/values-stage.yaml](../../helm/api/values-stage.yaml)
+- [kustomize/overlays/dev/deployment-patch.yaml](../../kustomize/overlays/dev/deployment-patch.yaml)
+- [kustomize/overlays/dev/kustomization.yaml](../../kustomize/overlays/dev/kustomization.yaml)
+- [kustomize/overlays/prod/deployment-patch.yaml](../../kustomize/overlays/prod/deployment-patch.yaml)
+- [kustomize/overlays/prod/kustomization.yaml](../../kustomize/overlays/prod/kustomization.yaml)
+- [kustomize/overlays/stage/deployment-patch.yaml](../../kustomize/overlays/stage/deployment-patch.yaml)
+- [kustomize/overlays/stage/kustomization.yaml](../../kustomize/overlays/stage/kustomization.yaml)
+
+---
+
 ## 學習目標
 
 完成 GitOps 多環境平台整合，建立 Dev、Stage、Prod 三套獨立環境，透過 Helm、Kustomize、Argo CD 與 Traefik 完成完整的 GitOps 部署流程，並驗證實際流量經過 Ingress Controller 成功到達 API。

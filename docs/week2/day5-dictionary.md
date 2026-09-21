@@ -1,5 +1,13 @@
 # Week 2 Day 5－Dictionary（字典）
 
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[day3-job-identity](../week4/day3-job-identity.md)。
+
+---
+
 ## 今日目標
 
 理解如何使用 Dictionary 表示一個 Process 的完整資訊，建立 Monitoring Framework 的基本資料模型。

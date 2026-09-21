@@ -1,4 +1,15 @@
 
+
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+下方 DDP 程式是現有 CPU／Gloo 實驗，供理解 rank 與同步；不代表已驗證多 GPU。
+
+- [helm/pytorch-runtime/templates/ddp-test-job.yaml](../../helm/pytorch-runtime/templates/ddp-test-job.yaml)
+- [runtime/pytorch/ddp_test.py](../../runtime/pytorch/ddp_test.py)：CPU／Gloo DDP 實驗
+
+---
 # Week16 Day1 — Multi-GPU & Distributed Training Fundamentals
 
 ## 1. Day1 Goal

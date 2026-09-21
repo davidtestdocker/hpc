@@ -1,5 +1,14 @@
 # Week 3 Day 4－Dockerfile 與建立自己的 Image
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [docker/Dockerfile](../../docker/Dockerfile)：容器映像建置
+- [monitoring/process_monitor.py](../../monitoring/process_monitor.py)：程序資訊收集
+
+---
+
 ## 今日目標
 
 學會使用 Dockerfile 建立自己的 Docker Image，而不是只使用官方 Image。

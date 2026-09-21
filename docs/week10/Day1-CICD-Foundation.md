@@ -1,5 +1,13 @@
 # Week10 Day1 - CI/CD Foundation
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [.github/workflows/ci.yml](../../.github/workflows/ci.yml)：CI／映像建置與 GitOps 更新
+
+---
+
 ## 今日目標
 
 - 認識 CI/CD

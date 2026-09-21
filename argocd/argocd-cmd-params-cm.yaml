@@ -1,9 +1,16 @@
+# Argo CD 設定（argocd-cmd-params-cm）：用於 GitOps 部署；既有 dev Application 指向舊 overlays/dev。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: v1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: ConfigMap
 
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: argocd-cmd-params-cm
+  # 資源所屬命名空間；叢集層級資源不使用此欄位。
   namespace: argocd
 
+# 鍵值資料；Secret 的 data 使用 Base64 編碼，ConfigMap 通常是純文字。
 data:
   server.insecure: "true"

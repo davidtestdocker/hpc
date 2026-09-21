@@ -1,5 +1,10 @@
+# GPU 排程設定（priorityclasses）：搭配 Kueue 管理工作准入、配額、優先序或節點拓撲。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: scheduling.k8s.io/v1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: PriorityClass
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: gpu-low
 value: 100

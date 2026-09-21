@@ -1,5 +1,14 @@
 # Week9 Day3 - Terraform Apply & State
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [terraform/environments/dev/main.tf](../../terraform/environments/dev/main.tf)
+- [terraform/modules/compute/main.tf](../../terraform/modules/compute/main.tf)
+
+---
+
 ## 今日目標
 
 今天正式使用 Terraform 建立第一個 Google Cloud Infrastructure，理解 Terraform 如何透過 `plan`、`apply`、`state` 與 `destroy` 管理整個 Infrastructure Lifecycle，而不是只會撰寫 Terraform HCL。

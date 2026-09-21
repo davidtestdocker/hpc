@@ -1,5 +1,14 @@
 # Week20 Day4 — HA / Node Failure / Distributed Job Recovery
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [k8s/gpu-scheduling/examples/jobset-mpi.yaml](../../k8s/gpu-scheduling/examples/jobset-mpi.yaml)：固定名稱的 MPI JobSet 實驗
+- [k8s/recovery/gpu-node-failure-test.yaml](../../k8s/recovery/gpu-node-failure-test.yaml)
+
+---
+
 ## 今天平台增加了什麼
 
 今天把平台補上實際的故障與恢復驗證：

@@ -1,12 +1,23 @@
+# 資源不匹配實驗：task 要求一個 GPU，CPU Ray 叢集無此資源時會等待排程。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: ray.io/v1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: RayJob
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: ray-resource-mismatch
+  # 資源所屬命名空間；叢集層級資源不使用此欄位。
   namespace: ray-system
+# 期望狀態；控制器據此建立或調整實際資源。
 spec:
+  # 依標籤選取已存在的 RayCluster。
   clusterSelector:
     ray.io/cluster: hpc-ray
 
+  # Ray Jobs API 執行的命令；| 保留換行，下方整段是字串而非 YAML 欄位。
+  # @ray.remote(num_gpus=1) 要求 Ray 提供一個 GPU；即使 Pod Running，task 也可能因無 GPU 而等待。
+  # .remote() 取得 ObjectRef，ray.get 阻塞等待 task 結果。
   entrypoint: |
     python -c '
     import ray

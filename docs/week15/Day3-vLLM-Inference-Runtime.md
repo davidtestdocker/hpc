@@ -1,5 +1,19 @@
 # Week15 Day3 - vLLM Inference Runtime
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [helm/prometheus/templates/configmap.yaml](../../helm/prometheus/templates/configmap.yaml)
+- [helm/vllm/Chart.yaml](../../helm/vllm/Chart.yaml)
+- [helm/vllm/templates/deployment.yaml](../../helm/vllm/templates/deployment.yaml)
+- [helm/vllm/templates/service.yaml](../../helm/vllm/templates/service.yaml)
+- [helm/vllm/values.yaml](../../helm/vllm/values.yaml)
+- [kustomize/overlays/gpu-sg/kustomization.yaml](../../kustomize/overlays/gpu-sg/kustomization.yaml)
+- [runtime/vllm/runtime.py](../../runtime/vllm/runtime.py)：vLLM HTTP runtime
+
+---
+
 ## 今日目標
 
 建立可實際運行於 GPU 的 LLM Inference Runtime，並將新加坡 GKE 的 vLLM Runtime Metrics 跨 Cluster 接回台灣既有 Prometheus / Grafana。

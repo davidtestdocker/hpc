@@ -1,5 +1,15 @@
 # Week11 Day2 - Prometheus Scrape Job、Target 與 Pull Model
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [helm/prometheus/templates/configmap.yaml](../../helm/prometheus/templates/configmap.yaml)
+- [helm/prometheus/templates/service.yaml](../../helm/prometheus/templates/service.yaml)
+- [helm/prometheus/values.yaml](../../helm/prometheus/values.yaml)
+
+---
+
 ---
 
 # 今日目標

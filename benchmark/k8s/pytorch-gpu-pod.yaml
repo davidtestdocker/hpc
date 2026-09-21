@@ -1,36 +1,52 @@
+# Kubernetes 資源（pytorch-gpu-pod）：宣告服務、工作負載或實驗設定，需套用到對應叢集才會生效。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: v1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: Pod
 
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: pytorch-gpu
+  # 資源所屬命名空間；叢集層級資源不使用此欄位。
   namespace: hpc-platform-dev
 
+# 期望狀態；控制器據此建立或調整實際資源。
 spec:
+  # Pod 內容器退出後的重啟政策。
   restartPolicy: Never
 
   # Run only on the GPU node pool
+  # 要求節點具有指定標籤，限制 Pod 可排入的節點。
   nodeSelector:
     cloud.google.com/gke-nodepool: gpu-pool
 
   # Allow scheduling onto the GPU node
+  # 容忍節點 taint；只解除排程限制，不保證會選中該節點。
   tolerations:
     - key: nvidia.com/gpu
       operator: Equal
       value: present
       effect: NoSchedule
 
+  # Pod 內的容器清單；同一 Pod 的容器共用網路。
   containers:
     - name: pytorch
 
       # Official PyTorch image with CUDA runtime
+      # 容器映像及標籤，決定執行的檔案系統與程式版本。
       image: pytorch/pytorch:2.12.0-cuda12.6-cudnn9-runtime
 
       # Keep the container running for interactive experiments
+      # 覆寫容器入口指令；多行字串中的 Shell 語法由指定的 shell 解讀。
       command:
         - sleep
         - infinity
 
+      # 資源設定；Pod 中是 requests／limits，Kustomize 中是待組合的檔案清單。
       resources:
+        # 容器可使用的資源上限；GPU 份額的實際意義取決於裝置外掛設定。
         limits:
           # Request one NVIDIA GPU
+          # NVIDIA 裝置外掛提供的 GPU 資源單位；time-slicing 時不等同實體卡數。
           nvidia.com/gpu: 1

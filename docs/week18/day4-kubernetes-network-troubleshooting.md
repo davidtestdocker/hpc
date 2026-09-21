@@ -1,5 +1,18 @@
 # Week18 Day4 — Kubernetes Networking Troubleshooting
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+`/tmp/net-debug-deny-egress.yaml` 是實驗時的暫存檔，未保存；下方 NetworkPolicy 檔案是現有相關設定。
+
+- [k8s/api-service.yaml](../../k8s/api-service.yaml)
+- [k8s/security/network-policy/allow-dns.yaml](../../k8s/security/network-policy/allow-dns.yaml)
+- [k8s/security/network-policy/allow-same-namespace.yaml](../../k8s/security/network-policy/allow-same-namespace.yaml)
+- [k8s/security/network-policy/default-deny.yaml](../../k8s/security/network-policy/default-deny.yaml)
+
+---
+
 ## 今日完成內容
 
 建立 Kubernetes 網路故障排查流程，從：

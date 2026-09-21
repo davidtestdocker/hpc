@@ -1,18 +1,30 @@
+# Kubernetes 安全設定（rbac-api-test）：身分與權限或網路隔離實驗，實際效果取決於引用身分及叢集控制器。
+# 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: v1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: Pod
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
   name: rbac-api-test
+  # 資源所屬命名空間；叢集層級資源不使用此欄位。
   namespace: hpc-platform-dev
+# 期望狀態；控制器據此建立或調整實際資源。
 spec:
+  # Pod 使用的 ServiceAccount；RBAC 依此身分授予 API 權限。
   serviceAccountName: benchmark-runner
+  # Pod 內容器退出後的重啟政策。
   restartPolicy: Never
 
+  # 程序身分、權限與作業系統安全設定。
   securityContext:
     seccompProfile:
       type: RuntimeDefault
 
+  # Pod 內的容器清單；同一 Pod 的容器共用網路。
   containers:
     - name: api-test
+      # 容器映像及標籤，決定執行的檔案系統與程式版本。
       image: curlimages/curl@sha256:94e9e444bcba979c2ea12e27ae39bee4cd10bc7041a472c4727a558e213744e6
 
       securityContext:
@@ -25,6 +37,7 @@ spec:
           drop:
             - ALL
 
+      # 覆寫容器入口指令；多行字串中的 Shell 語法由指定的 shell 解讀。
       command:
         - sh
         - -c
@@ -58,10 +71,13 @@ spec:
             -o /tmp/delete.json \
             -w "HTTP %{http_code}\n"
 
+      # 把已宣告的 volume 掛載到容器中的指定路徑。
       volumeMounts:
         - name: tmp
+          # 容器內可見的掛載路徑。
           mountPath: /tmp
 
+  # Pod 可掛載的儲存來源，例如 Secret、ConfigMap 或 PVC。
   volumes:
     - name: tmp
       emptyDir: {}

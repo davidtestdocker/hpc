@@ -1,5 +1,13 @@
 # Week 3 Day 1－為什麼需要 Docker？
 
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [docker/Dockerfile](../../docker/Dockerfile)：容器映像建置
+
+---
+
 ## 今日目標
 
 理解 Docker 在 HPC AI Performance Engineering Platform 中存在的目的。
