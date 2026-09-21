@@ -5,7 +5,6 @@ from kubernetes import client, config
 
 from api.workloads.renderer import render_mpi_jobset
 
-
 NAMESPACE = "hpc-platform-dev"
 
 

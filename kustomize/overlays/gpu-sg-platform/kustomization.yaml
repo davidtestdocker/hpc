@@ -22,21 +22,31 @@ helmCharts:
     releaseName: api
     namespace: hpc-platform-dev
     # 覆寫 Helm values 的設定檔路徑。
-    valuesFile: ../../../helm/api/values-dev.yaml
+    valuesFile: api-values.yaml
     includeCRDs: false
 
   - name: redis
     releaseName: redis
     namespace: hpc-platform-dev
+    valuesFile: redis-values.yaml
     includeCRDs: false
 
   - name: postgres
     releaseName: postgres
     namespace: hpc-platform-dev
+    valuesFile: postgres-values.yaml
     includeCRDs: false
 
 # 對選定資源套用局部修改。
 patches:
+  - path: system-pool-patch.yaml
+    target:
+      kind: Deployment
+      name: api|redis
+  - path: system-pool-patch.yaml
+    target:
+      kind: StatefulSet
+      name: postgres
   - path: api-serviceaccount-patch.yaml
     target:
       kind: Deployment

@@ -4,7 +4,7 @@
 
 ## 30 秒版本
 
-我想解決 HPC／AI workload 從提交到資源 admission、distributed execution 之間難以追蹤與排障的問題。我用 FastAPI、Redis、PostgreSQL 建立 submission layer，再透過 Kubernetes Python Client 動態建立 JobSet，由 Kueue admission 後啟動 MPI launcher 與三個 workers。已保存三個 ranks 的執行證據，另外有 Ray、Slurm、NCCL 與 performance supporting cases；目前還沒有 completion watcher 或 result collector。
+我想解決 HPC／AI workload 從提交到資源 admission、distributed execution 之間難以追蹤與排障的問題。我用 FastAPI、Redis、PostgreSQL 建立 submission layer，再透過 Kubernetes Python Client 動態建立 JobSet，由 Kueue admission 後啟動 MPI launcher 與三個 workers。Completion collector 讀取 JobSet 終態與 launcher log，已實測將 ranks 0／1／2、completed 與完成時間回寫 Redis/API，並同步 PostgreSQL status；目前 worker 與 collector 仍由 HTTP 手動觸發。
 
 ## 2 分鐘版本
 
@@ -12,9 +12,9 @@
 2. **Main E2E**：API 建立 job ID、保存 PostgreSQL 初始 metadata 與 Redis queue；手動觸發 worker handler 後，dispatcher 建立動態 JobSet。
 3. **Scheduling**：Kueue 管 queue、quota、ResourceFlavor 與 TAS；Pod placement 最後由 Kubernetes Scheduler 處理。另有 priority／preemption 的歷史驗證。
 4. **Distributed execution**：JobSet 管 launcher／worker grouping，launcher 經 DNS／SSH 用 mpirun 啟動三個 ranks。這是 CPU MPI workload，三個 worker Pods 不等於三台實體 nodes。
-5. **Performance／Observability**：固定組 vLLM JSON 顯示 concurrency 32→64 throughput +29.6%，TTFT +137.8%；另有 CPU DDP profiler、Prometheus／Grafana／DCGM evidence，各自保留環境限制。
+5. **Performance／Observability**：本輪 L4 BF16 Transformer 重複量測顯示 batch 8→16 tokens/s +74.4%、step latency +14.0%、memory +50.8%；固定組 vLLM JSON 另顯示 concurrency 32→64 throughput +29.6%、TTFT +137.8%。
 6. **Failure troubleshooting**：以 JobSet exit 42、Ray NODE_DIED、Slurm node 不回應、NCCL Socket fallback 展示不同 failure domains。Ray／Slurm 是平行案例，未串入 API。
-7. **Current boundary**：主線驗證到 MPI ranks，沒有自動 worker、final status sync 或結果回收；下一步會先補可靠 dispatch 與 lifecycle，再做 result integration。
+7. **Current boundary**：主線已驗證 MPI terminal status／ranks／PostgreSQL status 回寫；沒有自動 worker／collector daemon、持續 reconciliation、artifact storage 或跨資料庫交易一致性。
 
 ## Architecture Questions
 
@@ -32,7 +32,7 @@ MPI 有 launcher 與多個 worker child Jobs，需要共同管理。JobSet 提�
 
 ### 為什麼 system-pool / gpu-pool 分開？
 
-system-pool 承載 CPU platform services，gpu-pool 提供 L4 workload 資源，讓服務與 compute 工作有清楚部署分工。Node Pool 是 nodes 的管理群組，不是單一 node，也不是 GKE managed control plane。現有 overlay 尚未用 nodeSelector 強制鎖定 system-pool，所以文件分工不能替代 placement 驗證。
+system-pool 承載 CPU platform services，gpu-pool 提供 L4 workload 資源，讓服務與 compute 工作有清楚部署分工。Node Pool 是 nodes 的管理群組，不是單一 node，也不是 GKE managed control plane。現有主 overlay 已用 nodeSelector 指定 API／Redis／PostgreSQL 到 system-pool，已完成 rollout 與實際 Pod placement 驗收。
 
 ### Taint / Toleration 的作用？
 
@@ -50,7 +50,7 @@ API 要建立 JobSet，需有明確 Kubernetes identity。`api-jobset-runner` �
 
 ### MPI launcher / worker 怎麼運作？
 
-Renderer 同時替換 JobSet 名稱與三個 worker DNS，launcher 等待 SSH 可用後執行 mpirun。Worker 容器提供 sshd，三個 ranks 輸出 rank／hostname。Template request CPU、之後 sleep 900；這證明 distributed launch，不是 GPU performance 測試。
+Renderer 同時替換 JobSet 名稱與三個 worker DNS，launcher 等待 SSH 可用後執行 mpirun。Worker 容器提供 sshd，三個 ranks 輸出 rank／hostname。Template 以 launcher successPolicy 與 child Job deadline 結束工作；這證明 distributed launch，不是 GPU performance 測試。
 
 ### Slurm 與 Kubernetes / Kueue 差在哪？
 
@@ -122,12 +122,12 @@ Client／server Pods 在同一 node，流量路徑可能主要位於該 host 的
 
 ## Honest Limitations
 
-目前沒有 automatic worker daemon、completion watcher、final status sync、benchmark result collector 或 full lifecycle state machine；沒有 multi-node GPU scaling、RDMA hands-on benchmark，也未完成主 E2E 的 IaC／GitOps alignment。Redis persistence、schema migration 與整體 HA 仍有改善空間。Ray／Slurm 未接 API，historical evidence 不能替代目前環境健康檢查。
+目前沒有 automatic worker／collector daemon、持續 watch reconciliation、artifact object storage、跨 Redis／PostgreSQL 交易一致性或 full lifecycle state machine；沒有 multi-node GPU scaling、RDMA hands-on benchmark，也未完成主 E2E 的 GitOps alignment。Redis 非空備份還原、schema migration 與整體 HA 仍有改善空間。Ray／Slurm 未接 API，historical evidence 不能替代目前環境健康檢查。
 
 若繼續開發，優先順序為：
 
 1. 先明確定義 durable job state、dispatch 冪等與 queue／DB 失敗處理，再引入獨立 worker daemon。
-2. 補 completion watcher 與 final status sync，處理 retry、terminal state 與 reconciliation。
-3. 加入 result collector／artifact 關聯，形成可驗證的 benchmark lifecycle。
+2. 將手動 completion collector 改成 background watch／reconciliation，補 retry 與補償流程。
+3. 把 launcher log 與大型結果移至 object storage，API 只保存 artifact metadata。
 4. 對齊 IaC／GitOps、Redis persistence 與 Alembic，提升新環境重現能力。
 5. 有對應 GPU／RDMA hardware 後，再做受控 multi-node scaling 與 network benchmarks。

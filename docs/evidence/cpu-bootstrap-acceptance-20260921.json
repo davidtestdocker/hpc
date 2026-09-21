@@ -1,0 +1,34 @@
+{
+  "recorded_at": "2026-09-21",
+  "result": "pass",
+  "scope": "fresh CPU-only GKE bootstrap and platform acceptance; excludes GPU and MPI execution",
+  "terraform": {
+    "apply": "3 added",
+    "post_apply_plan": "No changes",
+    "destroy": "3 destroyed",
+    "state_resources_after_destroy": 0,
+    "cluster_lookup_after_destroy": "404 Not Found"
+  },
+  "controllers": {
+    "jobset": "v0.12.0 Ready on system-pool with 100m CPU request",
+    "kueue": "v0.19.2 Ready on system-pool with Recreate deployment strategy"
+  },
+  "scheduling": {"local_queue": "Active", "topology_flavor_clusterqueue_priorities": "applied"},
+  "platform": {
+    "api": "Running on system-pool; /health healthy",
+    "redis": "Running on system-pool; connected; PVC Bound",
+    "postgres": "Running on system-pool; jobs table query succeeded; PVC Bound",
+    "overlay_diff_after_apply": "empty"
+  },
+  "security": {
+    "postgres_secret": "created from external env file; value not captured",
+    "mpi_ssh_key": "generated in temporary directory; value not captured",
+    "api_service_account_create_jobsets": "yes",
+    "api_service_account_delete_pods": "no"
+  },
+  "limitations": [
+    "gpu-pool had zero nodes because project-wide GPU quota was exhausted",
+    "no MPI workload was submitted in this CPU-only rehearsal",
+    "database initialization used create_all rather than schema migration"
+  ]
+}

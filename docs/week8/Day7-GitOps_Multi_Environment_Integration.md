@@ -1,5 +1,7 @@
 # Week8 Day7 - GitOps Multi Environment Integration
 
+> 現行入口（2026-09-21）：[平台部署與驗收](../runbooks/platform-bootstrap.md)。主 overlay 已使用獨立 values；本文 dev GitOps／CI 仍屬歷史路徑，不會自動更新新的主環境 image tag。
+
 ## 對應檔案
 
 以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。

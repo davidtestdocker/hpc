@@ -1,0 +1,30 @@
+{
+  "aggregate": {
+    "mean_step_ms": 20.37438075006624,
+    "mean_tokens_per_second": 101096.07007033355,
+    "tokens_per_second_cv_percent": 9.050460491911592
+  },
+  "config": {
+    "batch_size": 8,
+    "heads": 8,
+    "hidden_size": 512,
+    "layers": 4,
+    "measured_steps": 20,
+    "precision": "bfloat16-autocast",
+    "repetitions": 3,
+    "sequence_length": 256,
+    "vocab_size": 4096,
+    "warmup_steps": 10
+  },
+  "cuda_version": "12.6",
+  "gpu": "NVIDIA L4",
+  "runs": [
+    {"final_loss": 0.06734064221382141, "mean_step_ms": 22.57209845020043, "median_step_ms": 22.985364999840385, "p95_step_ms": 23.96063900050649, "peak_memory_mib": 484.71630859375, "repetition": 1, "samples_per_second": 354.419861212725, "tokens_per_second": 90731.4844704576},
+    {"final_loss": 0.05324332416057587, "mean_step_ms": 18.9537375998043, "median_step_ms": 18.4824159996424, "p95_step_ms": 22.561936999409227, "peak_memory_mib": 484.71630859375, "repetition": 2, "samples_per_second": 422.08033945149697, "tokens_per_second": 108052.56689958322},
+    {"final_loss": 0.05261444300413132, "mean_step_ms": 19.597306200193998, "median_step_ms": 19.34100250036863, "p95_step_ms": 23.318558000028133, "peak_memory_mib": 484.71630859375, "repetition": 3, "samples_per_second": 408.21937047249924, "tokens_per_second": 104504.1588409598}
+  ],
+  "scope": "single-GPU BF16 kernel baseline; not pretrained LLM quality or multi-GPU scaling",
+  "seed": 20260921,
+  "torch_version": "2.12.0+cu126",
+  "workload": "synthetic-transformer-language-model-training"
+}

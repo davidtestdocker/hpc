@@ -1,10 +1,10 @@
-# 平台 API：接收工作、保存初始資料並操作 Redis 佇列；MPI 提交後為 submitted，其他分支仍是模擬結果。
+# 平台 API：接收工作、操作 Redis 佇列，並回收 MPI JobSet 終態；其他 benchmark 分支仍是模擬結果。
 # Python 語法：縮排界定區塊；def 定義函式，冒號後接區塊；型別註記說明預期型別。
 import json
 import logging
 import os
 from datetime import datetime, timedelta, timezone
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import redis
 from fastapi import FastAPI, HTTPException
@@ -14,6 +14,7 @@ from redis.exceptions import ConnectionError
 
 from api.database.models import Job
 from api.database.session import SessionLocal
+from api.workloads.collector import collect_mpi_jobset
 from api.workloads.dispatcher import submit_mpi_jobset
 
 logging.basicConfig(level=logging.INFO)
@@ -254,7 +255,7 @@ def process_next_job():
     if job["benchmark"] == "mpi":
         jobset_name = submit_mpi_jobset(job_id)
 
-        # submitted 僅表示 JobSet 已建立；目前沒有 watcher 回寫 MPI 的最終成功／失敗狀態。
+        # submitted 僅表示 JobSet 已建立；collect-mpi 端點負責回寫最終狀態。
         job["status"] = "submitted"
         job["result"] = {
             "message": "MPI JobSet submitted",
@@ -280,6 +281,65 @@ def process_next_job():
     )
 
     return job
+
+
+def persist_job_status(job_id: str, status: str) -> None:
+    """Keep the PostgreSQL status column aligned with the Redis lifecycle state."""
+    session = SessionLocal()
+    try:
+        db_job = session.get(Job, UUID(job_id))
+        if db_job is None:
+            raise RuntimeError(f"database job not found: {job_id}")
+        db_job.status = status
+        session.commit()
+    finally:
+        session.close()
+
+
+# 掃描已提交 MPI 工作，將 Kubernetes 終態與 launcher rank evidence 回寫平台狀態。
+@app.post("/worker/collect-mpi")
+def collect_submitted_mpi_jobs():
+    updated_jobs = []
+    pending_jobs = []
+    errors = []
+
+    # SCAN 逐批走訪 keys，避免 KEYS 在資料量增加後阻塞 Redis。
+    for key in redis_client.scan_iter(match="job:*"):
+        job = json.loads(redis_client.get(key))
+        if job.get("benchmark") != "mpi" or job.get("status") != "submitted":
+            continue
+
+        job_id = job["job_id"]
+        jobset_name = (job.get("result") or {}).get("jobset_name")
+        if not jobset_name:
+            errors.append({"job_id": job_id, "error": "missing jobset_name"})
+            continue
+
+        try:
+            update = collect_mpi_jobset(jobset_name)
+            if update is None:
+                pending_jobs.append(job_id)
+                continue
+
+            # DB 先成功再發布 Redis 終態；失敗時保留 submitted，下一輪可重試。
+            persist_job_status(job_id, update["status"])
+            job.update(update)
+            job["finished_at"] = datetime.now(timezone.utc).isoformat()
+            redis_client.set(key, json.dumps(job))
+            updated_jobs.append(job_id)
+        except Exception as exc:
+            logger.exception("Failed to collect MPI job %s", job_id)
+            errors.append({
+                "job_id": job_id,
+                "error": f"{type(exc).__name__}: {exc}",
+            })
+
+    return {
+        "updated_jobs": updated_jobs,
+        "pending_jobs": pending_jobs,
+        "errors": errors,
+        "updated_count": len(updated_jobs),
+    }
 
 # 統計 Redis 中的工作數量與已完成數。
 @app.get("/job-metrics")

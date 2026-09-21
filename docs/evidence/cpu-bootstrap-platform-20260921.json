@@ -1,0 +1,26 @@
+{
+  "context": "gke_project-4b82f780-0a12-4087-b94_asia-southeast1-a_hpc-bootstrap-cpu",
+  "execute": true,
+  "passed": true,
+  "steps": [
+    "prerequisites passed",
+    "Redis storage guard passed",
+    "server dry-run passed",
+    "overlay applied",
+    "deployment/redis rollout passed",
+    "statefulset/postgres rollout passed",
+    "deployment/api rollout passed",
+    "database create_all passed (not schema migration)",
+    "deployment passed"
+  ],
+  "preflight": {
+    "recorded_at": "2026-09-21T14:54:54.557242+00:00",
+    "scope": "CPU-only fresh-cluster infrastructure rehearsal; GPU readiness intentionally omitted",
+    "passed": true,
+    "checks": [
+      "system node ready", "namespace", "JobSet CRD and controller",
+      "Kueue LocalQueue CRD and controller", "local queue active",
+      "postgres-secret exists", "mpi-ssh-key exists"
+    ]
+  }
+}

@@ -1,5 +1,7 @@
 # Week5 Day2 - Redis Persistence
 
+> 現行入口（2026-09-21）：[平台部署與 Redis 遷移](../runbooks/platform-bootstrap.md)。已將空 Redis 移至 PVC，並驗證 Pod 替換後測試資料保留；不代表非空資料遷移或 HA。本文以下保留原始學習紀錄。
+
 ## 對應檔案
 
 以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
@@ -298,4 +300,3 @@ Redis 掛掉並不是 API 寫壞，而是依賴服務（Dependency）不可用�
 Week5 Day3：
 
 開始建立更可靠的 Queue 與 Job State Management，讓 Producer / Consumer 不只是能運作，而是真正具備企業平台需要的可靠性與可恢復能力。
-

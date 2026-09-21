@@ -1,0 +1,33 @@
+{
+  "recorded_at": "2026-09-21T09:37:16.023760+00:00",
+  "context": "gke_project-4b82f780-0a12-4087-b94_asia-southeast1-a_hpc-gpu-sg",
+  "jobset": "mpi-validation-20260921",
+  "uid": "85b12b91-b2ca-4bd0-ac04-90b21b142cef",
+  "scope": "direct JobSet CPU MPI rank smoke test; not API lifecycle or performance benchmark",
+  "passed": true,
+  "completed": true,
+  "failed": false,
+  "ranks": [
+    0,
+    1,
+    2
+  ],
+  "conditions": [
+    {
+      "lastTransitionTime": "2026-09-21T09:34:55Z",
+      "message": "jobset completed successfully",
+      "reason": "AllJobsCompleted",
+      "status": "True",
+      "type": "Completed"
+    }
+  ],
+  "launcher_log": "Warning: Permanently added '[mpi-validation-20260921-worker-0-0.mpi-validation-20260921]:2222' (RSA) to the list of known hosts.\nWarning: Permanently added '[mpi-validation-20260921-worker-2-0.mpi-validation-20260921]:2222' (RSA) to the list of known hosts.\nWarning: Permanently added '[mpi-validation-20260921-worker-1-0.mpi-validation-20260921]:2222' (RSA) to the list of known hosts.\nRANK=1 HOST=mpi-validation-20260921-worker-1-0\nRANK=2 HOST=mpi-validation-20260921-worker-2-0\nRANK=0 HOST=mpi-validation-20260921-worker-0-0\n",
+  "log_error": null,
+  "pods": [
+    {
+      "name": "mpi-validation-20260921-launcher-0-0-99p94",
+      "node": "gke-hpc-gpu-sg-gpu-pool-9ad99345-jz5j",
+      "phase": "Succeeded"
+    }
+  ]
+}

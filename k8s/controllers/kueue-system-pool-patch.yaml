@@ -1,0 +1,10 @@
+# Kueue 不執行 GPU 計算，固定放在 system-pool，避免消耗 GPU node 容量。
+spec:
+  # 單節點 rehearsal 無法同時容納兩個 500m controller；避免 RollingUpdate surge 卡住。
+  strategy:
+    type: Recreate
+    rollingUpdate: null
+  template:
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: system-pool

@@ -1,0 +1,47 @@
+# 單變因調校：沿用 baseline，只把 batch size 從 8 提高為 16。
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: transformer-train-batch16-20260921
+  namespace: hpc-platform-dev
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 900
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app: transformer-train-batch16
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        cloud.google.com/gke-nodepool: gpu-pool
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Equal
+          value: present
+          effect: NoSchedule
+      containers:
+        - name: benchmark
+          image: pytorch/pytorch:2.12.0-cuda12.6-cudnn9-runtime
+          command: ["python", "/benchmark/transformer_train_benchmark.py"]
+          env:
+            - name: BATCH_SIZE
+              value: "16"
+          resources:
+            requests:
+              cpu: "2"
+              memory: 8Gi
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "4"
+              memory: 12Gi
+              nvidia.com/gpu: "1"
+          volumeMounts:
+            - name: benchmark-script
+              mountPath: /benchmark
+              readOnly: true
+      volumes:
+        - name: benchmark-script
+          configMap:
+            name: transformer-train-benchmark

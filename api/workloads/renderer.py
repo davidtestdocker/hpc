@@ -2,7 +2,6 @@
 # Python 語法：縮排界定區塊；def 定義函式，冒號後接區塊；型別註記說明預期型別。
 from pathlib import Path
 
-
 # __file__ 是目前模組路徑；Path.parent 取得所在目錄，/ 用於串接路徑。
 TEMPLATE_PATH = Path(__file__).parent / "templates" / "jobset-mpi.yaml"
 PLACEHOLDER = "__JOBSET_NAME__"

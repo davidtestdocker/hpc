@@ -1,0 +1,25 @@
+{
+  "recorded_at": "2026-09-21T14:34:42.425168+00:00",
+  "project": "project-4b82f780-0a12-4087-b94",
+  "region": "asia-southeast1",
+  "spot": true,
+  "passed": false,
+  "checks": [
+    {
+      "metric": "PREEMPTIBLE_NVIDIA_L4_GPUS",
+      "limit": 1.0,
+      "usage": 0.0,
+      "required": 1,
+      "available": 1.0,
+      "passed": true
+    },
+    {
+      "metric": "GPUS_ALL_REGIONS",
+      "limit": 1.0,
+      "usage": 1.0,
+      "required": 1,
+      "available": 0.0,
+      "passed": false
+    }
+  ]
+}

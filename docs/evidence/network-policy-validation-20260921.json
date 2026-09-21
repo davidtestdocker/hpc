@@ -1,0 +1,42 @@
+{
+  "date": "2026-09-21",
+  "result": "pass",
+  "environment": {
+    "cluster": "hpc-gpu-sg-rehearsal",
+    "zone": "asia-southeast1-a",
+    "lifecycle": "terraform apply then destroy",
+    "network_policy": {
+      "enabled": true,
+      "provider": "CALICO"
+    },
+    "system_node": {
+      "count": 1,
+      "machine_type": "e2-standard-2",
+      "ready": true
+    },
+    "gpu_node_count": 0
+  },
+  "test": {
+    "namespace": "network-policy-validation",
+    "server": "server:80",
+    "policy": "allow-labeled-client-to-server",
+    "baseline": {
+      "allowed_client_exit_code": 0,
+      "denied_client_exit_code": 0
+    },
+    "with_policy": {
+      "allowed_client_exit_code": 0,
+      "denied_client_exit_code": 1,
+      "denied_client_output": "wget: download timed out"
+    },
+    "after_policy_delete": {
+      "denied_client_exit_code": 0
+    }
+  },
+  "cleanup": {
+    "terraform": "0 added, 0 changed, 3 destroyed",
+    "state_resources_after_destroy": 0,
+    "gke_describe_after_destroy": "404 Not Found"
+  },
+  "scope": "Packet-level ingress allow, deny, and recovery on an isolated Calico GKE cluster. The main hpc-gpu-sg cluster remains with NetworkPolicy enforcement disabled."
+}

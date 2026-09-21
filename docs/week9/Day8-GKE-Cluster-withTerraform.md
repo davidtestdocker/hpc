@@ -1,5 +1,7 @@
 # Week9 Day8 - Google Kubernetes Engine (GKE) with Terraform
 
+> 現行入口（2026-09-21）：[gpu-sg Terraform README](../../terraform/environments/gpu-sg/README.md) 與 [驗證證據](../evidence/terraform-gpu-sg-20260921.md)。本文其餘內容保留 hpc-dev 歷史實驗；不可把歷史指令直接用於主環境。
+
 ## 對應檔案
 
 以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
@@ -9,6 +11,15 @@
 - [terraform/modules/gke/main.tf](../../terraform/modules/gke/main.tf)
 - [terraform/modules/gke/outputs.tf](../../terraform/modules/gke/outputs.tf)
 - [terraform/modules/gke/variables.tf](../../terraform/modules/gke/variables.tf)
+- [terraform/environments/gpu-sg/main.tf](../../terraform/environments/gpu-sg/main.tf)
+
+## 2026-09-21 主環境對齊
+
+主展示環境已使用獨立 root module 描述 GKE cluster、CPU system pool 與 L4
+GPU pool。既有三個資源完成 import，最終 plan 為 `No changes`；另以隔離
+state 與不同 cluster 名稱完成 `3 add / 0 change / 0 destroy` plan，並實際
+完成 apply、GKE RUNNING、apply 後 zero drift 與 destroy。這驗證 CPU-only
+基礎設施 lifecycle；尚未在 rehearsal cluster bootstrap 完整平台或配置 GPU VM。
 
 ---
 

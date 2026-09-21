@@ -1,0 +1,13 @@
+# Strategic merge patch for the existing JobSet v0.12.0 controller.
+# Small demo only: 100m is a scheduling reservation, not a CPU limit.
+# Retain upstream memory requests/limits and remeasure under workload.
+spec:
+  template:
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: system-pool
+      containers:
+        - name: manager
+          resources:
+            requests:
+              cpu: 100m

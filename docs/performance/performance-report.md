@@ -1,6 +1,15 @@
 # Performance Report
 
-本報告彙整 repo 已保存的 performance evidence，未重跑 benchmark。各項結果來自不同歷史環境，不能視為同一次主 MPI E2E 的自動收集結果。能力與來源索引見 [Evidence Index](../evidence/README.md)。
+本報告彙整 repo 已保存的 performance evidence。2026-09-21 L4 Transformer benchmark 是本輪重跑；其餘多數結果來自不同歷史環境，不能視為同一次主 MPI E2E 的自動收集結果。能力與來源索引見 [Evidence Index](../evidence/README.md)。
+
+## NVIDIA L4：Synthetic Transformer Training
+
+本輪使用 PyTorch 2.12／CUDA 12.6，以固定小型 Transformer、BF16、10 warmup
+steps 與每組 3×20 measured steps，比較 batch size 8／16。Batch 16 的 token
+throughput 比 batch 8 高 74.4%，代價是 mean step latency +14.0% 與 peak
+allocated memory +50.8%。完整方法、raw runs 與限制見
+[L4 training report](transformer-training-l4-20260921.md)。這是 synthetic 小模型、
+單一 time-sharing share，不代表大型 pretrained LLM 或 multi-GPU scaling。
 
 ## vLLM：Concurrency 與 Latency Tradeoff
 

@@ -2,6 +2,7 @@
 # 語法：縮排表示階層，key: value 是鍵值，- 表示清單項目；# 後方是註解。
 # 工作負載副本數；是否生效取決於模板與 autoscaling 設定。
 replicaCount: 1
+existingSecret: false
 
 # 容器映像及標籤，決定執行的檔案系統與程式版本。
 image:

@@ -1,3 +1,2 @@
 ruff
 pytest
-httpx2

@@ -1,0 +1,18 @@
+{
+  "recorded_at": "2026-09-21T13:19:26.685716+00:00",
+  "passed": true,
+  "checks": {
+    "/health": {
+      "status": "healthy"
+    },
+    "/health/redis": {
+      "status": "healthy",
+      "redis": "connected"
+    },
+    "/jobs/e951b7ab-b654-4fcd-a585-419ca007ba52": {
+      "status": "completed",
+      "job_id": "e951b7ab-b654-4fcd-a585-419ca007ba52"
+    },
+    "postgres_job_status": "completed"
+  }
+}

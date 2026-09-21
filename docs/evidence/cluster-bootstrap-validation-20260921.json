@@ -1,0 +1,18 @@
+{
+  "recorded_at": "2026-09-21T13:41:17.856682+00:00",
+  "context": "gke_project-4b82f780-0a12-4087-b94_asia-southeast1-a_hpc-gpu-sg",
+  "execute": false,
+  "passed": true,
+  "controller_versions": {
+    "jobset": "v0.12.0",
+    "kueue": "v0.19.2"
+  },
+  "steps": [
+    "system and GPU node prerequisites passed",
+    "pinned controller manifests downloaded and verified",
+    "scheduling manifests server dry-run passed",
+    "platform overlay server dry-run passed; no resources changed",
+    "bootstrap validation passed"
+  ],
+  "platform_report": "cluster-bootstrap-validation-platform-20260921.json"
+}

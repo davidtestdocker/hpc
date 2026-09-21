@@ -1,0 +1,2 @@
+# Bootstrap this Secret separately; never render a password into artifacts.
+existingSecret: true

@@ -17,3 +17,9 @@ service:
   port: 6379
 
 containerPort: 6379
+
+# Enable explicitly per environment. Existing ephemeral queues need migration.
+persistence:
+  enabled: false
+  claimName: redis-pvc
+  size: 1Gi

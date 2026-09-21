@@ -1,0 +1,5 @@
+# 平台資源使用固定 namespace，讓 RBAC、queue 與 Secret 有一致的作用範圍。
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hpc-platform-dev

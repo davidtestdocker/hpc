@@ -1,0 +1,20 @@
+{
+  "recorded_at": "2026-09-21T14:50:50.050155+00:00",
+  "context": "gke_project-4b82f780-0a12-4087-b94_asia-southeast1-a_hpc-bootstrap-cpu",
+  "execute": true,
+  "passed": true,
+  "controller_versions": {"jobset": "v0.12.0", "kueue": "v0.19.2"},
+  "steps": [
+    "system node prerequisite passed; CPU-only rehearsal selected",
+    "pinned controller manifests downloaded and verified",
+    "jobset controller installed and ready",
+    "kueue controller installed and ready",
+    "namespace and controller system-pool placement applied",
+    "Kueue topology, flavor, queues and priorities applied",
+    "postgres-secret created from external env file",
+    "ephemeral MPI keys generated; Kubernetes Secret created",
+    "platform overlay deployed",
+    "bootstrap passed"
+  ],
+  "platform_report": "cpu-bootstrap-platform-20260921.json"
+}

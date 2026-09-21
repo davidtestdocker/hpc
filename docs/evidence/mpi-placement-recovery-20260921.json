@@ -1,0 +1,21 @@
+{
+  "recorded_at": "2026-09-21T09:30:47.417280+00:00",
+  "context": "gke_project-4b82f780-0a12-4087-b94_asia-southeast1-a_hpc-gpu-sg",
+  "workload": "jobset-mpi-52eedc2a-f6b1-4c97-9c11-529223ed6899-5dbaf",
+  "jobset": "mpi-52eedc2a-f6b1-4c97-9c11-529223ed6899",
+  "stale_pods": [
+    "mpi-52eedc2a-f6b1-4c97-9c11-529223ed6899-launcher-0-0-47kzl",
+    "mpi-52eedc2a-f6b1-4c97-9c11-529223ed6899-worker-0-0-2c6cv",
+    "mpi-52eedc2a-f6b1-4c97-9c11-529223ed6899-worker-1-0-24kkh",
+    "mpi-52eedc2a-f6b1-4c97-9c11-529223ed6899-worker-2-0-bsv2m"
+  ],
+  "old_hostnames": [
+    "gke-hpc-gpu-sg-gpu-pool-9ad99345-3dzb",
+    "gke-hpc-gpu-sg-gpu-pool-9ad99345-3dzb",
+    "gke-hpc-gpu-sg-gpu-pool-9ad99345-3dzb",
+    "gke-hpc-gpu-sg-gpu-pool-9ad99345-3dzb"
+  ],
+  "executed": true,
+  "reactivated": true,
+  "placement_recovered": false
+}

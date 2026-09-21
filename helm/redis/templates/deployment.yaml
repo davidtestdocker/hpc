@@ -16,6 +16,11 @@ metadata:
 spec:
   # 期望副本數；設定為 0 表示不維持執行中的副本。
   replicas: {{ .Values.replicaCount }}
+  {{- if .Values.persistence.enabled }}
+  strategy:
+    type: Recreate
+    rollingUpdate: null
+  {{- end }}
 
   # 選取要關聯的物件；不同資源種類支援的 selector 格式不同。
   selector:
@@ -48,3 +53,19 @@ spec:
             - redis-server
             - --appendonly
             - "yes"
+          readinessProbe:
+            exec:
+              command: [redis-cli, "-e", ping]
+            initialDelaySeconds: 2
+            periodSeconds: 3
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+          {{- end }}
+      {{- if .Values.persistence.enabled }}
+      volumes:
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.claimName }}
+      {{- end }}

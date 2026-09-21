@@ -23,6 +23,12 @@ spec:
   # 是否暫停啟動工作；Kueue 可在准入後解除暫停。
   suspend: true
 
+  # Workers run SSH servers; launcher completion defines successful execution.
+  successPolicy:
+    operator: All
+    targetReplicatedJobs:
+      - launcher
+
   # 工作失敗時由控制器採用的處理策略。
   failurePolicy:
     # JobSet 層級允許的重新啟動次數上限。
@@ -44,6 +50,7 @@ spec:
       # 子物件模板；控制器以此內容建立 Pod 或相關工作資源。
       template:
         spec:
+          activeDeadlineSeconds: 300
           # Job 失敗後的重試上限。
           backoffLimit: 0
           template:
@@ -125,7 +132,7 @@ spec:
                         -np 3 \
                         --host \
                         __JOBSET_NAME__-worker-0-0.__JOBSET_NAME__,__JOBSET_NAME__-worker-1-0.__JOBSET_NAME__,__JOBSET_NAME__-worker-2-0.__JOBSET_NAME__ \
-                        /bin/sh -lc 'echo "RANK=$OMPI_COMM_WORLD_RANK HOST=$(hostname)"; sleep 900'
+                        /bin/sh -lc 'echo "RANK=$OMPI_COMM_WORLD_RANK HOST=$(hostname)"'
                   volumeMounts:
                     - name: ssh-work
                       mountPath: /home/mpiuser/.ssh
@@ -142,6 +149,7 @@ spec:
       replicas: 3
       template:
         spec:
+          activeDeadlineSeconds: 330
           backoffLimit: 0
           template:
             spec:

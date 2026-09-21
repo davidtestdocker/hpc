@@ -1,3 +1,10 @@
+# 現行開發入口
+
+2026-09-21 開始 [一週作品衝刺](docs/career/one-week-sprint.md)。現行操作見 [平台部署與驗收](docs/runbooks/platform-bootstrap.md)，唯讀檢查使用 `python3 scripts/platform.py check`。
+本輪已修復 JobSet controller 排程容量、將空 Redis 移至 PVC，並驗證 Pod 替換後測試資料保留及 API 恢復。見 [遷移報告](docs/evidence/redis-persistence-migration-20260921.json) 與 [修復後檢查](docs/evidence/platform-preflight-after-20260921.json)。Terraform 主環境已完成 import 與零 drift；隔離 CPU-only cluster 已完成 apply／RUNNING／zero drift／destroy。下方原有成功 demo 為歷史紀錄。
+
+新 MPI collector image 已 rollout，並由 API 實測 JobSet Completed、ranks 0／1／2 與 PostgreSQL status 回寫，見 [lifecycle evidence](docs/evidence/mpi-api-lifecycle-20260921.json)。舊 MPI 工作恢復失敗則另行保留，詳見 [本輪修復與驗收](docs/demo/platform-recovery-20260921.md)。
+
 # Week1～Week20 學習總覽
 
 從 Linux 與 Python 基礎出發，逐步學習容器化、平台開發、雲端部署、效能分析，以及 HPC／AI 分散式運算與排障。下表依各週學習文件整理；點選週次可查看完整筆記與實驗紀錄。表中的概念學習與歷史實作不代表目前平台已全面整合，實際驗證範圍見後續平台介紹與 [Evidence Index](docs/evidence/README.md)。
@@ -23,7 +30,7 @@
 | [Week17](docs/week17/) | HPC 分散式運算與排程 | 實作 MPI 通訊與單節點 OSU 測試、Slurm CPU 多節點 MPI、Ray tasks／actors；比較排程層次，理解 RDMA 通訊架構與硬體需求 | Open MPI、OSU Micro-Benchmarks、Slurm、MUNGE、Ray／KubeRay、RayJob；RDMA／RoCE／InfiniBand 概念 |
 | [Week18](docs/week18/) | 網路與分散式通訊排障 | 建立頻寬、延遲、丟包與 MTU 基線；從封包追查連線故障，逐層檢查 Kubernetes 網路、NCCL Socket fallback 與 GPU／NIC／NUMA locality | ip／ss、ping、iperf3、tcpdump、iptables、ethtool、DNS／EndpointSlice、NCCL Debug、PCIe／NUMA |
 | [Week19](docs/week19/) | GPU 共享與工作准入 | 比較 GPU 共享模式，實驗 time-slicing、quota、priority／preemption；整合 JobSet MPI，驗證單 GPU node 的 TAS placement | Time-Slicing、MPS／MIG 概念、Kueue、ResourceFlavor、ClusterQueue／LocalQueue、PriorityClass、JobSet、TAS |
-| [Week20](docs/week20/) | 安全、故障恢復與技術選型 | 實作最小權限與 Pod hardening、NetworkPolicy 設計／schema 驗證；分析 JobSet recovery、Ray retry、Slurm node failure，整理跨層排障與架構選型 | RBAC／ServiceAccount、SecurityContext、Image／Secret Security、NetworkPolicy、FailurePolicy、Runbook；OpenStack／HTCondor／LSF／DLRover 概念 |
+| [Week20](docs/week20/) | 安全、故障恢復與技術選型 | 實作最小權限與 Pod hardening、NetworkPolicy 設計／schema 驗證及隔離 Calico 封包驗收；分析 JobSet recovery、Ray retry、Slurm node failure，整理跨層排障與架構選型 | RBAC／ServiceAccount、SecurityContext、Image／Secret Security、NetworkPolicy、FailurePolicy、Runbook；OpenStack／HTCondor／LSF／DLRover 概念 |
 
 這 20 週的學習逐步形成下方的 **HPC AI Performance Engineering Platform**：以 API、佇列與 Kubernetes 工作執行為主線，搭配監控、效能實驗及故障排查案例。以下說明整合後的平台架構、主要 demo、可追溯成果與目前限制。
 
@@ -33,9 +40,9 @@
 
 ## Overview
 
-以 API 驅動 distributed HPC／AI workload submission、scheduling 與 execution，結合 observability、performance analysis 和 failure troubleshooting 的工程作品。
+以 API 驅動 distributed HPC／AI workload submission、scheduling、execution 與結果回收，結合 observability、performance analysis 和 failure troubleshooting 的工程作品。
 
-主展示是 FastAPI → Redis queue → Kubernetes JobSet／Kueue → MPI ranks；Ray、Slurm、NCCL 與效能實驗提供平行的 supporting evidence。作品對應 HPC AI Performance、GPU Platform、AI Infrastructure 與 Platform Engineering，已完成工作提交與 rank execution，尚未形成完整 benchmark lifecycle 閉環。
+主展示是 FastAPI → Redis queue → Kubernetes JobSet／Kueue → MPI ranks → terminal result collection；Ray、Slurm、NCCL 與效能實驗提供平行的 supporting evidence。作品對應 HPC AI Performance、GPU Platform、AI Infrastructure 與 Platform Engineering，已完成一次手動觸發的工作提交、rank execution 與結果回寫；持續 reconciliation 與 artifact storage 尚未完成。
 
 ## Architecture
 
@@ -51,7 +58,7 @@ flowchart LR
     Q --> M["MPI launcher + workers"]
 ```
 
-Worker 目前由 `POST /worker/process-next` 手動觸發。Kueue 處理 queue／quota／TAS admission；JobSet 管理 distributed job grouping；admission 後由 Kubernetes Scheduler 完成 Pod placement。PostgreSQL 保存初始 metadata，後續 job state 目前在 Redis。
+Worker 目前由 `POST /worker/process-next` 手動觸發，完成後再以 `POST /worker/collect-mpi` 回收 JobSet 終態、launcher log 與 ranks。Kueue 處理 queue／quota／TAS admission；JobSet 管理 distributed job grouping；admission 後由 Kubernetes Scheduler 完成 Pod placement。Collector 會同步 Redis/API 與 PostgreSQL status。
 
 完整分工與 Node Pool 邊界見 [Final Architecture](docs/architecture/platform-architecture.md)。
 
@@ -68,13 +75,13 @@ Worker 目前由 `POST /worker/process-next` 手動觸發。Kueue 處理 queue�
 
 | 領域 | 已有能力與範圍 |
 |---|---|
-| Platform / API | FastAPI submission／query、PostgreSQL initial metadata、Redis queue／retry／dead-letter、MPI dispatch |
+| Platform / API | FastAPI submission／query、Redis queue／retry／dead-letter、MPI dispatch、JobSet terminal state／rank collection、PostgreSQL status sync |
 | Distributed Compute | MPI JobSet 主線；獨立 Ray／KubeRay tasks 與 Slurm CPU multi-node MPI experiments |
-| GPU / AI Performance | vLLM concurrency analysis、PyTorch runtime／CPU DDP profiling、單 GPU NCCL transport evidence |
+| GPU / AI Performance | L4 BF16 Transformer repeated benchmark／batch tuning、vLLM concurrency analysis、CPU DDP profiling、單 GPU NCCL transport evidence |
 | Scheduling | Kueue queue／quota／ResourceFlavor、priority／preemption、單 GPU node TAS placement |
 | Observability | API metrics、Prometheus／Grafana／DCGM manifests 與歷史驗證 |
-| Infrastructure | GKE、Helm／Kustomize、Terraform／Argo CD 部署成果；新舊環境尚待對齊 |
-| Security | Namespace ServiceAccount／RBAC、Pod hardening experiments、NetworkPolicy design／schema validation |
+| Infrastructure | GKE、Helm／Kustomize；gpu-sg Terraform import 零 drift，隔離 cluster apply／destroy 已驗證；Argo CD 尚待對齊 |
+| Security | Namespace ServiceAccount／RBAC、Pod hardening experiments、隔離 Calico NetworkPolicy allow／deny／recovery |
 | Troubleshooting | Admission、placement、runtime resource mismatch、worker failure、Slurm node failure、NCCL fallback |
 
 ## Supporting Demos
@@ -90,29 +97,31 @@ Worker 目前由 `POST /worker/process-next` 手動觸發。Kueue 處理 queue�
 
 固定 128 requests 的 vLLM 結果中，concurrency 16／32／64 的 throughput 為 **16.748／24.988／32.379 req/s**；mean TTFT 為 **135.601／188.663／448.579 ms**。32 → 64 的 throughput 增加 29.6%，TTFT 增加 137.8%，呈現此 workload 的 latency tradeoff。
 
+2026-09-21 在 L4 time-sharing share 重跑 BF16 synthetic Transformer training：batch 8→16 的 mean token throughput 為 **101,096→176,335 tokens/s（+74.4%）**，mean step latency **+14.0%**，peak allocated memory **+50.8%**。每組包含 10 warmup 與 3×20 measured steps；詳見 [比較報告](docs/performance/transformer-training-l4-20260921.md)。
+
 另保存 stress-ng CPU saturation、fio ephemeral-storage baseline、同 node iperf3、CPU／Gloo DDP profiling、單 GPU NCCL fallback，以及歷史 P100 DCGM dashboard evidence。它們來自不同環境，未由主 E2E 自動回收。
 
 詳見 [Performance Report](docs/performance/performance-report.md)，包含數據來源、測試方法與限制。
 
 ## Infrastructure
 
-主 E2E 使用 GKE `hpc-gpu-sg`、namespace `hpc-platform-dev`：`system-pool` 承載 CPU platform／control workloads，`gpu-pool` 提供 NVIDIA L4 distributed／GPU workload 資源。Node Pool 不等於單一 node，現有 platform overlay 也未以 nodeSelector 明確鎖定 system-pool。
+主 E2E 使用 GKE `hpc-gpu-sg`、namespace `hpc-platform-dev`：`system-pool` 承載 CPU platform／control workloads，`gpu-pool` 提供 NVIDIA L4 distributed／GPU workload 資源。Node Pool 不等於單一 node。完整 platform overlay 已部署至既有叢集，API／Redis／PostgreSQL 的 system-pool placement、rollout 與資料連線已驗收，見 [部署證據](docs/evidence/platform-deployment-20260921.json)。
 
-[Helm](helm/) 與 [platform Kustomize overlay](kustomize/overlays/gpu-sg-platform/) 保存服務與 API RBAC。現有 [Terraform dev](terraform/environments/dev/main.tf) 定義 hpc-dev，[Argo CD dev](argocd/application-dev.yaml) 指向舊 overlays/dev；**hpc-gpu-sg 主 E2E 與舊 IaC／GitOps environment 尚未完全對齊**。
+[Helm](helm/) 與 [platform Kustomize overlay](kustomize/overlays/gpu-sg-platform/) 保存服務與 API RBAC。[gpu-sg Terraform](terraform/environments/gpu-sg/main.tf) 已描述現有 GKE 與兩個 node pools，import 後 plan 為零 drift。[bootstrap tool](scripts/bootstrap_cluster.py) 鎖定 controllers 版本與 checksum，編排 queues、runtime Secrets 及 platform deployment；全新 CPU-only cluster 已完成 apply／acceptance／destroy。全新 GPU cluster 因專案全域 GPU quota 1／1 尚未完成 MPI 驗收。[Argo CD dev](argocd/application-dev.yaml) 仍屬舊環境，GitOps 尚未對齊主環境。
 
 ## Security
 
-API 使用 [api-jobset-runner ServiceAccount／namespace RBAC](k8s/security/api-jobset-rbac.yaml)，以 least privilege 限制 JobSet 操作。另有 [Pod hardening 紀錄](docs/week20/day2-pod-image-secret-security.md) 與 [NetworkPolicy 設計](docs/week20/day3-networkpolicy-tenant-isolation.md)；後者僅驗證 schema，未驗證 packet deny enforcement。SSH private keys 不放入 repo。
+API 使用 [api-jobset-runner ServiceAccount／namespace RBAC](k8s/security/api-jobset-rbac.yaml)，以 least privilege 限制 JobSet 操作。另有 [Pod hardening 紀錄](docs/week20/day2-pod-image-secret-security.md)；[NetworkPolicy 實測](docs/evidence/network-policy-validation-20260921.json) 在隔離 Calico GKE 完成 baseline、allow、deny timeout 與 policy 移除後恢復。主 cluster enforcement 仍關閉。SSH private keys 不放入 repo。
 
 ## Evidence
 
-[Evidence Index / Capability Matrix](docs/evidence/README.md) 將 15 項能力對應到真實 scripts、manifests、JSON／log 與 historical records，逐項標示 verified scope 和 limitation。歷史結果不代表目前 cluster 即時狀態。
+[Evidence Index / Capability Matrix](docs/evidence/README.md) 將各項能力對應到真實 scripts、manifests、JSON／log 與 historical records，逐項標示 verified scope 和 limitation。歷史結果不代表目前 cluster 即時狀態。
 
 ## Current Boundary
 
-**已完成：** API submission → queue → dispatch → Kueue admission → MPI ranks。
+**已完成：** API submission → queue → dispatch → Kueue admission → MPI ranks → terminal condition／rank collection → Redis／PostgreSQL completed。
 
-**尚未完成：** automatic worker daemon、JobSet completion watcher、Kubernetes final status → API／DB sync、result collector、full lifecycle state machine。MPI job API 目前停在 `submitted`；其他 benchmark 分支仍可能 simulated。既有 rank demo 不等於完整 production-ready benchmark system。
+**尚未完成：** automatic worker／collector daemon、連續 watch／reconciliation、artifact object storage、跨 Redis／PostgreSQL 交易一致性與 full lifecycle state machine。MPI 已實測由 `submitted` 收斂為 `completed`；其他 benchmark 分支仍可能 simulated。單次成功不等於 production-ready benchmark system。
 
 ## Repository Structure
 
@@ -163,6 +172,15 @@ kubectl get jobset "$MPI_JOBSET" -n hpc-platform-dev
 kubectl logs -n hpc-platform-dev "job/${MPI_JOBSET}-launcher-0" -c launcher
 ```
 
+7. JobSet 結束後觸發 collector，再以提交時取得的 `job_id` 查詢結果：
+
+```bash
+curl -sS -X POST http://127.0.0.1:8000/worker/collect-mpi
+curl -sS "http://127.0.0.1:8000/jobs/<job_id>"
+```
+
+回應應包含 `status: completed`、JobSet terminal condition 與 `ranks: [0, 1, 2]`。
+
 ## Limitations / Future Improvements
 
-後續改善集中於 worker daemon、lifecycle watcher／final status sync、result collector、Redis persistence、Alembic schema migration，以及 IaC／GitOps alignment。Multi-node GPU／RDMA performance 需另備硬體與驗證，現有 evidence 不涵蓋這些結論。
+後續改善集中於 worker／collector daemon、watch reconciliation、result artifact storage、非空 Redis 備份還原、Alembic schema migration，以及 IaC／GitOps alignment。Redis PVC 與 graceful Pod replacement 已驗證。Multi-node GPU／RDMA performance 需另備硬體與驗證，現有 evidence 不涵蓋這些結論。

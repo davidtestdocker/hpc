@@ -1,0 +1,38 @@
+{
+  "context": "gke_project-4b82f780-0a12-4087-b94_asia-southeast1-a_hpc-gpu-sg",
+  "namespace": "hpc-platform-dev",
+  "passed": true,
+  "steps": [
+    {
+      "time": "2026-09-21T09:24:19.579997+00:00",
+      "step": "preconditions passed",
+      "source_uid": "1857a5ad-ebd4-4728-bcf1-49d021c738a6",
+      "api_replicas": 1
+    },
+    {
+      "time": "2026-09-21T09:24:20.630917+00:00",
+      "step": "API stopped; HPA with minReplicas > 0 is inactive at zero replicas"
+    },
+    {
+      "time": "2026-09-21T09:24:22.142971+00:00",
+      "step": "writes paused; all databases confirmed empty"
+    },
+    {
+      "time": "2026-09-21T09:24:23.553226+00:00",
+      "step": "Redis deployment and new PVC applied"
+    },
+    {
+      "time": "2026-09-21T09:24:41.853190+00:00",
+      "step": "Redis ready",
+      "pvc_phase": "Bound"
+    },
+    {
+      "time": "2026-09-21T09:24:55.278216+00:00",
+      "step": "marker survived Pod replacement; test marker removed"
+    },
+    {
+      "time": "2026-09-21T09:25:12.885888+00:00",
+      "step": "API restored; empty-database migration and graceful restart verified"
+    }
+  ]
+}

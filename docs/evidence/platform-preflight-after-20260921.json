@@ -1,0 +1,59 @@
+{
+  "recorded_at": "2026-09-21T09:26:37.960384+00:00",
+  "context": "gke_project-4b82f780-0a12-4087-b94_asia-southeast1-a_hpc-gpu-sg",
+  "namespace": "hpc-platform-dev",
+  "scope": "read-only prerequisites; not a rebuild or workload acceptance test",
+  "passed": true,
+  "checks": [
+    {
+      "name": "system node ready",
+      "passed": true,
+      "detail": "verified"
+    },
+    {
+      "name": "GPU resource advertised",
+      "passed": true,
+      "detail": "verified"
+    },
+    {
+      "name": "namespace",
+      "passed": true,
+      "detail": "verified"
+    },
+    {
+      "name": "jobsets.jobset.x-k8s.io",
+      "passed": true,
+      "detail": "verified"
+    },
+    {
+      "name": "localqueues.kueue.x-k8s.io",
+      "passed": true,
+      "detail": "verified"
+    },
+    {
+      "name": "jobset-system controllers",
+      "passed": true,
+      "detail": "verified"
+    },
+    {
+      "name": "kueue-system controllers",
+      "passed": true,
+      "detail": "verified"
+    },
+    {
+      "name": "local queue active",
+      "passed": true,
+      "detail": "verified"
+    },
+    {
+      "name": "postgres-secret exists",
+      "passed": true,
+      "detail": "key contents not inspected"
+    },
+    {
+      "name": "mpi-ssh-key exists",
+      "passed": true,
+      "detail": "key contents not inspected"
+    }
+  ]
+}

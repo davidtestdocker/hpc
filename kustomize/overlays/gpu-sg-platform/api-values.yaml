@@ -1,0 +1,9 @@
+# Main demo values are independent of the historical dev GitOps image tag.
+image:
+  tag: mpi-collector-20260921-v1
+service:
+  type: ClusterIP
+  port: 8000
+  targetPort: 8000
+ingress:
+  enabled: false

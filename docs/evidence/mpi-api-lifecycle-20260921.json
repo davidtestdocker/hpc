@@ -1,0 +1,50 @@
+{
+  "recorded_at": "2026-09-21T12:48:29Z",
+  "result": "pass",
+  "scope": "API-triggered CPU MPI JobSet lifecycle and result collection; not a performance benchmark or multi-node GPU run",
+  "deployment": {
+    "image": "asia-east1-docker.pkg.dev/project-4b82f780-0a12-4087-b94/hpc-images/hpc-api:mpi-collector-20260921-v1",
+    "digest": "sha256:b4baf0c76c39b367561269c53b30963195e00d55d5dada49916b785e5cd91508",
+    "rollout": "success",
+    "health": "healthy",
+    "redis_health": "connected"
+  },
+  "job": {
+    "job_id": "e951b7ab-b654-4fcd-a585-419ca007ba52",
+    "jobset_name": "mpi-e951b7ab-b654-4fcd-a585-419ca007ba52",
+    "jobset_uid": "d4f916bc-3f0a-4e6e-b2c1-a7da6fde62c8",
+    "processing_started_at": "2026-09-21T12:46:04.666090+00:00",
+    "jobset_completed_at": "2026-09-21T12:46:18Z",
+    "finished_at": "2026-09-21T12:46:35.890732+00:00",
+    "api_status": "completed",
+    "database_status": "completed",
+    "terminal_state": "Completed",
+    "terminal_reason": "AllJobsCompleted",
+    "ranks": [0, 1, 2],
+    "rank_evidence_complete": true,
+    "retry_count": 0
+  },
+  "collector_response": {
+    "updated_jobs": ["e951b7ab-b654-4fcd-a585-419ca007ba52"],
+    "pending_jobs": [],
+    "errors": [],
+    "updated_count": 1
+  },
+  "rbac": {
+    "before": {
+      "get_pods": "no",
+      "get_pods_log": "no"
+    },
+    "after": {
+      "list_pods": "yes",
+      "get_pods_log": "yes",
+      "delete_pods": "no"
+    }
+  },
+  "limitations": [
+    "process-next and collect-mpi are manually triggered HTTP endpoints, not background workers",
+    "Redis and PostgreSQL updates are not one distributed transaction",
+    "launcher logs are stored in Redis and are not yet moved to object storage",
+    "non-MPI benchmark branches remain simulated"
+  ]
+}

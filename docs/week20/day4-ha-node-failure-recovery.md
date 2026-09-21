@@ -1,5 +1,7 @@
 # Week20 Day4 — HA / Node Failure / Distributed Job Recovery
 
+> 2026-09-21 新實測見 [平台修復與驗收](../demo/platform-recovery-20260921.md)：controller／Redis 恢復成功、新 MPI JobSet Completed；舊 MPI TAS placement 恢復被 reclaimablePods webhook 擋住。本文以下保留原始實驗，不把新工作成功當成舊工作恢復。
+
 ## 對應檔案
 
 以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。

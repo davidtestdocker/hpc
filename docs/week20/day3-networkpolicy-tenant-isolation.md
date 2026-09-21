@@ -259,7 +259,7 @@ Training workload 可以被限制為：
 
 ---
 
-## 10. Current GKE Limitation
+## 10. 2026-09-21 實測與主環境邊界
 
 目前 hpc-gpu-sg：
 
@@ -267,22 +267,26 @@ Training workload 可以被限制為：
       networkPolicyConfig:
         disabled: true
 
-代表目前 GKE 沒有啟用 NetworkPolicy enforcement。
+代表主 `hpc-gpu-sg` 仍沒有啟用 NetworkPolicy enforcement。沒有直接在主叢集
+套用 policy，避免把 API 接受 manifest 誤當成封包隔離成功。
 
-因此本次完成：
+另由 Terraform 建立 CPU-only 隔離叢集 `hpc-gpu-sg-rehearsal`，GKE API
+回報 `networkPolicy.enabled=true`、provider `CALICO`。在獨立 namespace
+部署 server、allowed client 與 denied client 後，結果如下：
 
-    NetworkPolicy design             ✅
-    Kubernetes API schema validation ✅
-    Declarative manifests            ✅
+    policy 前：allowed client → server  ✅
+    policy 前：denied client → server   ✅
+    policy 後：allowed client → server  ✅
+    policy 後：denied client → timeout  ✅
+    移除 policy：denied client 恢復     ✅
 
-未宣稱完成：
+測試使用 [fixtures](../../k8s/security/network-policy/rehearsal-fixtures.yaml)、
+[allow policy](../../k8s/security/network-policy/allow-client-to-server.yaml)，
+結構化結果見 [evidence JSON](../evidence/network-policy-validation-20260921.json)。
+驗收後 Terraform 完成 3-resource destroy，state 為空且 GKE 查詢回傳 404。
 
-    Actual packet deny validation    ❌
-
-啟用 GKE NetworkPolicy 需要調整 cluster networking，
-且會造成 node rolling update。
-
-目前單 GPU node lab 不為此額外重建 cluster。
+這證明隔離 Calico GKE 的 ingress allow／deny enforcement，不代表主叢集已啟用、
+全平台 policy 已設計完成，或 egress／跨 namespace／DNS 規則也已實測。
 
 ---
 

@@ -1,0 +1,29 @@
+{
+  "recorded_at": "2026-09-21",
+  "result": "blocked_by_quota_and_cleaned_up",
+  "scope": "isolated Terraform GPU cluster rehearsal; main cluster unchanged",
+  "terraform_plan": {
+    "cluster_name": "hpc-gpu-sg-bootstrap",
+    "gpu_spot": true,
+    "resources": "3 add, 0 change, 0 destroy"
+  },
+  "provisioning": {
+    "cluster": "created",
+    "system_pool": "created",
+    "gpu_pool": "ERROR",
+    "canonical_code": "RESOURCE_EXHAUSTED",
+    "reason": "GCE_QUOTA_EXCEEDED",
+    "quota_metric": "GPUS_ALL_REGIONS",
+    "quota_limit": 1,
+    "quota_usage": 1,
+    "regional_spot_l4_limit": 1,
+    "regional_spot_l4_usage": 0
+  },
+  "bootstrap_executed": false,
+  "cleanup": {
+    "terraform_destroy": "3 destroyed",
+    "state_resources_after_destroy": 0,
+    "cluster_lookup_after_destroy": "404 Not Found"
+  },
+  "conclusion": "Regional Spot L4 quota alone was insufficient because the project-wide GPU quota was already consumed by the main cluster."
+}

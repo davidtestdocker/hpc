@@ -1,0 +1,4 @@
+persistence:
+  enabled: true
+  claimName: redis-pvc
+  size: 1Gi

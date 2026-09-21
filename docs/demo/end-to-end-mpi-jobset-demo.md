@@ -1,5 +1,7 @@
 # End-to-End MPI JobSet Demo
 
+> 2026-09-21 更新：以下成功輸出保留為歷史 evidence。現行部署請先看 [平台 runbook](../runbooks/platform-bootstrap.md)。controller 與空 Redis 遷移已完成；新模板與 completion collector 已 rollout，另有 API lifecycle 驗收。舊 MPI 工作存在未修復的 reconciliation 問題，見 [本輪修復 demo](platform-recovery-20260921.md)。
+
 ## Demo 目的
 
 這個 Demo 用來驗證 HPC AI Performance Engineering Platform 的完整工作提交流程。
@@ -8,7 +10,7 @@
 
 JobSet workload 由 Kueue 進行 queue／resource admission，Pod placement 由 Kubernetes Scheduler 完成，最後啟動 MPI Launcher 與 3 個 Worker，並透過 `mpirun` 實際啟動 3 個 MPI Rank。
 
-以下成功結果是保存的歷史 evidence，不代表目前 cluster 即時狀態。Template request CPU，三個 worker Pods 不等於三台實體 nodes，也不代表 GPU benchmark；主線目前驗證到 rank execution，尚無 completion／result 回收閉環。
+以下成功結果是保存的歷史 evidence，不代表目前 cluster 即時狀態。Template request CPU，三個 worker Pods 不等於三台實體 nodes，也不代表 GPU benchmark；本輪另已驗證手動觸發的 completion／result 回收，仍缺 background watch 與持續 reconciliation。
 
 ---
 
@@ -49,7 +51,7 @@ MPI Launcher
 
 ## Demo prerequisite
 
-以下指令從 repo 根目錄執行。先確認 kubectl context 指向目標 cluster（本次成功環境為 `hpc-gpu-sg`），且 `hpc-platform-dev` namespace、JobSet／Kueue controllers、`gpu-local-queue` 與其 ClusterQueue／ResourceFlavor／Topology 已建立。API image 需要可從 Artifact Registry 拉取；目前 dev tag 為 `jobset-dispatch-v4`。
+以下指令從 repo 根目錄執行。先確認 kubectl context 指向目標 cluster（本次成功環境為 `hpc-gpu-sg`），且 `hpc-platform-dev` namespace、JobSet／Kueue controllers、`gpu-local-queue` 與其 ClusterQueue／ResourceFlavor／Topology 已建立。API image 需要可從 Artifact Registry 拉取；本輪 lifecycle 驗收使用 `hpc-api:mpi-collector-20260921-v1`。
 
 平台 overlay 包含 API、Redis、PostgreSQL，以及 API 使用的 ServiceAccount／Role／RoleBinding；不會建立上述 controllers、queues 或 MPI SSH Secret。它使用本地 Helm charts 與跨目錄檔案引用，因此需要 Helm CLI，以及以下 render flags：
 
@@ -118,7 +120,7 @@ curl -X POST \
   -d '{"benchmark":"mpi"}'
 ```
 
-以下保留成功執行當時的原始回應；目前 API 的 `next_step` 已改為 `Check job status at GET /jobs/<job_id>`，其他歷史 evidence 不變。`GET /jobs` 也可列出工作；MPI 狀態目前在 dispatch 後為 `submitted`，尚未同步 JobSet 的最終完成狀態。
+以下保留成功執行當時的原始回應；目前 API 的 `next_step` 已改為 `Check job status at GET /jobs/<job_id>`，其他歷史 evidence 不變。2026-09-21 新增手動 `POST /worker/collect-mpi`，已另以 [API lifecycle evidence](../evidence/mpi-api-lifecycle-20260921.json) 驗證 `submitted` → `completed`、ranks 與 PostgreSQL status 回寫。
 
 ```json
 {

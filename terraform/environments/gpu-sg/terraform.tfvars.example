@@ -1,0 +1,17 @@
+# 複製為 terraform.tfvars；該檔已被 .gitignore 排除。
+project_id = "project-4b82f780-0a12-4087-b94"
+
+# 建立額外 rehearsal cluster 時修改名稱，避免碰到現有主環境。
+cluster_name = "hpc-gpu-sg-rehearsal"
+
+# GPU node 會產生成本；純 IaC 驗證可保留 0，實際 GPU 驗收再設為 1。
+gpu_node_count = 0
+
+# 隔離 GPU rehearsal 可設 true 使用 Spot 配額；CPU-only 時此值不生效。
+gpu_spot = false
+
+# rehearsal 完成後需要 destroy；主環境維持預設 true。
+deletion_protection = false
+
+# 在隔離環境實測 default deny／explicit allow；主環境預設維持 false。
+enable_network_policy = true
