@@ -37,7 +37,7 @@ TTFT 是首 token 等待時間，TPOT 是後續每個 output token 的平均時�
 
 在這三個測點中，latency 從 16 → 32 就已增加；到 64 時 TTFT 增幅明顯高於 throughput 增幅，吞吐量仍提高，但首 token 等待代價大幅上升。若重視 responsiveness，32 是值得進一步驗證的折衷測點，不能在沒有 latency SLO 的情況下宣稱它是最佳設定。
 
-[歷史分析](../history/20260922-before-current/week15/Day6-Performance-Analyzer.md.txt) 與 analyzer 以 latency 增幅是否超過 throughput 增幅判定 `SATURATION_CANDIDATE`。這是瓶頸候選訊號，不是單憑三筆數據就證明 GPU 硬體飽和。
+[歷史分析](../history/20260922-before-current/week15/Day6-Performance-Analyzer.md) 與 analyzer 以 latency 增幅是否超過 throughput 增幅判定 `SATURATION_CANDIDATE`。這是瓶頸候選訊號，不是單憑三筆數據就證明 GPU 硬體飽和。
 
 限制：每個 concurrency 只有本組保存的單次結果，時間戳不同，並非重複試驗的平均或 confidence interval。JSON 另有 `max_concurrent_requests`（32／64／99），與設定欄位不同；本報告未將它當作 concurrency，也未替其差異推定原因。結論只適用於這個模型、token workload 與歷史 serving 環境，不能泛化成所有模型／GPU 的容量建議。
 
@@ -53,11 +53,11 @@ TTFT 是首 token 等待時間，TPOT 是後續每個 output token 的平均時�
 
 | 領域 | 已保存結果 | 解讀與限制 |
 |---|---|---|
-| PyTorch DDP／profiler | [DDP 紀錄](../history/20260922-before-current/week16/day2-pytorch-ddp.md.txt)、[profiler 分析](../../Day6-Distributed-Training-Bottleneck-Analysis.md)：1 worker 5813.76 samples/s；2 workers profiling run 4753.08 samples/s；`aten::addmm` 33.78%、`aten::mm` 33.56% | Single-node CPU／Gloo；operator 摘錄支持 matrix compute 佔主要 CPU 時間。不同 CPU limits 與 profiling 條件，不視為嚴格同條件 scaling；不是 multi-node GPU／NCCL scaling |
+| PyTorch DDP／profiler | [DDP 紀錄](../history/20260922-before-current/week16/day2-pytorch-ddp.md)、[profiler 分析](../../Day6-Distributed-Training-Bottleneck-Analysis.md)：1 worker 5813.76 samples/s；2 workers profiling run 4753.08 samples/s；`aten::addmm` 33.78%、`aten::mm` 33.56% | Single-node CPU／Gloo；operator 摘錄支持 matrix compute 佔主要 CPU 時間。不同 CPU limits 與 profiling 條件，不視為嚴格同條件 scaling；不是 multi-node GPU／NCCL scaling |
 | NCCL transport | [Raw log](../../benchmark/results/week16-day4-nccl-single-gpu.txt)、[fallback demo](../demo/nccl-transport-fallback-demo.md)：`NET/IB : No device found` → `Using network Socket` → `Init COMPLETE` | 1 GPU／1 rank／1 node；沒有 RDMA hardware，僅證明 transport discovery／fallback 與初始化。無 inter-node NCCL traffic、ib_write_bw 或 TCP vs RDMA performance comparison |
-| DCGM／GPU monitoring | [Dashboard 歷史紀錄](../history/20260922-before-current/week14/Day6-gpu-dashboard-establish-and-gpuworkload-verification.md.txt)：utilization 約 0% → 100%、temperature 約 51°C → 60°C、VRAM used 0 → 約 256 MiB | 歷史 P100 環境的 workload／metrics 對照；不是目前 hpc-gpu-sg L4 dashboard 結果，GPU utilization 上升也不等於 application throughput 最佳化 |
+| DCGM／GPU monitoring | [Dashboard 歷史紀錄](../history/20260922-before-current/week14/Day6-gpu-dashboard-establish-and-gpuworkload-verification.md)：utilization 約 0% → 100%、temperature 約 51°C → 60°C、VRAM used 0 → 約 256 MiB | 歷史 P100 環境的 workload／metrics 對照；不是目前 hpc-gpu-sg L4 dashboard 結果，GPU utilization 上升也不等於 application throughput 最佳化 |
 
-DDP 的另一份 [scaling 紀錄](../history/20260922-before-current/week16/day5-distributed-training-scaling.md.txt) 保存 2 workers 5549.91 samples/s，與上表 profiling run 是不同紀錄，不能互相替換。此處保留來源與測試條件，不將差值歸因為單一已證實瓶頸。
+DDP 的另一份 [scaling 紀錄](../history/20260922-before-current/week16/day5-distributed-training-scaling.md) 保存 2 workers 5549.91 samples/s，與上表 profiling run 是不同紀錄，不能互相替換。此處保留來源與測試條件，不將差值歸因為單一已證實瓶頸。
 
 ## 結果使用邊界
 

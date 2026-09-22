@@ -1,13 +1,13 @@
-<!-- current-curriculum: 2026-09-22 -->
+<!-- readable-curriculum: 2026-09-22 -->
 # Week8 Day6 — Helm 與 Kustomize 整合
 
 [上一課](<Day5_Kustomize_Foundation.md>) · [本週目錄](README.md) · [下一課](<Day7-GitOps_Multi_Environment_Integration.md>) · [全程導讀](../learning-guide.md)
 
 版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-## 先備知識與本課目標
+## 閱讀方式：不用再開 VM 或做本機測試
 
-先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Helm 與 Kustomize 整合」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
+先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
 
 ## 概念解說
 
@@ -46,33 +46,338 @@ def ready_nodes(nodes, pool, gpu=False):
 def inspect(context, require_gpu=True):
 ```
 
-## 閱讀與練習
+## 已有結果與解讀
 
-本次主部署鏈的讀法：
+### 這一課的結果直接看哪裡
 
-1. `kustomization.yaml` 的 `helmCharts` 選 api／redis／postgres charts，`valuesFile` 指向主環境覆寫。
-2. chart 的模板把 values 展開成資源；此時仍只是文字／物件內容。
-3. Kustomize 的 `patches` 對被 target 選中的資源增加 nodeSelector／serviceAccount 等差異。
-4. `scripts/platform.py render` 只產生結果；`scripts.deploy_platform.py` 才有 server dry-run／apply／rollout 步驟。
+本課原本的完整教學、程式示例、結果與解讀已放回本頁下方，不再用縮短版取代它。命令是當時操作或語法示例，**不是要求你現在再執行**。
 
-離線練習可用 `PYTHONPATH=. .venv/bin/python scripts/platform.py render` 印出完整主 overlay。需要本機 kubectl、Helm 和 chart；不會發起 apply。本次渲染為 14 個物件，含 api-worker、Redis PVC 和 API HPA，但不含 controllers／queue／runtime Secrets，這些由 bootstrap 前置處理。
+概念例子的輸出只說明程式／工具行為，不冒充 VM 實測；原文沒留下的實測數值就維持未知，不用預期值補造。舊環境名稱、日期、成功與失敗照原文保留。
 
-1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
-2. 讀 platform.render 的完整參數，使用離線 render 檢視 Deployment／StatefulSet／PVC，最後才對照 deploy 如何套用和等待 rollout。
-3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
+## 原始完整教材與當時輸出
 
-```bash
-sed -n '29,52p' 'scripts/platform.py'
+以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
+
+另有[可渲染的原版 Markdown](<../history/20260922-before-current/week8/Day6-Helm-Kustomize-Integration.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+
+<!-- original-week-body -->
+<!-- current-learning-map -->
+> **版本同步（2026-09-22）**：下方正文保留本日原始學習／實驗紀錄，不作為現行環境操作手冊。
+> **本週現況**：現行 overlay 是 gpu-sg-platform；Argo dev 仍指 overlays/dev，不能宣稱主環境已完成 GitOps 對齊。
+> **閱讀順序**：先學本文基礎，再讀[Week8 現行對照與檢核](../learning-guide.md#week8)及[對應現行入口](../../kustomize/overlays/gpu-sg-platform/kustomization.yaml)。
+> **操作提醒**：舊 IP、context、映像及 apply／destroy 指令不可直接照跑；先確認目標環境與現行 runbook。
+<!-- /current-learning-map -->
+
+# Week8 Day6 - Helm + Kustomize Integration
+
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [helm/api/Chart.yaml](../../helm/api/Chart.yaml)
+- [helm/api/values-dev.yaml](../../helm/api/values-dev.yaml)
+- [helm/api/values.yaml](../../helm/api/values.yaml)
+- [kustomize/overlays/dev/deployment-patch.yaml](../../kustomize/overlays/dev/deployment-patch.yaml)
+- [kustomize/overlays/dev/kustomization.yaml](../../kustomize/overlays/dev/kustomization.yaml)
+
+---
+
+## 學習目標
+
+完成 Helm 與 Kustomize 整合，建立可支援 Dev / Stage / Prod 的多環境部署流程。
+
+---
+
+# 完成成果
+
+✅ API Helm Chart
+
+✅ Redis Helm Chart
+
+✅ PostgreSQL Helm Chart
+
+✅ Kustomize Dev / Stage / Prod Overlay
+
+✅ Helm + Kustomize Integration
+
+✅ Dev 環境成功部署
+
+---
+
+# 專案架構
+
+```
+helm/
+├── api/
+├── redis/
+└── postgres/
+
+kustomize/
+└── overlays/
+    ├── dev/
+    ├── stage/
+    └── prod/
 ```
 
-這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
+---
 
-## 怎樣判斷自己讀懂了
+# 部署流程
 
-- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
-- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
-- 能從[本週證據／實作對照](<../evidence/platform-deployment-20260921.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
+```
+Developer
+      │
+      ▼
+kustomize/overlays/dev
+      │
+      ▼
+Helm Render
+      │
+      ├── api
+      ├── redis
+      └── postgres
+      │
+      ▼
+Kustomize Patch
+      │
+      ▼
+kubectl apply
+      │
+      ▼
+Kubernetes
+```
 
-## 舊版與新版本的關係
+---
 
-[改寫前完整教材快照](<../history/20260922-before-current/week8/Day6-Helm-Kustomize-Integration.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。
+# Helm 實際讀取順序
+
+```
+Chart.yaml
+      ↓
+values.yaml
+      ↓
+values-dev.yaml
+      ↓
+templates/*
+      ↓
+Render YAML
+```
+
+---
+
+# Kustomize 做什麼？
+
+Overlay 不建立 Resource。
+
+Overlay 只負責：
+
+- 選擇 Helm Chart
+- 指定 Namespace
+- 套用 Patch
+- 套用不同環境設定
+
+例如：
+
+- replicas
+- APP_ENV
+- host
+
+---
+
+# Chart 職責
+
+## API
+
+- Deployment
+- Service
+- ConfigMap
+- HPA
+- Ingress
+
+## Redis
+
+- Deployment
+- Service
+
+## PostgreSQL
+
+- StatefulSet
+- Service
+- Secret
+- PVC
+
+---
+
+# 部署指令
+
+```bash
+kubectl kustomize kustomize/overlays/dev \
+  --enable-helm \
+  --load-restrictor LoadRestrictionsNone \
+| kubectl apply -f -
+```
+
+---
+
+# 今天踩到的重要坑
+
+### 1. Helm Template 不要寫死 Namespace
+
+❌
+
+```yaml
+namespace: hpc-platform
+```
+
+✅
+
+```yaml
+namespace: {{ .Release.Namespace }}
+```
+
+---
+
+### 2. Patch 必須匹配正確 Namespace
+
+否則：
+
+```
+no resource matches strategic merge patch
+```
+
+---
+
+### 3. Secret 不要重複建立
+
+PostgreSQL Chart：
+
+建立 Secret
+
+API Chart：
+
+只引用 Secret
+
+---
+
+### 4. Dev 不使用 NodePort
+
+避免：
+
+```
+provided port is already allocated
+```
+
+Dev 使用：
+
+```
+ClusterIP
+```
+
+---
+
+### 5. imagePullPolicy: Never
+
+代表：
+
+Kubernetes 不會下載 Image。
+
+新的 Image Tag 必須：
+
+```
+docker tag
+
+↓
+
+docker save
+
+↓
+
+k3s ctr images import
+```
+
+否則：
+
+```
+ErrImageNeverPull
+```
+
+---
+
+### 6. replicaCount 不等於最終 Pod 數
+
+```
+Deployment replicas
+
+↓
+
+HPA
+
+↓
+
+依 CPU 自動 Scale
+```
+
+Deployment 的 replicas 只是初始值。
+
+---
+
+# Day6 完成後架構
+
+```
+Developer
+      │
+      ▼
+Kustomize
+      │
+      ▼
+Helm
+      │
+      ▼
+Render YAML
+      │
+      ▼
+Kubernetes
+```
+
+---
+
+# Interview Q&A
+
+## Q1：Helm 與 Kustomize 的角色差異？
+
+**A：**
+
+Helm 負責產生（Render）YAML。
+
+Kustomize 負責依照不同環境修改 Render 後的 YAML。
+
+---
+
+## Q2：為什麼要拆成 api、redis、postgres 三個 Chart？
+
+**A：**
+
+因為每個服務可以獨立維護、升級、重複使用，符合企業實務。
+
+---
+
+## Q3：為什麼 Helm Template 不應寫死 Namespace？
+
+**A：**
+
+同一個 Chart 要能部署到 dev、stage、prod，不應綁定單一 Namespace。
+
+---
+
+## Q4：Deployment 的 replicas 為什麼最後會變？
+
+**A：**
+
+Deployment 的 replicas 是初始值，HPA 會依 CPU 使用率動態調整 Pod 數量。
+
+---
+
+## Q5：為什麼 Dev 使用 ClusterIP，而不是 NodePort？
+
+**A：**
+
+Dev 已經透過 Ingress 對外提供服務，使用 ClusterIP 可避免 NodePort 衝突並更符合實務部署方式。

@@ -1,13 +1,13 @@
-<!-- current-curriculum: 2026-09-22 -->
+<!-- readable-curriculum: 2026-09-22 -->
 # Week10 Day6 — CI 建置映像
 
 [上一課](<Day5-Pytest-MockCI-Integration.md>) · [本週目錄](README.md) · [下一課](<Day7-GitHub-Actions-GitOps-自動部署-ArgoCD.md>) · [全程導讀](../learning-guide.md)
 
 版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-## 先備知識與本課目標
+## 閱讀方式：不用再開 VM 或做本機測試
 
-先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「CI 建置映像」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
+先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
 
 ## 概念解說
 
@@ -46,24 +46,232 @@ docker build 產生 image，push 才上 registry，部署再引用 tag 或 diges
       - name: Commit GitOps Changes
 ```
 
-## 閱讀與練習
+## 已有結果與解讀
 
-1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
-2. 讀 build 的 -f 與 context，找 tag 使用 github.sha 的位置；將 build 成功、push 成功、rollout 成功列為不同驗收點。
-3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
+### 已保存的本機驗證結果
+
+2026-09-22 教材改寫時，在此 repo 開發環境執行並記錄：`53 passed`；三個 Helm charts lint 通過，完整主 overlay 離線渲染出 14 個物件。這是本機測試與渲染結果，**不是遠端 GitHub Actions 整條 CI 成功，也不是新雲端驗收**。
+
+目前 CI 改的是 values-dev.yaml，主 overlay 使用獨立 api-values.yaml，因此不能說 push 一定更新主展示。下方完整保留原本課程與當時輸出；不要求你再跑一次 pytest。
+
+## 原始完整教材與當時輸出
+
+以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
+
+另有[可渲染的原版 Markdown](<../history/20260922-before-current/week10/Day6-Docker-Build-inCI.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+
+<!-- original-week-body -->
+<!-- current-learning-map -->
+> **版本同步（2026-09-22）**：下方正文保留本日原始學習／實驗紀錄，不作為現行環境操作手冊。
+> **本週現況**：現行測試入口為 pytest tests；mock／CI 與實機證據分開。GitOps 尚未對齊主 overlay。
+> **閱讀順序**：先學本文基礎，再讀[Week10 現行對照與檢核](../learning-guide.md#week10)及[對應現行入口](../../tests/test_worker.py)。
+> **操作提醒**：舊 IP、context、映像及 apply／destroy 指令不可直接照跑；先確認目標環境與現行 runbook。
+<!-- /current-learning-map -->
+
+# Week10 Day6 - Docker Build in CI
+
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [.github/workflows/ci.yml](../../.github/workflows/ci.yml)：CI／映像建置與 GitOps 更新
+- [docker/Dockerfile](../../docker/Dockerfile)：容器映像建置
+- [requirements.txt](../../requirements.txt)
+
+---
+
+## 今日目標
+
+- 建立 Production 等級 Dockerfile
+- 建立 .dockerignore
+- 將 Docker Build 整合至 GitHub Actions
+- 驗證專案可成功建置 Docker Image
+
+---
+
+# 今日成果
+
+- 建立 `.dockerignore`
+- 優化 Dockerfile
+- 使用非 root User 執行 Container
+- 新增 Python Runtime Environment Variables
+- GitHub Actions 新增 Docker Build
+- Docker Image Build 成功
+
+---
+
+# Dockerfile 優化
+
+新增：
+
+- 非 root User
+- `PYTHONDONTWRITEBYTECODE`
+- `PYTHONUNBUFFERED`
+- 升級 pip
+- Layer 最佳化
+- `COPY --chown`
+- `EXPOSE 8000`
+
+---
+
+# .dockerignore
+
+用途：
+
+避免不必要檔案進入 Build Context。
+
+例如：
+
+- .git
+- .venv
+- docs
+- tests
+- terraform
+- __pycache__
+- *.tfstate
+
+減少 Build 時間與 Image 體積。
+
+---
+
+# Docker Build
+
+Workflow 新增：
 
 ```bash
-sed -n '86,109p' '.github/workflows/ci.yml'
+docker build \
+    -f docker/Dockerfile \
+    -t hpc-api:ci \
+    .
 ```
 
-這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
+作用：
 
-## 怎樣判斷自己讀懂了
+驗證 Dockerfile 能成功建置 Image。
 
-- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
-- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
-- 能從[本週證據／實作對照](<../../tests/test_worker.py>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
+---
 
-## 舊版與新版本的關係
+# Docker Build Context
 
-[改寫前完整教材快照](<../history/20260922-before-current/week10/Day6-Docker-Build-inCI.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。
+```text
+docker build .
+```
+
+`.`
+
+代表：
+
+目前專案目錄。
+
+Docker 只能 COPY Build Context 內的檔案。
+
+因此：
+
+```
+COPY requirements.txt .
+```
+
+才能正常找到檔案。
+
+---
+
+# CI Workflow
+
+Git Push
+
+↓
+
+GitHub Actions
+
+↓
+
+Python Syntax Check
+
+↓
+
+Ruff
+
+↓
+
+Pytest
+
+↓
+
+Docker Build
+
+↓
+
+PASS
+
+---
+
+# 今日遇到的問題
+
+### Dockerfile Parse Error
+
+原因：
+
+CMD JSON Array 寫法錯誤。
+
+解法：
+
+改為合法 Docker CMD Exec Form。
+
+---
+
+### Docker Build 成功
+
+成功於：
+
+- 本機 Build
+- GitHub Actions Build
+
+代表 Dockerfile 可於全新環境正常建置。
+
+---
+
+# Build vs Deploy
+
+Build
+
+- 建立 Docker Image
+- 驗證 Dockerfile
+- 驗證依賴
+- 驗證專案可封裝
+
+Deploy
+
+- 將 Image 部署至 Kubernetes
+- Rolling Update
+- 提供服務
+
+Day6 僅完成 Build。
+
+---
+
+# 今日重點
+
+- Docker Build 為 CI 的重要驗證流程。
+- .dockerignore 可減少 Build Context。
+- Dockerfile 採用非 root User 提升安全性。
+- GitHub Actions 已完成 Docker Image 自動建置。
+
+---
+
+# Interview Q&A
+
+### Q1：為什麼 CI 要做 Docker Build？
+
+確認專案可在全新的環境成功建置成 Docker Image，避免部署時才發現 Dockerfile、依賴或 COPY 路徑問題。
+
+---
+
+### Q2：.dockerignore 的用途？
+
+限制 Build Context，避免無關檔案進入 Docker Build，降低建置時間、減少 Image 大小，並避免將敏感或開發環境檔案打包。
+
+---
+
+# 本日總結
+
+完成 Production 等級 Dockerfile 與 .dockerignore，成功將 Docker Build 整合至 GitHub Actions，建立從程式碼驗證到 Docker Image 建置的完整 CI 流程。

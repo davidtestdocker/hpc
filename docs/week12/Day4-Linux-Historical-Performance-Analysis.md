@@ -1,13 +1,13 @@
-<!-- current-curriculum: 2026-09-22 -->
+<!-- readable-curriculum: 2026-09-22 -->
 # Week12 Day4 — 歷史監控與時間對齊
 
 [上一課](<Day3-Linux-Disk-Performance-Analysis.md>) · [本週目錄](README.md) · [下一課](<Day5-Linux-CPU-Benchmark-with-sysbench.md>) · [全程導讀](../learning-guide.md)
 
 版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-## 先備知識與本課目標
+## 閱讀方式：不用再開 VM 或做本機測試
 
-先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「歷史監控與時間對齊」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
+先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
 
 ## 概念解說
 
@@ -20,9 +20,9 @@
 本課對照：[docs/evidence/README.md](<../evidence/README.md>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```text
-| Linux Performance | [CPU analysis](../history/20260922-before-current/week12/Day1-Linux-CPU-Performance-Analysis.md.txt)、[perf](../history/20260922-before-current/week12/Day6-Linux-CPU-Profiling-with-perf.md.txt)、[strace](../history/20260922-before-current/week12/Day7-Linux-System-Call-Analysis-with-strace.md.txt)、[CPU report](../../benchmark/cpu/results/cpu_benchmark_20260810.md) | Linux CPU／process／system-call 診斷紀錄與 stress-ng CPU saturation baseline | 歷史環境的輸出／報告；不是主 MPI job 的自動 profiling 或跨機型可直接比較的結果 |
-| RBAC / Security | [API JobSet RBAC](../../k8s/security/api-jobset-rbac.yaml)、[RBAC 驗證](../history/20260922-before-current/week20/day1-rbac-serviceaccount-least-privilege.md.txt)、[Pod hardening](../history/20260922-before-current/week20/day2-pod-image-secret-security.md.txt)、[NetworkPolicy 實測](network-policy-validation-20260921.json) | API namespace-scoped JobSet 權限設定；歷史 benchmark-runner 允許／拒絕；隔離 Calico GKE ingress baseline／allow／deny／recovery | benchmark-runner 與 api-jobset-runner 是不同身份；NetworkPolicy 實測不在主 cluster，未涵蓋 egress、跨 namespace 或全平台 hardening |
-| Terraform / GitOps | [Terraform 證據](terraform-gpu-sg-20260921.md)、[CPU-only bootstrap 驗收](cpu-bootstrap-acceptance-20260921.json)、[gpu-sg root](../../terraform/environments/gpu-sg/main.tf)、[歷史 GitOps 紀錄](../history/20260922-before-current/week10/Day7-GitHub-Actions-GitOps-自動部署-ArgoCD.md.txt) | 主環境 import 零 drift；全新 CPU-only cluster 完成 controllers／Secrets／queues／平台 bootstrap、health／RBAC／PVC 驗收及銷毀 | 不涵蓋全新 GPU cluster MPI 執行；缺 remote state；Argo dev 仍指舊 overlays/dev |
+| Linux Performance | [CPU analysis](../history/20260922-before-current/week12/Day1-Linux-CPU-Performance-Analysis.md)、[perf](../history/20260922-before-current/week12/Day6-Linux-CPU-Profiling-with-perf.md)、[strace](../history/20260922-before-current/week12/Day7-Linux-System-Call-Analysis-with-strace.md)、[CPU report](../../benchmark/cpu/results/cpu_benchmark_20260810.md) | Linux CPU／process／system-call 診斷紀錄與 stress-ng CPU saturation baseline | 歷史環境的輸出／報告；不是主 MPI job 的自動 profiling 或跨機型可直接比較的結果 |
+| RBAC / Security | [API JobSet RBAC](../../k8s/security/api-jobset-rbac.yaml)、[RBAC 驗證](../history/20260922-before-current/week20/day1-rbac-serviceaccount-least-privilege.md)、[Pod hardening](../history/20260922-before-current/week20/day2-pod-image-secret-security.md)、[NetworkPolicy 實測](network-policy-validation-20260921.json) | API namespace-scoped JobSet 權限設定；歷史 benchmark-runner 允許／拒絕；隔離 Calico GKE ingress baseline／allow／deny／recovery | benchmark-runner 與 api-jobset-runner 是不同身份；NetworkPolicy 實測不在主 cluster，未涵蓋 egress、跨 namespace 或全平台 hardening |
+| Terraform / GitOps | [Terraform 證據](terraform-gpu-sg-20260921.md)、[CPU-only bootstrap 驗收](cpu-bootstrap-acceptance-20260921.json)、[gpu-sg root](../../terraform/environments/gpu-sg/main.tf)、[歷史 GitOps 紀錄](../history/20260922-before-current/week10/Day7-GitHub-Actions-GitOps-自動部署-ArgoCD.md) | 主環境 import 零 drift；全新 CPU-only cluster 完成 controllers／Secrets／queues／平台 bootstrap、health／RBAC／PVC 驗收及銷毀 | 不涵蓋全新 GPU cluster MPI 執行；缺 remote state；Argo dev 仍指舊 overlays/dev |
 | L4 Causal LM / CUDA Profiling | [9/22 報告](../performance/causal-lm-l4-20260922.md)、[原始證據與 hashes](../../benchmark/results/causal-lm-20260922/evidence.json) | 13M causal LM、文字 byte tokens、交錯三次量測、兩份 CUDA traces、同步 nvidia-smi 遙測 | 單 L4 time-sharing；非 pretrained LLM 品質或多 GPU 結論；獨立 runner 尚未接 MPI API |
 
 ## Capability Matrix
@@ -46,24 +46,399 @@
 | Troubleshooting | Kueue、JobSet、Ray、Slurm、NCCL failure-domain 定位 | Implemented · Validated · Documented · Partial | 有 failure scripts／hooks 與紀錄；單 GPU node 無 node failover，Slurm 未驗證恢復，非完整 HA 認證 |
 ```
 
-## 閱讀與練習
+## 已有結果與解讀
 
-1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
-2. 讀證據索引中的 Linux 與監控條目，為一個結果標出環境、時間與 workload；缺欄位時明說缺失，不補猜測數字。
-3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
+### 這一課的結果直接看哪裡
 
-```bash
-sed -n '94,117p' 'docs/evidence/README.md'
+本課原本的完整教學、程式示例、結果與解讀已放回本頁下方，不再用縮短版取代它。命令是當時操作或語法示例，**不是要求你現在再執行**。
+
+概念例子的輸出只說明程式／工具行為，不冒充 VM 實測；原文沒留下的實測數值就維持未知，不用預期值補造。舊環境名稱、日期、成功與失敗照原文保留。
+
+## 原始完整教材與當時輸出
+
+以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
+
+另有[可渲染的原版 Markdown](<../history/20260922-before-current/week12/Day4-Linux-Historical-Performance-Analysis.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+
+<!-- original-week-body -->
+<!-- current-learning-map -->
+> **版本同步（2026-09-22）**：下方正文保留本日原始學習／實驗紀錄，不作為現行環境操作手冊。
+> **本週現況**：Linux 診斷方法繼續適用；舊 perf／strace／CPU 數據不代表主 MPI 的自動 profiling。
+> **閱讀順序**：先學本文基礎，再讀[Week12 現行對照與檢核](../learning-guide.md#week12)及[對應現行入口](../performance/performance-report.md)。
+> **操作提醒**：舊 IP、context、映像及 apply／destroy 指令不可直接照跑；先確認目標環境與現行 runbook。
+<!-- /current-learning-map -->
+
+# Week12 Day4 - Linux Historical Performance Analysis
+
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[performance-report](../performance/performance-report.md)。
+
+---
+
+## 目標
+
+本章節學習使用 `sar`（System Activity Reporter）分析 Linux 系統歷史效能資料，了解 `sar` 的工作原理，以及如何查看 CPU、Memory、Disk、Network 的歷史資訊。
+
+完成本章後，可以回答：
+
+- `sar` 是什麼？
+- `sar` 與 `top` 有什麼差異？
+- `sar` 的資料從哪裡來？
+- `sysstat` 與 `sadc` 的角色是什麼？
+- 為什麼 `sar` 看不到剛剛幾秒鐘前的 CPU 尖峰？
+
+---
+
+# 今日學習重點
+
+- 認識 Historical Performance Analysis
+- 了解 `sar` 工作原理
+- 了解 `sysstat`、`sadc`
+- systemd timer
+- `sar -u`
+- `sar -P ALL`
+- Production Incident Analysis
+
+---
+
+# Lab Environment
+
+OS
+
+```text
+Ubuntu 24.04
 ```
 
-這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
+CPU
 
-## 怎樣判斷自己讀懂了
+```text
+4 vCPU
+```
 
-- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
-- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
-- 能從[本週證據／實作對照](<../../benchmark/cpu/results/cpu_benchmark_20260810.md>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
+Memory
 
-## 舊版與新版本的關係
+```text
+16GB
+```
 
-[改寫前完整教材快照](<../history/20260922-before-current/week12/Day4-Linux-Historical-Performance-Analysis.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。
+---
+
+# 為什麼需要 sar？
+
+前幾天學過：
+
+- top
+- free
+- vmstat
+- iostat
+
+這些工具都有共同特性：
+
+> **只能查看目前系統狀態。**
+
+例如：
+
+今天上午收到通知：
+
+```
+昨天晚上 22:30 API Timeout
+```
+
+登入主機：
+
+```bash
+top
+```
+
+看到：
+
+```
+CPU Idle 95%
+```
+
+並不能代表：
+
+```
+昨天晚上 CPU 沒有滿載。
+```
+
+因此需要：
+
+```
+sar
+```
+
+查看歷史資料。
+
+---
+
+# sar 是什麼？
+
+sar
+
+(System Activity Reporter)
+
+屬於：
+
+```
+sysstat
+```
+
+工具之一。
+
+用途：
+
+讀取 Linux 歷史效能資料。
+
+---
+
+# sar 的工作流程
+
+```
+systemd timer
+        │
+        ▼
+sysstat-collect.timer
+        │
+        ▼
+sysstat-collect.service
+        │
+        ▼
+sadc
+        │
+        ▼
+/var/log/sysstat/saXX
+        │
+        ▼
+sar
+```
+
+重點：
+
+- `sar` 不負責收集資料。
+- `sadc` 才是真正收集資料。
+- `sar` 只是讀取 `saXX`。
+
+---
+
+# Step1：確認 sar
+
+查看版本：
+
+```bash
+sar -V
+```
+
+---
+
+# Step2：確認 sysstat
+
+查看：
+
+```bash
+systemctl status sysstat
+```
+
+若尚未啟用：
+
+```bash
+sudo systemctl enable --now sysstat
+```
+
+---
+
+# Step3：確認 Timer
+
+```bash
+systemctl list-timers | grep sysstat
+```
+
+Ubuntu 24.04：
+
+```
+sysstat-collect.timer
+```
+
+代表：
+
+系統定期收集資料。
+
+---
+
+# Step4：查看歷史資料
+
+查看：
+
+```bash
+ls -lh /var/log/sysstat/
+```
+
+例如：
+
+```
+sa04
+```
+
+代表：
+
+本月第 4 天收集的資料。
+
+---
+
+# Ubuntu 預設收集頻率
+
+查看：
+
+```bash
+systemctl cat sysstat-collect.timer
+```
+
+重要設定：
+
+```text
+OnCalendar=*:00/10
+```
+
+代表：
+
+```
+每 10 分鐘
+```
+
+收集一次。
+
+因此：
+
+```
+sar
+```
+
+較適合：
+
+- Production Trend
+- Incident Analysis
+
+而不是：
+
+```
+幾秒鐘內的 CPU 尖峰
+```
+
+---
+
+# Step5：查看 CPU
+
+```bash
+sar -u
+```
+
+重要欄位：
+
+| 欄位 | 說明 |
+|------|------|
+| %user | User Space CPU |
+| %system | Kernel CPU |
+| %iowait | Waiting Disk |
+| %idle | CPU Idle |
+
+---
+
+# Step6：查看每顆 CPU
+
+```bash
+sar -P ALL
+```
+
+與：
+
+```
+mpstat
+```
+
+不同：
+
+- mpstat：即時
+- sar：歷史
+
+---
+
+# sar 與其他工具
+
+| 工具 | 用途 |
+|------|------|
+| top | 即時 CPU / Memory |
+| free | 即時 Memory |
+| vmstat | 即時 CPU / Memory / IO |
+| iostat | 即時 Disk |
+| pidstat | 即時 Process |
+| sar | 歷史效能分析 |
+
+---
+
+# Production Incident
+
+例如：
+
+```
+昨天晚上 22:30 API Timeout
+```
+
+分析流程：
+
+```
+確認時間
+      │
+      ▼
+sar
+      │
+CPU 是否異常？
+      │
+      ▼
+Memory 是否異常？
+      │
+      ▼
+Disk 是否異常？
+      │
+      ▼
+Network 是否異常？
+      │
+      ▼
+若需要即時分析
+      │
+      ▼
+top
+pidstat
+perf
+strace
+```
+
+---
+
+# 今日重點
+
+- `sar` 是歷史分析工具。
+- `sar` 不負責收集資料。
+- `sadc` 才是真正收集資料。
+- Ubuntu 預設透過 systemd timer 每 10 分鐘收集一次。
+- `sar` 適合分析長時間趨勢，不適合分析幾秒鐘的尖峰。
+
+---
+
+# Interview
+
+## Q1：`sar` 與 `top` 有什麼差異？
+
+**答：**
+
+`top` 只能查看目前系統狀態；`sar` 可以讀取 `sysstat` 收集的歷史資料，因此適合分析過去某個時間點的 CPU、Memory、Disk、Network 狀況。
+
+---
+
+## Q2：`sar` 的資料是哪裡來的？
+
+**答：**
+
+`sar` 本身不會收集資料，而是讀取 `sysstat` 使用 `sadc` 定期收集並寫入 `/var/log/sysstat/saXX` 的歷史效能資料。在 Ubuntu 24.04 中，預設由 `sysstat-collect.timer` 每 10 分鐘觸發一次資料收集。

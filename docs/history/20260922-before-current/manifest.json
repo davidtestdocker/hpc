@@ -4,831 +4,1107 @@
   "files": [
     {
       "source": "docs/week1/day1-linux-process.md",
-      "archive": "docs/history/20260922-before-current/week1/day1-linux-process.md.txt",
-      "sha256": "823023966035ec9b7c5675fce3c5eb1fb9e1a80878bc5df26bf8108cbf789755",
-      "bytes": 5194
+      "archive": "docs/history/20260922-before-current/week1/day1-linux-process.md",
+      "sha256": "146afc3b81cd51b0b238e558c3fb5c29af78667d4365a0d940e3b49c01cb425c",
+      "bytes": 5218,
+      "original_body_sha256": "823023966035ec9b7c5675fce3c5eb1fb9e1a80878bc5df26bf8108cbf789755",
+      "original_body_bytes": 5194
     },
     {
       "source": "docs/week1/day2-cpu-scheduler.md",
-      "archive": "docs/history/20260922-before-current/week1/day2-cpu-scheduler.md.txt",
-      "sha256": "dd4fb8abf63da70a195370b6c00d003cc5ab1ad3830a50013b2b44008eb7f7b1",
-      "bytes": 2972
+      "archive": "docs/history/20260922-before-current/week1/day2-cpu-scheduler.md",
+      "sha256": "9132e51a9d28846e004d536bae099c921db9b7f1ed51f2ba4ca34f41b7277753",
+      "bytes": 2996,
+      "original_body_sha256": "dd4fb8abf63da70a195370b6c00d003cc5ab1ad3830a50013b2b44008eb7f7b1",
+      "original_body_bytes": 2972
     },
     {
       "source": "docs/week1/day3-context-switch.md",
-      "archive": "docs/history/20260922-before-current/week1/day3-context-switch.md.txt",
-      "sha256": "b03a1b6a3b3dbc3e00b47fffe6f685e456475a023b335c16160c1bf85b37bbce",
-      "bytes": 2915
+      "archive": "docs/history/20260922-before-current/week1/day3-context-switch.md",
+      "sha256": "d2e9cffa325aea6ceb402f505c94765219299042ca322b0aa9dc76a9564ca346",
+      "bytes": 2939,
+      "original_body_sha256": "b03a1b6a3b3dbc3e00b47fffe6f685e456475a023b335c16160c1bf85b37bbce",
+      "original_body_bytes": 2915
     },
     {
       "source": "docs/week1/day4-cpu-utilization.md",
-      "archive": "docs/history/20260922-before-current/week1/day4-cpu-utilization.md.txt",
-      "sha256": "d98e931fe013e9b148916629685db762bd545b12a6620efb819a61dd75c9541f",
-      "bytes": 2553
+      "archive": "docs/history/20260922-before-current/week1/day4-cpu-utilization.md",
+      "sha256": "d710e0a62371d6b5c0a64462bb24022debf6ac24e5fdd764190c637e35ea5c1b",
+      "bytes": 2577,
+      "original_body_sha256": "d98e931fe013e9b148916629685db762bd545b12a6620efb819a61dd75c9541f",
+      "original_body_bytes": 2553
     },
     {
       "source": "docs/week1/day5-memory.md",
-      "archive": "docs/history/20260922-before-current/week1/day5-memory.md.txt",
-      "sha256": "cf25e94b8b58185badfd69d75812c0eb54aaac8419e310fa6947b5860db875d3",
-      "bytes": 2712
+      "archive": "docs/history/20260922-before-current/week1/day5-memory.md",
+      "sha256": "11a63b39b86adba096523bf6c8df60410a12310821c408e583b35335b5677bec",
+      "bytes": 2736,
+      "original_body_sha256": "cf25e94b8b58185badfd69d75812c0eb54aaac8419e310fa6947b5860db875d3",
+      "original_body_bytes": 2712
     },
     {
       "source": "docs/week1/day6-disk-io.md",
-      "archive": "docs/history/20260922-before-current/week1/day6-disk-io.md.txt",
-      "sha256": "f95c34bd0e747395ac08ceab92f0f1be204d536c8a13832da06b93b04ae00e49",
-      "bytes": 2834
+      "archive": "docs/history/20260922-before-current/week1/day6-disk-io.md",
+      "sha256": "6b970616f034df3c479fefe852022709947425cfd43ea2a38660b9d98c729ca1",
+      "bytes": 2858,
+      "original_body_sha256": "f95c34bd0e747395ac08ceab92f0f1be204d536c8a13832da06b93b04ae00e49",
+      "original_body_bytes": 2834
     },
     {
       "source": "docs/week1/day7-performance-analysis.md",
-      "archive": "docs/history/20260922-before-current/week1/day7-performance-analysis.md.txt",
-      "sha256": "a1648fec27e732120d32ebdbf9118a158fa992001c658cf4add5330bb25f5dcd",
-      "bytes": 4159
+      "archive": "docs/history/20260922-before-current/week1/day7-performance-analysis.md",
+      "sha256": "03d886abeb9c0c2517a7aa3661d42477866bc8628e03fecd910fa1929b93438d",
+      "bytes": 4183,
+      "original_body_sha256": "a1648fec27e732120d32ebdbf9118a158fa992001c658cf4add5330bb25f5dcd",
+      "original_body_bytes": 4159
     },
     {
       "source": "docs/week2/day1-python.md",
-      "archive": "docs/history/20260922-before-current/week2/day1-python.md.txt",
-      "sha256": "23ce2fcb71fd287bc10ff295a66e53acf5ad7bf97f46a9ed9f34be4201fd3c2a",
-      "bytes": 3536
+      "archive": "docs/history/20260922-before-current/week2/day1-python.md",
+      "sha256": "2b870c5d4cf6a25d655cc346b6a142c6e2dfd188e3359449b60d185eb44de49d",
+      "bytes": 3568,
+      "original_body_sha256": "23ce2fcb71fd287bc10ff295a66e53acf5ad7bf97f46a9ed9f34be4201fd3c2a",
+      "original_body_bytes": 3536
     },
     {
       "source": "docs/week2/day2-function.md",
-      "archive": "docs/history/20260922-before-current/week2/day2-function.md.txt",
-      "sha256": "87c46875fce5875e0cee9765977ea29027e330ad8be9831ca947ad9d28483723",
-      "bytes": 2731
+      "archive": "docs/history/20260922-before-current/week2/day2-function.md",
+      "sha256": "62b4ebf493969b3ee89f740016da21215a642842a8db78f826f44aab76604e76",
+      "bytes": 2764,
+      "original_body_sha256": "87c46875fce5875e0cee9765977ea29027e330ad8be9831ca947ad9d28483723",
+      "original_body_bytes": 2731
     },
     {
       "source": "docs/week2/day3-return.md",
-      "archive": "docs/history/20260922-before-current/week2/day3-return.md.txt",
-      "sha256": "62c1a8c77c63cc7ba226f31e4e5317c9e6563dd71d5b94411d77d7cde228b2df",
-      "bytes": 2455
+      "archive": "docs/history/20260922-before-current/week2/day3-return.md",
+      "sha256": "b091e1ac2b6307920884af6e6b472bc6e1f8cb9c1af6526b5386dad828909f32",
+      "bytes": 2488,
+      "original_body_sha256": "62c1a8c77c63cc7ba226f31e4e5317c9e6563dd71d5b94411d77d7cde228b2df",
+      "original_body_bytes": 2455
     },
     {
       "source": "docs/week2/day4-list.md",
-      "archive": "docs/history/20260922-before-current/week2/day4-list.md.txt",
-      "sha256": "c35db567f5ac98b3b47fb082b5f7eba3b6e06293fd8061aa7ec0d8f4abe18eb5",
-      "bytes": 2248
+      "archive": "docs/history/20260922-before-current/week2/day4-list.md",
+      "sha256": "aa1b7ced9cbf845b25f39b48dc4d86fdafc274c7a0dc44700772ccb4bd687e69",
+      "bytes": 2281,
+      "original_body_sha256": "c35db567f5ac98b3b47fb082b5f7eba3b6e06293fd8061aa7ec0d8f4abe18eb5",
+      "original_body_bytes": 2248
     },
     {
       "source": "docs/week2/day5-dictionary.md",
-      "archive": "docs/history/20260922-before-current/week2/day5-dictionary.md.txt",
-      "sha256": "af14d1bb98046952568a6a8d42236d9e8a8f0a5d58630e05e0e53bec1092e786",
-      "bytes": 2564
+      "archive": "docs/history/20260922-before-current/week2/day5-dictionary.md",
+      "sha256": "d7834fcdf503a33b9e263b6b8b9ef2ee6b32fb585873480ca301a0aaa4519b30",
+      "bytes": 2588,
+      "original_body_sha256": "af14d1bb98046952568a6a8d42236d9e8a8f0a5d58630e05e0e53bec1092e786",
+      "original_body_bytes": 2564
     },
     {
       "source": "docs/week2/day6-subprocess.md",
-      "archive": "docs/history/20260922-before-current/week2/day6-subprocess.md.txt",
-      "sha256": "ae96f64b4e514e50381cb8979611925ac9249a251f9950517f504af945228b3c",
-      "bytes": 2883
+      "archive": "docs/history/20260922-before-current/week2/day6-subprocess.md",
+      "sha256": "ddbaf035e221e0848171ea37f4f629c154465913463e9bb39bcfb821215d51a7",
+      "bytes": 2907,
+      "original_body_sha256": "ae96f64b4e514e50381cb8979611925ac9249a251f9950517f504af945228b3c",
+      "original_body_bytes": 2883
     },
     {
       "source": "docs/week2/day7-stdout.md",
-      "archive": "docs/history/20260922-before-current/week2/day7-stdout.md.txt",
-      "sha256": "0a4d405a2b36644efd1928a687f1fef7892fbbb960653d2e5c98fdc68304d12b",
-      "bytes": 2652
+      "archive": "docs/history/20260922-before-current/week2/day7-stdout.md",
+      "sha256": "a73dc6ef77f371ada1bfa8dc6b4752db7cf5a003ff61cd248e0e977ff061e11d",
+      "bytes": 2676,
+      "original_body_sha256": "0a4d405a2b36644efd1928a687f1fef7892fbbb960653d2e5c98fdc68304d12b",
+      "original_body_bytes": 2652
     },
     {
       "source": "docs/week3/day1-why-docker.md",
-      "archive": "docs/history/20260922-before-current/week3/day1-why-docker.md.txt",
-      "sha256": "64bdecff0438aa77460e25d4984f456df0badc79681e668ad7e06c604f09cf0b",
-      "bytes": 3491
+      "archive": "docs/history/20260922-before-current/week3/day1-why-docker.md",
+      "sha256": "b02d72efeade14b1d21b46f1e98f5c9e9442a8aad6b0a714848cd06aad94da67",
+      "bytes": 3515,
+      "original_body_sha256": "64bdecff0438aa77460e25d4984f456df0badc79681e668ad7e06c604f09cf0b",
+      "original_body_bytes": 3491
     },
     {
       "source": "docs/week3/day2-install-docker.md",
-      "archive": "docs/history/20260922-before-current/week3/day2-install-docker.md.txt",
-      "sha256": "cefbc8d7672c68a2acd3149bdd31a1ebdbdc2ce55581132715a0f95d72144716",
-      "bytes": 2648
+      "archive": "docs/history/20260922-before-current/week3/day2-install-docker.md",
+      "sha256": "d40abe4a6979ff226c5d26265397ad28950635985b2030c4b841b7170085201e",
+      "bytes": 2681,
+      "original_body_sha256": "cefbc8d7672c68a2acd3149bdd31a1ebdbdc2ce55581132715a0f95d72144716",
+      "original_body_bytes": 2648
     },
     {
       "source": "docs/week3/day3-image-container.md",
-      "archive": "docs/history/20260922-before-current/week3/day3-image-container.md.txt",
-      "sha256": "778dedf0c02ef3d4802f52f77941e2b6d887c0a46d5f32c5a194d7aa93abac93",
-      "bytes": 2950
+      "archive": "docs/history/20260922-before-current/week3/day3-image-container.md",
+      "sha256": "d34c8aed828ae48b12b658ee8bf933f371242c30c9f2a311bcebff3bd145fb23",
+      "bytes": 2974,
+      "original_body_sha256": "778dedf0c02ef3d4802f52f77941e2b6d887c0a46d5f32c5a194d7aa93abac93",
+      "original_body_bytes": 2950
     },
     {
       "source": "docs/week3/day4-dockerfile.md",
-      "archive": "docs/history/20260922-before-current/week3/day4-dockerfile.md.txt",
-      "sha256": "193d07c3e573685fcc2f6f54fb2a761855d8e4f5b93bfb06518320d58c490ba5",
-      "bytes": 2997
+      "archive": "docs/history/20260922-before-current/week3/day4-dockerfile.md",
+      "sha256": "ebb0998d89d1a60b99ee2dc02d94be9a5c6e6471cc5055312f87c676f2932e41",
+      "bytes": 3029,
+      "original_body_sha256": "193d07c3e573685fcc2f6f54fb2a761855d8e4f5b93bfb06518320d58c490ba5",
+      "original_body_bytes": 2997
     },
     {
       "source": "docs/week3/day5-docker-compose.md",
-      "archive": "docs/history/20260922-before-current/week3/day5-docker-compose.md.txt",
-      "sha256": "1f7564c4458603e53f676a171a0cdddce4e71c7f56a617e20848ee87fd28dc2f",
-      "bytes": 2830
+      "archive": "docs/history/20260922-before-current/week3/day5-docker-compose.md",
+      "sha256": "9bfb7294d7ad5433e010c1f21c91bda6d0e84a935b46c067c45c20d8d06092f4",
+      "bytes": 2862,
+      "original_body_sha256": "1f7564c4458603e53f676a171a0cdddce4e71c7f56a617e20848ee87fd28dc2f",
+      "original_body_bytes": 2830
     },
     {
       "source": "docs/week3/day6-containerize-monitoring.md",
-      "archive": "docs/history/20260922-before-current/week3/day6-containerize-monitoring.md.txt",
-      "sha256": "1b52f54abdb8a2f5698b61e3b3c30e0e2b2b25680e02abc3ffce61206d14659c",
-      "bytes": 3073
+      "archive": "docs/history/20260922-before-current/week3/day6-containerize-monitoring.md",
+      "sha256": "815c8b6484ca035571acd10ecf3d621092b54460fe2ed1956ae1e6ce2de07d04",
+      "bytes": 3113,
+      "original_body_sha256": "1b52f54abdb8a2f5698b61e3b3c30e0e2b2b25680e02abc3ffce61206d14659c",
+      "original_body_bytes": 3073
     },
     {
       "source": "docs/week3/day7-docker-integration.md",
-      "archive": "docs/history/20260922-before-current/week3/day7-docker-integration.md.txt",
-      "sha256": "46852825cb0f16fe9d4fa58cc8890ae86133cd3756c322f900f5b2a61a54f76e",
-      "bytes": 4141
+      "archive": "docs/history/20260922-before-current/week3/day7-docker-integration.md",
+      "sha256": "40825e663a74a997ddc938ba3bd8ca4da5d309187261d577cbb72fd7e65477bd",
+      "bytes": 4181,
+      "original_body_sha256": "46852825cb0f16fe9d4fa58cc8890ae86133cd3756c322f900f5b2a61a54f76e",
+      "original_body_bytes": 4141
     },
     {
       "source": "docs/week4/day1-platform-api-design.md",
-      "archive": "docs/history/20260922-before-current/week4/day1-platform-api-design.md.txt",
-      "sha256": "ee7c0221de46c34496c5a877c642a681fd148d3818c9639c6bf53f9e4e0e5f79",
-      "bytes": 3902
+      "archive": "docs/history/20260922-before-current/week4/day1-platform-api-design.md",
+      "sha256": "680f92407a6dadb0837e10e98f45c0fc2f91aecfa66687a0b8f6627edb2356aa",
+      "bytes": 3950,
+      "original_body_sha256": "ee7c0221de46c34496c5a877c642a681fd148d3818c9639c6bf53f9e4e0e5f79",
+      "original_body_bytes": 3902
     },
     {
       "source": "docs/week4/day2-rest-api-design.md",
-      "archive": "docs/history/20260922-before-current/week4/day2-rest-api-design.md.txt",
-      "sha256": "7fdb31e3561d935f67bf1588b4912dfe10b1ca4ba4ca94f6f24605b4ab225cc6",
-      "bytes": 5439
+      "archive": "docs/history/20260922-before-current/week4/day2-rest-api-design.md",
+      "sha256": "935a2a65904032ff532d6024399f4ffe3887b995b29bf396ca1228fdfadeb4f2",
+      "bytes": 5463,
+      "original_body_sha256": "7fdb31e3561d935f67bf1588b4912dfe10b1ca4ba4ca94f6f24605b4ab225cc6",
+      "original_body_bytes": 5439
     },
     {
       "source": "docs/week4/day3-job-identity.md",
-      "archive": "docs/history/20260922-before-current/week4/day3-job-identity.md.txt",
-      "sha256": "cd6db3a7f8d9f4e3468b160ea5306deecd76c01ef6abdd0cb6228bfe8c5b0d69",
-      "bytes": 4753
+      "archive": "docs/history/20260922-before-current/week4/day3-job-identity.md",
+      "sha256": "a211153a6bf5ee423a20e1f9de47e827ce0c8c399ef37a08a5e7d192c18d8e15",
+      "bytes": 4777,
+      "original_body_sha256": "cd6db3a7f8d9f4e3468b160ea5306deecd76c01ef6abdd0cb6228bfe8c5b0d69",
+      "original_body_bytes": 4753
     },
     {
       "source": "docs/week4/day4-memory-queue.md",
-      "archive": "docs/history/20260922-before-current/week4/day4-memory-queue.md.txt",
-      "sha256": "1e5a00d23aff9ef4f916bd3154c064ba7b0ab82503a2ea748075ac6990333951",
-      "bytes": 4361
+      "archive": "docs/history/20260922-before-current/week4/day4-memory-queue.md",
+      "sha256": "19ff8bc4005f071175d1dbe0e8df164ef622989de73124054f291953d551d756",
+      "bytes": 4385,
+      "original_body_sha256": "1e5a00d23aff9ef4f916bd3154c064ba7b0ab82503a2ea748075ac6990333951",
+      "original_body_bytes": 4361
     },
     {
       "source": "docs/week4/day5-dockerize-api.md",
-      "archive": "docs/history/20260922-before-current/week4/day5-dockerize-api.md.txt",
-      "sha256": "6037c0460c371f7f1bd1ca6eb422dc491271fb003a0973cb275877b689c42864",
-      "bytes": 5521
+      "archive": "docs/history/20260922-before-current/week4/day5-dockerize-api.md",
+      "sha256": "e64bb1d63cba261de9e5694ba150c586155c1ce2ee222f3f4beeb89630672898",
+      "bytes": 5569,
+      "original_body_sha256": "6037c0460c371f7f1bd1ca6eb422dc491271fb003a0973cb275877b689c42864",
+      "original_body_bytes": 5521
     },
     {
       "source": "docs/week4/day6-monitoring-integration.md",
-      "archive": "docs/history/20260922-before-current/week4/day6-monitoring-integration.md.txt",
-      "sha256": "afefedfbd397fb1a9e69252b1aaac0a0e188f8d33d946a5721e05b3332afee22",
-      "bytes": 4633
+      "archive": "docs/history/20260922-before-current/week4/day6-monitoring-integration.md",
+      "sha256": "03be86bf1a2bbf4f43bbf46a64e6ce45b1b5bfdb385c73044649cd429f50a728",
+      "bytes": 4665,
+      "original_body_sha256": "afefedfbd397fb1a9e69252b1aaac0a0e188f8d33d946a5721e05b3332afee22",
+      "original_body_bytes": 4633
     },
     {
       "source": "docs/week5/day1-redis-foundation.md",
-      "archive": "docs/history/20260922-before-current/week5/day1-redis-foundation.md.txt",
-      "sha256": "3659fe96da1802b515f0a83d2f8e0a4aa8cd29040a96b823cc583ab04fe83be2",
-      "bytes": 6542
+      "archive": "docs/history/20260922-before-current/week5/day1-redis-foundation.md",
+      "sha256": "d8c95d42dc25fc42161eaa1d9729d392edd96b85cc7ffd421df11ef3cf40359f",
+      "bytes": 6582,
+      "original_body_sha256": "3659fe96da1802b515f0a83d2f8e0a4aa8cd29040a96b823cc583ab04fe83be2",
+      "original_body_bytes": 6542
     },
     {
       "source": "docs/week5/day2-redis-persistence.md",
-      "archive": "docs/history/20260922-before-current/week5/day2-redis-persistence.md.txt",
-      "sha256": "8747c0d613c780d744c129fc85bfe40b48dd135d8dbb738ab6d0dfb7977cd84b",
-      "bytes": 6401
+      "archive": "docs/history/20260922-before-current/week5/day2-redis-persistence.md",
+      "sha256": "bb3a7114269df7cd7c657fa5a3b079ca1a0058c17905adeb3d4a3c7812f252de",
+      "bytes": 6441,
+      "original_body_sha256": "8747c0d613c780d744c129fc85bfe40b48dd135d8dbb738ab6d0dfb7977cd84b",
+      "original_body_bytes": 6401
     },
     {
       "source": "docs/week5/day3-reliable-worker-state-machine.md",
-      "archive": "docs/history/20260922-before-current/week5/day3-reliable-worker-state-machine.md.txt",
-      "sha256": "225856dea948242d4d8f40ac90fb760eb1d00492b81ae73dc3f8284371c386b4",
-      "bytes": 5745
+      "archive": "docs/history/20260922-before-current/week5/day3-reliable-worker-state-machine.md",
+      "sha256": "cbfc1729eb72b1bce38ec4fa5cf479bd2ae30ed78ae9ac38e5234fce99290fbc",
+      "bytes": 5777,
+      "original_body_sha256": "225856dea948242d4d8f40ac90fb760eb1d00492b81ae73dc3f8284371c386b4",
+      "original_body_bytes": 5745
     },
     {
       "source": "docs/week5/day4-stuck-job-recovery.md",
-      "archive": "docs/history/20260922-before-current/week5/day4-stuck-job-recovery.md.txt",
-      "sha256": "38d35a1f968ca3834c7d8c02e7f0b8680e68ab97a2d62fa1e694dffce451f546",
-      "bytes": 4807
+      "archive": "docs/history/20260922-before-current/week5/day4-stuck-job-recovery.md",
+      "sha256": "d9295d273d99117ea1443eddd66211fb2848d9aaa9a118e9ee7369b7cd696c22",
+      "bytes": 4839,
+      "original_body_sha256": "38d35a1f968ca3834c7d8c02e7f0b8680e68ab97a2d62fa1e694dffce451f546",
+      "original_body_bytes": 4807
     },
     {
       "source": "docs/week5/day5-retry-strategy-and-deadletter-que.md",
-      "archive": "docs/history/20260922-before-current/week5/day5-retry-strategy-and-deadletter-que.md.txt",
-      "sha256": "3a5dc18b436f8eb62bc4b50cc07f2e27e5ef2ee7d0f7d6e06b2802bdf6e7d9c0",
-      "bytes": 6699
+      "archive": "docs/history/20260922-before-current/week5/day5-retry-strategy-and-deadletter-que.md",
+      "sha256": "c1341ed2521b57e97a1f72e59b4075d175e42bd484e5e17b4d2e6680c9267af3",
+      "bytes": 6731,
+      "original_body_sha256": "3a5dc18b436f8eb62bc4b50cc07f2e27e5ef2ee7d0f7d6e06b2802bdf6e7d9c0",
+      "original_body_bytes": 6699
     },
     {
       "source": "docs/week5/day6-postgresql-foundation.md",
-      "archive": "docs/history/20260922-before-current/week5/day6-postgresql-foundation.md.txt",
-      "sha256": "6f326d73d1ea07b8d568be256f7987d6d167c4af8ed8a6ca6d37fd717901c2ed",
-      "bytes": 6725
+      "archive": "docs/history/20260922-before-current/week5/day6-postgresql-foundation.md",
+      "sha256": "523f55827d405255d76879ef67327e5dd9305206af96dba803aab6357c9df38a",
+      "bytes": 6797,
+      "original_body_sha256": "6f326d73d1ea07b8d568be256f7987d6d167c4af8ed8a6ca6d37fd717901c2ed",
+      "original_body_bytes": 6725
     },
     {
       "source": "docs/week5/day7-sqlalchemy-foundation.md",
-      "archive": "docs/history/20260922-before-current/week5/day7-sqlalchemy-foundation.md.txt",
-      "sha256": "acc1ee29bebfcc97cd1a4e867d74f5125ffaf09bcd0b97e3d272c34aa8d4661b",
-      "bytes": 5876
+      "archive": "docs/history/20260922-before-current/week5/day7-sqlalchemy-foundation.md",
+      "sha256": "7900d956e48832ae43f2437efb74bc65f0234feba100d08482fd6786fde5d12c",
+      "bytes": 5932,
+      "original_body_sha256": "acc1ee29bebfcc97cd1a4e867d74f5125ffaf09bcd0b97e3d272c34aa8d4661b",
+      "original_body_bytes": 5876
     },
     {
       "source": "docs/week6/Day1_Kubernetes_Foundation.md",
-      "archive": "docs/history/20260922-before-current/week6/Day1_Kubernetes_Foundation.md.txt",
-      "sha256": "11ea5eb0dd39c7912b6f0a7b891d017e899f2e64c9c4ce20d9c7bdf4b4b5e830",
-      "bytes": 4483
+      "archive": "docs/history/20260922-before-current/week6/Day1_Kubernetes_Foundation.md",
+      "sha256": "a3ca8fa35611c190b668f6b66f5d8aab32b5ab2427b79ff4d10e372ae2eba0f5",
+      "bytes": 4515,
+      "original_body_sha256": "11ea5eb0dd39c7912b6f0a7b891d017e899f2e64c9c4ce20d9c7bdf4b4b5e830",
+      "original_body_bytes": 4483
     },
     {
       "source": "docs/week6/Day2_Pod_Foundation.md",
-      "archive": "docs/history/20260922-before-current/week6/Day2_Pod_Foundation.md.txt",
-      "sha256": "f96aeb005d0f6f31d1ef68f4ee062a09ae9342ee46d4b16d88d0ac218d1ba779",
-      "bytes": 4843
+      "archive": "docs/history/20260922-before-current/week6/Day2_Pod_Foundation.md",
+      "sha256": "12b89854011ad61e2347c99534ecdb2cdf10eee01af49bfa0fd957e239b4d586",
+      "bytes": 4867,
+      "original_body_sha256": "f96aeb005d0f6f31d1ef68f4ee062a09ae9342ee46d4b16d88d0ac218d1ba779",
+      "original_body_bytes": 4843
     },
     {
       "source": "docs/week6/Day3_Deployment_Foundation.md",
-      "archive": "docs/history/20260922-before-current/week6/Day3_Deployment_Foundation.md.txt",
-      "sha256": "bae0eceacbdcf8233e7c5ca783fd5fd71dbc05f66f3ccf0cd45c01f7b730c1a8",
-      "bytes": 4865
+      "archive": "docs/history/20260922-before-current/week6/Day3_Deployment_Foundation.md",
+      "sha256": "f7fc11fabeb0eec40e38535ebe13ef9d4faf3ba9fe22c25d3fc4c87a77d6802f",
+      "bytes": 4897,
+      "original_body_sha256": "bae0eceacbdcf8233e7c5ca783fd5fd71dbc05f66f3ccf0cd45c01f7b730c1a8",
+      "original_body_bytes": 4865
     },
     {
       "source": "docs/week6/Day4_Service_Foundation.md",
-      "archive": "docs/history/20260922-before-current/week6/Day4_Service_Foundation.md.txt",
-      "sha256": "a1b0b5eea85adcf6e95db17b7965d05c92ec2880a0b9c294aa4fbfe0476275b0",
-      "bytes": 5273
+      "archive": "docs/history/20260922-before-current/week6/Day4_Service_Foundation.md",
+      "sha256": "006d0f8cf023df816cfb1954909a883ed39a2ad0cf6d6e4f93e45962380c7dab",
+      "bytes": 5305,
+      "original_body_sha256": "a1b0b5eea85adcf6e95db17b7965d05c92ec2880a0b9c294aa4fbfe0476275b0",
+      "original_body_bytes": 5273
     },
     {
       "source": "docs/week6/Day5_K3s_Foundation.md",
-      "archive": "docs/history/20260922-before-current/week6/Day5_K3s_Foundation.md.txt",
-      "sha256": "b937684ce0d62b8a877ce73e9beb586edd85d824f95298564ac0700f4996455d",
-      "bytes": 5065
+      "archive": "docs/history/20260922-before-current/week6/Day5_K3s_Foundation.md",
+      "sha256": "9e20ee24e7070fdb017cb42950dac59eecdddf8fea057632d5605e37abb9b2e1",
+      "bytes": 5098,
+      "original_body_sha256": "b937684ce0d62b8a877ce73e9beb586edd85d824f95298564ac0700f4996455d",
+      "original_body_bytes": 5065
     },
     {
       "source": "docs/week6/Day6_Deploy_API_and_Redis.md",
-      "archive": "docs/history/20260922-before-current/week6/Day6_Deploy_API_and_Redis.md.txt",
-      "sha256": "6c95b883700576b79bb1c0b8746645b6facc82ef10b3fb377dd92c0c2dd1383b",
-      "bytes": 6441
+      "archive": "docs/history/20260922-before-current/week6/Day6_Deploy_API_and_Redis.md",
+      "sha256": "5b4765e58c287f024c138505a5dd0801c94bddbc985347257efc2d2a42870c65",
+      "bytes": 6497,
+      "original_body_sha256": "6c95b883700576b79bb1c0b8746645b6facc82ef10b3fb377dd92c0c2dd1383b",
+      "original_body_bytes": 6441
     },
     {
       "source": "docs/week6/Day7_Complete_Platform_on_Kubernetes.md",
-      "archive": "docs/history/20260922-before-current/week6/Day7_Complete_Platform_on_Kubernetes.md.txt",
-      "sha256": "b3146f8b14639cdb8d46a2a662ac8df7cca774fd547eba899618cbfb5010b6b9",
-      "bytes": 7765
+      "archive": "docs/history/20260922-before-current/week6/Day7_Complete_Platform_on_Kubernetes.md",
+      "sha256": "0bdcd6d8c188494035a8392fe8ca7b6d449248292508579bbbb082ebcb2bc46d",
+      "bytes": 7853,
+      "original_body_sha256": "b3146f8b14639cdb8d46a2a662ac8df7cca774fd547eba899618cbfb5010b6b9",
+      "original_body_bytes": 7765
     },
     {
       "source": "docs/week7/Day1_ConfigMap.md",
-      "archive": "docs/history/20260922-before-current/week7/Day1_ConfigMap.md.txt",
-      "sha256": "620f6de49b25e828e74d54b636f3a94a7420c6529c0ec13adab5c55fd16a6323",
-      "bytes": 2761
+      "archive": "docs/history/20260922-before-current/week7/Day1_ConfigMap.md",
+      "sha256": "f9415b615d57b87f31c33992d8a8a3dc230fe14955637db6fa5c7bb11c26a138",
+      "bytes": 2793,
+      "original_body_sha256": "620f6de49b25e828e74d54b636f3a94a7420c6529c0ec13adab5c55fd16a6323",
+      "original_body_bytes": 2761
     },
     {
       "source": "docs/week7/Day2_Secret.md",
-      "archive": "docs/history/20260922-before-current/week7/Day2_Secret.md.txt",
-      "sha256": "8519d1bc7973a585fa846390d9c3024518c3482a4151ef16bf06d62133e9dbd0",
-      "bytes": 7514
+      "archive": "docs/history/20260922-before-current/week7/Day2_Secret.md",
+      "sha256": "40d8c427d5a6d4d3c9b1375efbd9414b6e16aa1aed2059bffcc17ebed21abeb7",
+      "bytes": 7570,
+      "original_body_sha256": "8519d1bc7973a585fa846390d9c3024518c3482a4151ef16bf06d62133e9dbd0",
+      "original_body_bytes": 7514
     },
     {
       "source": "docs/week7/Day3_Resource_Requests_Limits_QoS.md",
-      "archive": "docs/history/20260922-before-current/week7/Day3_Resource_Requests_Limits_QoS.md.txt",
-      "sha256": "662a6e582e847f2812b03d06601e2660ba26396d95032b01149e63642a63a25f",
-      "bytes": 4864
+      "archive": "docs/history/20260922-before-current/week7/Day3_Resource_Requests_Limits_QoS.md",
+      "sha256": "0dbcfeb00ea4f1790d545188c66f6c7942dec5f48a5c0f17a483b1e8d82e21fa",
+      "bytes": 4888,
+      "original_body_sha256": "662a6e582e847f2812b03d06601e2660ba26396d95032b01149e63642a63a25f",
+      "original_body_bytes": 4864
     },
     {
       "source": "docs/week7/Day4_Liveness_and_Readiness_Probe.md",
-      "archive": "docs/history/20260922-before-current/week7/Day4_Liveness_and_Readiness_Probe.md.txt",
-      "sha256": "d0fcc671863d95624f9fc5665c27f1fbf85922e0d6ca3c69489bdedc2ca14944",
-      "bytes": 5150
+      "archive": "docs/history/20260922-before-current/week7/Day4_Liveness_and_Readiness_Probe.md",
+      "sha256": "9bd5d86d1f97394dd86740244eb136b2b484b8eba91020cee2632947c0a64597",
+      "bytes": 5182,
+      "original_body_sha256": "d0fcc671863d95624f9fc5665c27f1fbf85922e0d6ca3c69489bdedc2ca14944",
+      "original_body_bytes": 5150
     },
     {
       "source": "docs/week7/Day5_Service_Types_NodePort.md",
-      "archive": "docs/history/20260922-before-current/week7/Day5_Service_Types_NodePort.md.txt",
-      "sha256": "68f2483f507b7e87cb168778f224fc5c00decc875c21550cca449ad3e0ce8f06",
-      "bytes": 5503
+      "archive": "docs/history/20260922-before-current/week7/Day5_Service_Types_NodePort.md",
+      "sha256": "9c595e27f79ff834814d87a4fe340cad714e3404a3b52706ced335afdc9540c4",
+      "bytes": 5535,
+      "original_body_sha256": "68f2483f507b7e87cb168778f224fc5c00decc875c21550cca449ad3e0ce8f06",
+      "original_body_bytes": 5503
     },
     {
       "source": "docs/week7/Day6_Ingress_Traefik.md",
-      "archive": "docs/history/20260922-before-current/week7/Day6_Ingress_Traefik.md.txt",
-      "sha256": "d66626aa306bd801131885e12172e464126ceee836f2b0ea1c8caf0a422e2a55",
-      "bytes": 5451
+      "archive": "docs/history/20260922-before-current/week7/Day6_Ingress_Traefik.md",
+      "sha256": "5a59af012112a01f94ad3f9676948f56b5706ce415d483ecf137d32cc314bdc4",
+      "bytes": 5475,
+      "original_body_sha256": "d66626aa306bd801131885e12172e464126ceee836f2b0ea1c8caf0a422e2a55",
+      "original_body_bytes": 5451
     },
     {
       "source": "docs/week7/Day7_Horizontal_Pod_Autoscaler.md",
-      "archive": "docs/history/20260922-before-current/week7/Day7_Horizontal_Pod_Autoscaler.md.txt",
-      "sha256": "c58ff75fb84a69e90c69c0e6d115a65cad8fda1aca87e84acf85a66e870133fb",
-      "bytes": 5851
+      "archive": "docs/history/20260922-before-current/week7/Day7_Horizontal_Pod_Autoscaler.md",
+      "sha256": "5cc000d576c2dfbb21c8700d82bd9eab2c47f03495c2391006159fc691bf78d1",
+      "bytes": 5891,
+      "original_body_sha256": "c58ff75fb84a69e90c69c0e6d115a65cad8fda1aca87e84acf85a66e870133fb",
+      "original_body_bytes": 5851
     },
     {
       "source": "docs/week8/Day1_GitOps_Foundation.md",
-      "archive": "docs/history/20260922-before-current/week8/Day1_GitOps_Foundation.md.txt",
-      "sha256": "70e14f5d92dc693fd678ba18afb2b8f03cb3b1bd3359c3860296bf8af572e9ff",
-      "bytes": 5085
+      "archive": "docs/history/20260922-before-current/week8/Day1_GitOps_Foundation.md",
+      "sha256": "a9fd821d802792cac73eae32241646b2d1f945a4e69a5fce34d78ac6b58139f1",
+      "bytes": 5141,
+      "original_body_sha256": "70e14f5d92dc693fd678ba18afb2b8f03cb3b1bd3359c3860296bf8af572e9ff",
+      "original_body_bytes": 5085
     },
     {
       "source": "docs/week8/Day2_Helm_Foundation.md",
-      "archive": "docs/history/20260922-before-current/week8/Day2_Helm_Foundation.md.txt",
-      "sha256": "3233bde6eb7b08a2667ffc576747054c1852b02434aa4ad1876d410cc45f7ac4",
-      "bytes": 5998
+      "archive": "docs/history/20260922-before-current/week8/Day2_Helm_Foundation.md",
+      "sha256": "1fa657a7aca527db74c20d984c460c0fbc148495d8bfac0451015ff552cb7067",
+      "bytes": 6126,
+      "original_body_sha256": "3233bde6eb7b08a2667ffc576747054c1852b02434aa4ad1876d410cc45f7ac4",
+      "original_body_bytes": 5998
     },
     {
       "source": "docs/week8/Day3_Helmize_Platform.md",
-      "archive": "docs/history/20260922-before-current/week8/Day3_Helmize_Platform.md.txt",
-      "sha256": "61a0a8727d40762e0d9c54354b26e3112bcb20dd60bbfdd20d393aeca9bcf9b1",
-      "bytes": 7874
+      "archive": "docs/history/20260922-before-current/week8/Day3_Helmize_Platform.md",
+      "sha256": "dc70481d6e29b9670c795a2289bb7a7e03b99bf5f3e5644de195dbe6cf79c16d",
+      "bytes": 8098,
+      "original_body_sha256": "61a0a8727d40762e0d9c54354b26e3112bcb20dd60bbfdd20d393aeca9bcf9b1",
+      "original_body_bytes": 7874
     },
     {
       "source": "docs/week8/Day4_Helm_Advanced.md",
-      "archive": "docs/history/20260922-before-current/week8/Day4_Helm_Advanced.md.txt",
-      "sha256": "d3dfdfcd70d0ecbad9be739771b499959c60f01c7798abb1fbd39ea9c28bf3b5",
-      "bytes": 5685
+      "archive": "docs/history/20260922-before-current/week8/Day4_Helm_Advanced.md",
+      "sha256": "fcc3687aaa1f65c41f88531b88776594f3bbd8fe8899b7df7c70d21188ec92b0",
+      "bytes": 5733,
+      "original_body_sha256": "d3dfdfcd70d0ecbad9be739771b499959c60f01c7798abb1fbd39ea9c28bf3b5",
+      "original_body_bytes": 5685
     },
     {
       "source": "docs/week8/Day5_Kustomize_Foundation.md",
-      "archive": "docs/history/20260922-before-current/week8/Day5_Kustomize_Foundation.md.txt",
-      "sha256": "1b121823511ac296e30928128d9262c8e5344a83938b522d48783deb7908e184",
-      "bytes": 7316
+      "archive": "docs/history/20260922-before-current/week8/Day5_Kustomize_Foundation.md",
+      "sha256": "87f2a97174f56310d2535a7c04f7e35131eaf275c05d65893fdf90d0cf7f7560",
+      "bytes": 7380,
+      "original_body_sha256": "1b121823511ac296e30928128d9262c8e5344a83938b522d48783deb7908e184",
+      "original_body_bytes": 7316
     },
     {
       "source": "docs/week8/Day6-Helm-Kustomize-Integration.md",
-      "archive": "docs/history/20260922-before-current/week8/Day6-Helm-Kustomize-Integration.md.txt",
-      "sha256": "116318c605f61428cae254e1befcd7794be894f0ef2330a766b6514a3df2b48b",
-      "bytes": 4573
+      "archive": "docs/history/20260922-before-current/week8/Day6-Helm-Kustomize-Integration.md",
+      "sha256": "6b3751fa140cfd80329afa02ad2329eabf36d22157cd7bdabc19951f62c7ebb1",
+      "bytes": 4629,
+      "original_body_sha256": "116318c605f61428cae254e1befcd7794be894f0ef2330a766b6514a3df2b48b",
+      "original_body_bytes": 4573
     },
     {
       "source": "docs/week8/Day7-GitOps_Multi_Environment_Integration.md",
-      "archive": "docs/history/20260922-before-current/week8/Day7-GitOps_Multi_Environment_Integration.md.txt",
-      "sha256": "104c222cbe01023a695894bcfa2ef3c8a47aba44cfa5fc913cf930a35d2d5ecf",
-      "bytes": 7562
+      "archive": "docs/history/20260922-before-current/week8/Day7-GitOps_Multi_Environment_Integration.md",
+      "sha256": "20a6cd2dde22705f15465061f33b3af45249a8e2360ee3cdbc408153b01993d2",
+      "bytes": 7690,
+      "original_body_sha256": "104c222cbe01023a695894bcfa2ef3c8a47aba44cfa5fc913cf930a35d2d5ecf",
+      "original_body_bytes": 7562
     },
     {
       "source": "docs/week9/Day1-Terraform.md",
-      "archive": "docs/history/20260922-before-current/week9/Day1-Terraform.md.txt",
-      "sha256": "66768b2cfcae5b6642112656bfc2121e58f94f7de5a5b803c459258508ff6b59",
-      "bytes": 6723
+      "archive": "docs/history/20260922-before-current/week9/Day1-Terraform.md",
+      "sha256": "76bf1369643bd5a96974f68de155cbbe9ac2ec08a50aa740fb63feaca35cb7f9",
+      "bytes": 6763,
+      "original_body_sha256": "66768b2cfcae5b6642112656bfc2121e58f94f7de5a5b803c459258508ff6b59",
+      "original_body_bytes": 6723
     },
     {
       "source": "docs/week9/Day2-Terraform-Language-Foundation.md",
-      "archive": "docs/history/20260922-before-current/week9/Day2-Terraform-Language-Foundation.md.txt",
-      "sha256": "9061f66cbb1edf43dd77d0604988dd629cfee97b398e5a54e1be2de8078275d7",
-      "bytes": 6350
+      "archive": "docs/history/20260922-before-current/week9/Day2-Terraform-Language-Foundation.md",
+      "sha256": "41838da5d314a77123d173c1aeacf760462740939adc228453cc0417999278b2",
+      "bytes": 6406,
+      "original_body_sha256": "9061f66cbb1edf43dd77d0604988dd629cfee97b398e5a54e1be2de8078275d7",
+      "original_body_bytes": 6350
     },
     {
       "source": "docs/week9/Day3-Terraform-Apply-State-Resource-Lifecycle.md",
-      "archive": "docs/history/20260922-before-current/week9/Day3-Terraform-Apply-State-Resource-Lifecycle.md.txt",
-      "sha256": "50bce4b5e6e426cd6bc624761758b6d24e242c19fdc6e1d1ad70791b0ab78a4d",
-      "bytes": 5734
+      "archive": "docs/history/20260922-before-current/week9/Day3-Terraform-Apply-State-Resource-Lifecycle.md",
+      "sha256": "c37bd524f5f7847a00e9cee712cf3b75c4a086132e70f1d693c974999f535717",
+      "bytes": 5766,
+      "original_body_sha256": "50bce4b5e6e426cd6bc624761758b6d24e242c19fdc6e1d1ad70791b0ab78a4d",
+      "original_body_bytes": 5734
     },
     {
       "source": "docs/week9/Day4-Terraform-Output-Resource-Reference.md",
-      "archive": "docs/history/20260922-before-current/week9/Day4-Terraform-Output-Resource-Reference.md.txt",
-      "sha256": "0eb725a86b91458ff8507e515765ced4a4d124faa09acb73b2ad4b65886446d0",
-      "bytes": 6167
+      "archive": "docs/history/20260922-before-current/week9/Day4-Terraform-Output-Resource-Reference.md",
+      "sha256": "16e7724897be749bfbe288768c44940c243513857fac33818888bd26d9fce027",
+      "bytes": 6207,
+      "original_body_sha256": "0eb725a86b91458ff8507e515765ced4a4d124faa09acb73b2ad4b65886446d0",
+      "original_body_bytes": 6167
     },
     {
       "source": "docs/week9/Day5-Terraform-Module-Refactor.md",
-      "archive": "docs/history/20260922-before-current/week9/Day5-Terraform-Module-Refactor.md.txt",
-      "sha256": "779a20f9b03d9be84b3e48a80703e8349920d2fddd0a393b814458549b3be7ea",
-      "bytes": 5208
+      "archive": "docs/history/20260922-before-current/week9/Day5-Terraform-Module-Refactor.md",
+      "sha256": "a1913bbcdfc436172d17903ff9c8ed8761eb783fb409e482d0b00ebbd4866a05",
+      "bytes": 5256,
+      "original_body_sha256": "779a20f9b03d9be84b3e48a80703e8349920d2fddd0a393b814458549b3be7ea",
+      "original_body_bytes": 5208
     },
     {
       "source": "docs/week9/Day6-Terraform-Network-Module.md",
-      "archive": "docs/history/20260922-before-current/week9/Day6-Terraform-Network-Module.md.txt",
-      "sha256": "2d8398c7433725b89fe1d16c5b31e4086a16871fc357942ebe8a9b73d7b38396",
-      "bytes": 4951
+      "archive": "docs/history/20260922-before-current/week9/Day6-Terraform-Network-Module.md",
+      "sha256": "ee9fa0180fa10a5189ceb6a923606cae80b863b70fce57e443e434cc942e0b0e",
+      "bytes": 5023,
+      "original_body_sha256": "2d8398c7433725b89fe1d16c5b31e4086a16871fc357942ebe8a9b73d7b38396",
+      "original_body_bytes": 4951
     },
     {
       "source": "docs/week9/Day7-Terraform-Multi-Environment.md",
-      "archive": "docs/history/20260922-before-current/week9/Day7-Terraform-Multi-Environment.md.txt",
-      "sha256": "dfb307e1a6d1f91be41b554f66c2f62a0fd5c3fcd9b290ab57ec7d614bb1acfc",
-      "bytes": 5614
+      "archive": "docs/history/20260922-before-current/week9/Day7-Terraform-Multi-Environment.md",
+      "sha256": "4079ab71154c784e54caab1c29eee96254867c209b7c5121441e08b071fd1a25",
+      "bytes": 5750,
+      "original_body_sha256": "dfb307e1a6d1f91be41b554f66c2f62a0fd5c3fcd9b290ab57ec7d614bb1acfc",
+      "original_body_bytes": 5614
     },
     {
       "source": "docs/week9/Day8-GKE-Cluster-withTerraform.md",
-      "archive": "docs/history/20260922-before-current/week9/Day8-GKE-Cluster-withTerraform.md.txt",
-      "sha256": "e006eab698f5b5e8b29c70e61253aa8b6ad2fc8b7861287c7498a35c7834bcb3",
-      "bytes": 7654
+      "archive": "docs/history/20260922-before-current/week9/Day8-GKE-Cluster-withTerraform.md",
+      "sha256": "ceb071fd034a44662ee016860df99b41ff4ca9a2fddf09456e17f478292eee20",
+      "bytes": 7750,
+      "original_body_sha256": "e006eab698f5b5e8b29c70e61253aa8b6ad2fc8b7861287c7498a35c7834bcb3",
+      "original_body_bytes": 7654
     },
     {
       "source": "docs/week10/Day1-CICD-Foundation.md",
-      "archive": "docs/history/20260922-before-current/week10/Day1-CICD-Foundation.md.txt",
-      "sha256": "e5d5ab3aa35b6d3986c912d6dbc99f1571730f4be461ba8c2a4ba15901f6d383",
-      "bytes": 3474
+      "archive": "docs/history/20260922-before-current/week10/Day1-CICD-Foundation.md",
+      "sha256": "9ce567489a128b7e83f2a5bebb96eb7b04845b652724bee7d1c7a8d59f8ab7d5",
+      "bytes": 3498,
+      "original_body_sha256": "e5d5ab3aa35b6d3986c912d6dbc99f1571730f4be461ba8c2a4ba15901f6d383",
+      "original_body_bytes": 3474
     },
     {
       "source": "docs/week10/Day2-First-GitHub-ActionsCI-Pipeline.md",
-      "archive": "docs/history/20260922-before-current/week10/Day2-First-GitHub-ActionsCI-Pipeline.md.txt",
-      "sha256": "a44da231100cb82daddaba107c7d418ce34bfed1ce72fbe193caac7107a53e4c",
-      "bytes": 5354
+      "archive": "docs/history/20260922-before-current/week10/Day2-First-GitHub-ActionsCI-Pipeline.md",
+      "sha256": "46f919f62e862b9a1ac4bba7165c924f360a6bbdc8b7c955dc6b0f20648fe5f1",
+      "bytes": 5386,
+      "original_body_sha256": "a44da231100cb82daddaba107c7d418ce34bfed1ce72fbe193caac7107a53e4c",
+      "original_body_bytes": 5354
     },
     {
       "source": "docs/week10/Day3-CodeQuality-withRuff.md",
-      "archive": "docs/history/20260922-before-current/week10/Day3-CodeQuality-withRuff.md.txt",
-      "sha256": "aabdd31e8ac6f0d1dd53b8104a449f1c172b9c41f2cae15beaac1360bbaeeec5",
-      "bytes": 4745
+      "archive": "docs/history/20260922-before-current/week10/Day3-CodeQuality-withRuff.md",
+      "sha256": "596e849d7f78b85307a3d67c4902263044bd22e08783fdbf7b23bb1695c64d72",
+      "bytes": 4793,
+      "original_body_sha256": "aabdd31e8ac6f0d1dd53b8104a449f1c172b9c41f2cae15beaac1360bbaeeec5",
+      "original_body_bytes": 4745
     },
     {
       "source": "docs/week10/Day4-Pytest-API-Testing-Foundation.md",
-      "archive": "docs/history/20260922-before-current/week10/Day4-Pytest-API-Testing-Foundation.md.txt",
-      "sha256": "a84d7769045728256326da92b2dfcd8b5e9808a98ba3f660d52927e22b3ee5d6",
-      "bytes": 3887
+      "archive": "docs/history/20260922-before-current/week10/Day4-Pytest-API-Testing-Foundation.md",
+      "sha256": "828006df215b28898e29454c5529c157368af56b1bf284875b883f2bd04ad936",
+      "bytes": 3951,
+      "original_body_sha256": "a84d7769045728256326da92b2dfcd8b5e9808a98ba3f660d52927e22b3ee5d6",
+      "original_body_bytes": 3887
     },
     {
       "source": "docs/week10/Day5-Pytest-MockCI-Integration.md",
-      "archive": "docs/history/20260922-before-current/week10/Day5-Pytest-MockCI-Integration.md.txt",
-      "sha256": "160f978ff8a96b2f2b89c1e0b0c5d9407bc206cd14af41294f28f5ae2fbed9e3",
-      "bytes": 3651
+      "archive": "docs/history/20260922-before-current/week10/Day5-Pytest-MockCI-Integration.md",
+      "sha256": "4180117b04f4f9ad2cfc95343abd4b1a3a9ce46483c690079f83ad581461c5e4",
+      "bytes": 3691,
+      "original_body_sha256": "160f978ff8a96b2f2b89c1e0b0c5d9407bc206cd14af41294f28f5ae2fbed9e3",
+      "original_body_bytes": 3651
     },
     {
       "source": "docs/week10/Day6-Docker-Build-inCI.md",
-      "archive": "docs/history/20260922-before-current/week10/Day6-Docker-Build-inCI.md.txt",
-      "sha256": "a83ec972eba0f6c30234857342f88f0052d3befbf7d0862b225664e76b204409",
-      "bytes": 3572
+      "archive": "docs/history/20260922-before-current/week10/Day6-Docker-Build-inCI.md",
+      "sha256": "1490279d8539ebb83859d75a10645f358c5257eb1d4aebbc582feaaa3d89ebd4",
+      "bytes": 3612,
+      "original_body_sha256": "a83ec972eba0f6c30234857342f88f0052d3befbf7d0862b225664e76b204409",
+      "original_body_bytes": 3572
     },
     {
       "source": "docs/week10/Day7-GitHub-Actions-GitOps-自動部署-ArgoCD.md",
-      "archive": "docs/history/20260922-before-current/week10/Day7-GitHub-Actions-GitOps-自動部署-ArgoCD.md.txt",
-      "sha256": "e2c2e0d163bf6a636ca183da6f32a27ef6b14f33c63f1a98226fa7ca06531b68",
-      "bytes": 4612
+      "archive": "docs/history/20260922-before-current/week10/Day7-GitHub-Actions-GitOps-自動部署-ArgoCD.md",
+      "sha256": "38cddfdfc1688a66bc178bedbe74ba4f75c0ec35322612e3a30dab9018f66d76",
+      "bytes": 4668,
+      "original_body_sha256": "e2c2e0d163bf6a636ca183da6f32a27ef6b14f33c63f1a98226fa7ca06531b68",
+      "original_body_bytes": 4612
     },
     {
       "source": "docs/week11/Day1-建立Prometheus監控平台與Observability-Node-Pool.md",
-      "archive": "docs/history/20260922-before-current/week11/Day1-建立Prometheus監控平台與Observability-Node-Pool.md.txt",
-      "sha256": "9cc3be3698fc2a29a80f7919379ba758e7ede311b7730f1c44d868beb37e3fbe",
-      "bytes": 8238
+      "archive": "docs/history/20260922-before-current/week11/Day1-建立Prometheus監控平台與Observability-Node-Pool.md",
+      "sha256": "8bd9748945f6606a7e4be54db2343304ac9d1bce5e308dfc1e48bca6d7e2be9d",
+      "bytes": 8358,
+      "original_body_sha256": "9cc3be3698fc2a29a80f7919379ba758e7ede311b7730f1c44d868beb37e3fbe",
+      "original_body_bytes": 8238
     },
     {
       "source": "docs/week11/Day2-Prometheus-ScrapeJob-Target與PullModel.md",
-      "archive": "docs/history/20260922-before-current/week11/Day2-Prometheus-ScrapeJob-Target與PullModel.md.txt",
-      "sha256": "f9a18952309ab0778fb84c7fc7a208733fdd13d67c434f6ec105ba1c004b5370",
-      "bytes": 7294
+      "archive": "docs/history/20260922-before-current/week11/Day2-Prometheus-ScrapeJob-Target與PullModel.md",
+      "sha256": "b5a5258f25120826b39f229e2f574864dbbe7e001ef60bfc414c21360bca6c0f",
+      "bytes": 7334,
+      "original_body_sha256": "f9a18952309ab0778fb84c7fc7a208733fdd13d67c434f6ec105ba1c004b5370",
+      "original_body_bytes": 7294
     },
     {
       "source": "docs/week11/Day3-FastAPI-Application-Metrics.md",
-      "archive": "docs/history/20260922-before-current/week11/Day3-FastAPI-Application-Metrics.md.txt",
-      "sha256": "a2a675577779f5fa3dc6a9b769c9f475185052baf4cef1e1ef1cc743872251c8",
-      "bytes": 7173
+      "archive": "docs/history/20260922-before-current/week11/Day3-FastAPI-Application-Metrics.md",
+      "sha256": "6e256e0d71c6b60305389081c6ab0bf511402da25e554be50811aeb9c11e401e",
+      "bytes": 7221,
+      "original_body_sha256": "a2a675577779f5fa3dc6a9b769c9f475185052baf4cef1e1ef1cc743872251c8",
+      "original_body_bytes": 7173
     },
     {
       "source": "docs/week11/Day4-NodeExporter-GrafanaDashboard-KubernetesServiceDiscovery.md",
-      "archive": "docs/history/20260922-before-current/week11/Day4-NodeExporter-GrafanaDashboard-KubernetesServiceDiscovery.md.txt",
-      "sha256": "205036a8cf2d025ef076f3401720971bf9dc67957dd00d59bf4a4ab1d92d9545",
-      "bytes": 9163
+      "archive": "docs/history/20260922-before-current/week11/Day4-NodeExporter-GrafanaDashboard-KubernetesServiceDiscovery.md",
+      "sha256": "7db7f09afd2ca5b52cdb300a19d8c76447a927c54b8571c6ab1d98acd97b3db7",
+      "bytes": 9235,
+      "original_body_sha256": "205036a8cf2d025ef076f3401720971bf9dc67957dd00d59bf4a4ab1d92d9545",
+      "original_body_bytes": 9163
     },
     {
       "source": "docs/week12/Day1-Linux-CPU-Performance-Analysis.md",
-      "archive": "docs/history/20260922-before-current/week12/Day1-Linux-CPU-Performance-Analysis.md.txt",
-      "sha256": "461774bde5b462fa5f27a6089afb1abc7eaa9146dc20497c0018c0f61cf38fc2",
-      "bytes": 6373
+      "archive": "docs/history/20260922-before-current/week12/Day1-Linux-CPU-Performance-Analysis.md",
+      "sha256": "90bcc055763a8aac1d2bc757f6d62b8c1e2d80ca1ba272496cd8b24ad188c420",
+      "bytes": 6397,
+      "original_body_sha256": "461774bde5b462fa5f27a6089afb1abc7eaa9146dc20497c0018c0f61cf38fc2",
+      "original_body_bytes": 6373
     },
     {
       "source": "docs/week12/Day2-Linux-Memory-Performance-Analysis.md",
-      "archive": "docs/history/20260922-before-current/week12/Day2-Linux-Memory-Performance-Analysis.md.txt",
-      "sha256": "619ad151ef7486784602f639174238c37c70a60b37d22c0928fa4c0ddfc6c998",
-      "bytes": 7845
+      "archive": "docs/history/20260922-before-current/week12/Day2-Linux-Memory-Performance-Analysis.md",
+      "sha256": "9f0532f1daff67aa63a4e843314632c24474efc50fcf9fc5c45e2b8e4b532372",
+      "bytes": 7869,
+      "original_body_sha256": "619ad151ef7486784602f639174238c37c70a60b37d22c0928fa4c0ddfc6c998",
+      "original_body_bytes": 7845
     },
     {
       "source": "docs/week12/Day3-Linux-Disk-Performance-Analysis.md",
-      "archive": "docs/history/20260922-before-current/week12/Day3-Linux-Disk-Performance-Analysis.md.txt",
-      "sha256": "3b397fe9727ef8b91360e808414184231f1a111babcdf1e54117b7ff04e1cd63",
-      "bytes": 4932
+      "archive": "docs/history/20260922-before-current/week12/Day3-Linux-Disk-Performance-Analysis.md",
+      "sha256": "2193734938fd6cb915756a4613e2280251a5e6ca50b19425f82e459954dd0a3c",
+      "bytes": 4956,
+      "original_body_sha256": "3b397fe9727ef8b91360e808414184231f1a111babcdf1e54117b7ff04e1cd63",
+      "original_body_bytes": 4932
     },
     {
       "source": "docs/week12/Day4-Linux-Historical-Performance-Analysis.md",
-      "archive": "docs/history/20260922-before-current/week12/Day4-Linux-Historical-Performance-Analysis.md.txt",
-      "sha256": "a964c2129e7978bd984683d2c3cc4d3a00b12c3a38bd68b5ab4007cc8970d093",
-      "bytes": 5188
+      "archive": "docs/history/20260922-before-current/week12/Day4-Linux-Historical-Performance-Analysis.md",
+      "sha256": "cba6e86d1524cb6b07255e90d1c04775c537b1b2dcfeea6e433ed1dcc5a9b004",
+      "bytes": 5212,
+      "original_body_sha256": "a964c2129e7978bd984683d2c3cc4d3a00b12c3a38bd68b5ab4007cc8970d093",
+      "original_body_bytes": 5188
     },
     {
       "source": "docs/week12/Day5-Linux-CPU-Benchmark-with-sysbench.md",
-      "archive": "docs/history/20260922-before-current/week12/Day5-Linux-CPU-Benchmark-with-sysbench.md.txt",
-      "sha256": "04558d8488286c6fcb18d70d6ac80241d89113854a25327f3a61882f3a13221c",
-      "bytes": 7335
+      "archive": "docs/history/20260922-before-current/week12/Day5-Linux-CPU-Benchmark-with-sysbench.md",
+      "sha256": "0dc06f780bbe69115f9c660002a0f9bd51d3a80a82cd5e0e09f7e9c6b7f4286f",
+      "bytes": 7359,
+      "original_body_sha256": "04558d8488286c6fcb18d70d6ac80241d89113854a25327f3a61882f3a13221c",
+      "original_body_bytes": 7335
     },
     {
       "source": "docs/week12/Day6-Linux-CPU-Profiling-with-perf.md",
-      "archive": "docs/history/20260922-before-current/week12/Day6-Linux-CPU-Profiling-with-perf.md.txt",
-      "sha256": "d4641996246778ba4db442e9d1f118fed88d705454afcd3315ffdb2be9452cfd",
-      "bytes": 7519
+      "archive": "docs/history/20260922-before-current/week12/Day6-Linux-CPU-Profiling-with-perf.md",
+      "sha256": "45dc8cd3dfb2ee2f14273aa9831497d0ab881872e4c4aba3e10aaaf02836613c",
+      "bytes": 7543,
+      "original_body_sha256": "d4641996246778ba4db442e9d1f118fed88d705454afcd3315ffdb2be9452cfd",
+      "original_body_bytes": 7519
     },
     {
       "source": "docs/week12/Day7-Linux-System-Call-Analysis-with-strace.md",
-      "archive": "docs/history/20260922-before-current/week12/Day7-Linux-System-Call-Analysis-with-strace.md.txt",
-      "sha256": "f4460fc21fc860061f7e01d011aad32bf1a69aadb7329c4dd9b6b605e676c593",
-      "bytes": 6395
+      "archive": "docs/history/20260922-before-current/week12/Day7-Linux-System-Call-Analysis-with-strace.md",
+      "sha256": "3f6aaa447f3800e41bfbaba4bc2aa4092bb7d6c6011b9375622d7c23fa1110e9",
+      "bytes": 6419,
+      "original_body_sha256": "f4460fc21fc860061f7e01d011aad32bf1a69aadb7329c4dd9b6b605e676c593",
+      "original_body_bytes": 6395
     },
     {
       "source": "docs/week13/Day1-FastAPI-API-Benchmark.md",
-      "archive": "docs/history/20260922-before-current/week13/Day1-FastAPI-API-Benchmark.md.txt",
-      "sha256": "9f83491007810d34ff2d39ba957246e1512240f0cbdc4e66efe62e9ba8984aea",
-      "bytes": 4611
+      "archive": "docs/history/20260922-before-current/week13/Day1-FastAPI-API-Benchmark.md",
+      "sha256": "21d0c2a38b7af936b9d8d1f82e8b84354393f352069637069f5ae1ccb9fa1922",
+      "bytes": 4643,
+      "original_body_sha256": "9f83491007810d34ff2d39ba957246e1512240f0cbdc4e66efe62e9ba8984aea",
+      "original_body_bytes": 4611
     },
     {
       "source": "docs/week13/Day2-Redis-Benchmark.md",
-      "archive": "docs/history/20260922-before-current/week13/Day2-Redis-Benchmark.md.txt",
-      "sha256": "ed6c58d77d28fcfe140cfadcf3b0e899cecf1be0ae63c8cd76690e9b7277b6c5",
-      "bytes": 3688
+      "archive": "docs/history/20260922-before-current/week13/Day2-Redis-Benchmark.md",
+      "sha256": "697eca3ec988f1601eb8e9360c1ceb95fdeb756a786b7460a2fc0e1bf641352e",
+      "bytes": 3720,
+      "original_body_sha256": "ed6c58d77d28fcfe140cfadcf3b0e899cecf1be0ae63c8cd76690e9b7277b6c5",
+      "original_body_bytes": 3688
     },
     {
       "source": "docs/week13/Day3-PostgreSQL-Benchmark.md",
-      "archive": "docs/history/20260922-before-current/week13/Day3-PostgreSQL-Benchmark.md.txt",
-      "sha256": "318c7906e9056fe8a2f754e98219fa9347f40aa4cb98f9098dd69e692e546ade",
-      "bytes": 3761
+      "archive": "docs/history/20260922-before-current/week13/Day3-PostgreSQL-Benchmark.md",
+      "sha256": "caff580302b5443dcae10d6f49645caae3d1839823d67d23e2da2ce12f2bc71f",
+      "bytes": 3801,
+      "original_body_sha256": "318c7906e9056fe8a2f754e98219fa9347f40aa4cb98f9098dd69e692e546ade",
+      "original_body_bytes": 3761
     },
     {
       "source": "docs/week13/Day4-PostgreSQL-Concurrency-Benchmark.md",
-      "archive": "docs/history/20260922-before-current/week13/Day4-PostgreSQL-Concurrency-Benchmark.md.txt",
-      "sha256": "46e1010b75a2bf27e46275be2aa4c5e8317817bc5c0b3e7a53991310c6bbaa46",
-      "bytes": 3220
+      "archive": "docs/history/20260922-before-current/week13/Day4-PostgreSQL-Concurrency-Benchmark.md",
+      "sha256": "96be52f67936cbc40f91072acf97689aee75e0e726844cebe744aa6f48f8e0cc",
+      "bytes": 3260,
+      "original_body_sha256": "46e1010b75a2bf27e46275be2aa4c5e8317817bc5c0b3e7a53991310c6bbaa46",
+      "original_body_bytes": 3220
     },
     {
       "source": "docs/week13/day5-resource-monitoring.md",
-      "archive": "docs/history/20260922-before-current/week13/day5-resource-monitoring.md.txt",
-      "sha256": "5b7f1432376501224ccd03df632abfec8d445f916b85065a237df242e7a350f0",
-      "bytes": 4910
+      "archive": "docs/history/20260922-before-current/week13/day5-resource-monitoring.md",
+      "sha256": "df4362523fca793ff3bcf985ca527dc6719ba3868e4efc007d80c687766a0ef1",
+      "bytes": 4950,
+      "original_body_sha256": "5b7f1432376501224ccd03df632abfec8d445f916b85065a237df242e7a350f0",
+      "original_body_bytes": 4910
     },
     {
       "source": "docs/week13/day6-benchmark-automation.md",
-      "archive": "docs/history/20260922-before-current/week13/day6-benchmark-automation.md.txt",
-      "sha256": "d793d9a44922a6126d5f13ef4f66b21689a0ef7889d8672be4fbbf9a91dd252d",
-      "bytes": 5366
+      "archive": "docs/history/20260922-before-current/week13/day6-benchmark-automation.md",
+      "sha256": "9b8c0020fc602fb59dc5c29c8d94afa966ead74f993c373fb583d45595d9cfa3",
+      "bytes": 5406,
+      "original_body_sha256": "d793d9a44922a6126d5f13ef4f66b21689a0ef7889d8672be4fbbf9a91dd252d",
+      "original_body_bytes": 5366
     },
     {
       "source": "docs/week13/day7-1-cpu-benchmark.md",
-      "archive": "docs/history/20260922-before-current/week13/day7-1-cpu-benchmark.md.txt",
-      "sha256": "4818888f75bff6095eb302f940aed3c901035dd3ea85aa84b2feee0cd67f5a38",
-      "bytes": 5458
+      "archive": "docs/history/20260922-before-current/week13/day7-1-cpu-benchmark.md",
+      "sha256": "6b50c70155e68afad99b3a6a1b982a9f9ffe2aaee3daf29170d1002fc61a1f6d",
+      "bytes": 5498,
+      "original_body_sha256": "4818888f75bff6095eb302f940aed3c901035dd3ea85aa84b2feee0cd67f5a38",
+      "original_body_bytes": 5458
     },
     {
       "source": "docs/week13/day7-2-storage-benchmark.md",
-      "archive": "docs/history/20260922-before-current/week13/day7-2-storage-benchmark.md.txt",
-      "sha256": "6d89524d77619ed0d3f840a187e7b2ea0cae5f81254fe3a786cd308c58cedede",
-      "bytes": 9732
+      "archive": "docs/history/20260922-before-current/week13/day7-2-storage-benchmark.md",
+      "sha256": "728c9c2b8cc44fa185938b38300c2f2ca8d79ced2d731cd0429e4ea263cfe365",
+      "bytes": 9772,
+      "original_body_sha256": "6d89524d77619ed0d3f840a187e7b2ea0cae5f81254fe3a786cd308c58cedede",
+      "original_body_bytes": 9732
     },
     {
       "source": "docs/week13/day7-3-network-benchmark.md",
-      "archive": "docs/history/20260922-before-current/week13/day7-3-network-benchmark.md.txt",
-      "sha256": "2e7678842c6ebd25d42c26914edc05d7c1ef9292f09146b6f89ddb857a00a76d",
-      "bytes": 7123
+      "archive": "docs/history/20260922-before-current/week13/day7-3-network-benchmark.md",
+      "sha256": "0bacc3a659506d59ca810a5b4b692886a992efa3d1887a85d563d3d7016edab0",
+      "bytes": 7163,
+      "original_body_sha256": "2e7678842c6ebd25d42c26914edc05d7c1ef9292f09146b6f89ddb857a00a76d",
+      "original_body_bytes": 7123
     },
     {
       "source": "docs/week13/day7-4-benchmark-framework.md",
-      "archive": "docs/history/20260922-before-current/week13/day7-4-benchmark-framework.md.txt",
-      "sha256": "52e1405231421204feb2c34c7cbd62c297efede6624dc8a1ca772c7e84e32b3f",
-      "bytes": 4974
+      "archive": "docs/history/20260922-before-current/week13/day7-4-benchmark-framework.md",
+      "sha256": "390fe2dc98f3d41ac434966f6f97512673d13a110db57e5e77405eb29380a614",
+      "bytes": 5030,
+      "original_body_sha256": "52e1405231421204feb2c34c7cbd62c297efede6624dc8a1ca772c7e84e32b3f",
+      "original_body_bytes": 4974
     },
     {
       "source": "docs/week13/day7-5-benchmark-framework-v2.md",
-      "archive": "docs/history/20260922-before-current/week13/day7-5-benchmark-framework-v2.md.txt",
-      "sha256": "805ea999a2bd33ddf5f916336ee2ea240d847b00fc01b10d8c659c5d64d3cfb5",
-      "bytes": 7173
+      "archive": "docs/history/20260922-before-current/week13/day7-5-benchmark-framework-v2.md",
+      "sha256": "f6fdea7bf255552d98da08de7697df3cb9ab5bb70c571f7e28a9451a62d87536",
+      "bytes": 7229,
+      "original_body_sha256": "805ea999a2bd33ddf5f916336ee2ea240d847b00fc01b10d8c659c5d64d3cfb5",
+      "original_body_bytes": 7173
     },
     {
       "source": "docs/week13/day7-6-result-integration.md",
-      "archive": "docs/history/20260922-before-current/week13/day7-6-result-integration.md.txt",
-      "sha256": "91f8f9732b5b56abe7db0501516efb4a7048eb9811c286d609e13014ba4a224e",
-      "bytes": 4751
+      "archive": "docs/history/20260922-before-current/week13/day7-6-result-integration.md",
+      "sha256": "fd7a72c6cbd8e40336c50832ee57c2e986da1ca8656bb878ac89d5b37e221b68",
+      "bytes": 4799,
+      "original_body_sha256": "91f8f9732b5b56abe7db0501516efb4a7048eb9811c286d609e13014ba4a224e",
+      "original_body_bytes": 4751
     },
     {
       "source": "docs/week13/day7-7-week13-final-report.md",
-      "archive": "docs/history/20260922-before-current/week13/day7-7-week13-final-report.md.txt",
-      "sha256": "b6f07cceca65d873bd05b2cee7a38a4a9ad78743289592dbd3bb5fdb03ac2f68",
-      "bytes": 5740
+      "archive": "docs/history/20260922-before-current/week13/day7-7-week13-final-report.md",
+      "sha256": "dd7a41bf43ff4eceb9c88ceedee4575c089e4388cf0a02394171ebe492c58da4",
+      "bytes": 5788,
+      "original_body_sha256": "b6f07cceca65d873bd05b2cee7a38a4a9ad78743289592dbd3bb5fdb03ac2f68",
+      "original_body_bytes": 5740
     },
     {
       "source": "docs/week13/day7-benchmark-report.md",
-      "archive": "docs/history/20260922-before-current/week13/day7-benchmark-report.md.txt",
-      "sha256": "20a858540f94b3cd4f48b2e367891ef47a54e6afb31522ce1f3fcdf2158849a8",
-      "bytes": 1143
+      "archive": "docs/history/20260922-before-current/week13/day7-benchmark-report.md",
+      "sha256": "3102900ba932ad8ddf32bdb62271a006a8662d35795341168d36e6e9649a09e7",
+      "bytes": 1191,
+      "original_body_sha256": "20a858540f94b3cd4f48b2e367891ef47a54e6afb31522ce1f3fcdf2158849a8",
+      "original_body_bytes": 1143
     },
     {
       "source": "docs/week14/day2-kubernetes-gpu-scheduling.md",
-      "archive": "docs/history/20260922-before-current/week14/day2-kubernetes-gpu-scheduling.md.txt",
-      "sha256": "2c4f84d5f10ab26c4d429fbee45424dd07bb99e497da0775935da236c6a47b2b",
-      "bytes": 5509
+      "archive": "docs/history/20260922-before-current/week14/day2-kubernetes-gpu-scheduling.md",
+      "sha256": "1cbcd1bce2b1c5d20006651e5443e201d61544d884aa08ede5bf0715b573a6d3",
+      "bytes": 5533,
+      "original_body_sha256": "2c4f84d5f10ab26c4d429fbee45424dd07bb99e497da0775935da236c6a47b2b",
+      "original_body_bytes": 5509
     },
     {
       "source": "docs/week14/day3-gpu-monitoring-architecture.md",
-      "archive": "docs/history/20260922-before-current/week14/day3-gpu-monitoring-architecture.md.txt",
-      "sha256": "f867a1cc3e395055754c6f3bff7a9e5393cad31ec752394a3058d14e9e49a168",
-      "bytes": 5982
+      "archive": "docs/history/20260922-before-current/week14/day3-gpu-monitoring-architecture.md",
+      "sha256": "78099f3ed09556772d0a09ddff90d5a9370fa8216ccc3f72c1e3cdfea6b414bd",
+      "bytes": 6022,
+      "original_body_sha256": "f867a1cc3e395055754c6f3bff7a9e5393cad31ec752394a3058d14e9e49a168",
+      "original_body_bytes": 5982
     },
     {
       "source": "docs/week14/Day4-GKE-GPU-Node-Pool-GPU-Scheduling.md",
-      "archive": "docs/history/20260922-before-current/week14/Day4-GKE-GPU-Node-Pool-GPU-Scheduling.md.txt",
-      "sha256": "e51c7f68000029bc096a25c20266bd16c586321ae557d89467c68bc8264bfccf",
-      "bytes": 7688
+      "archive": "docs/history/20260922-before-current/week14/Day4-GKE-GPU-Node-Pool-GPU-Scheduling.md",
+      "sha256": "c3fd956623cb3f504f19f40390291dde0c8dd4043be48739a72d68ff61148d50",
+      "bytes": 7712,
+      "original_body_sha256": "e51c7f68000029bc096a25c20266bd16c586321ae557d89467c68bc8264bfccf",
+      "original_body_bytes": 7688
     },
     {
       "source": "docs/week14/Day5-GPU-Metrics-Monitoring-integration.md",
-      "archive": "docs/history/20260922-before-current/week14/Day5-GPU-Metrics-Monitoring-integration.md.txt",
-      "sha256": "a061a0d2f516b99f315ca4a75b3e50a4be2cd60da28317396d1edeef8b0f5b3a",
-      "bytes": 9271
+      "archive": "docs/history/20260922-before-current/week14/Day5-GPU-Metrics-Monitoring-integration.md",
+      "sha256": "3b3f0e763b32db4c75c76ae8537f6a5a9b7360545fa4334d1c72371eee88660b",
+      "bytes": 9319,
+      "original_body_sha256": "a061a0d2f516b99f315ca4a75b3e50a4be2cd60da28317396d1edeef8b0f5b3a",
+      "original_body_bytes": 9271
     },
     {
       "source": "docs/week14/Day6-gpu-dashboard-establish-and-gpuworkload-verification.md",
-      "archive": "docs/history/20260922-before-current/week14/Day6-gpu-dashboard-establish-and-gpuworkload-verification.md.txt",
-      "sha256": "3c3ecf77d43d873258e62f955f0b41fad2c820cf844a454eec98ae5d08d11875",
-      "bytes": 4417
+      "archive": "docs/history/20260922-before-current/week14/Day6-gpu-dashboard-establish-and-gpuworkload-verification.md",
+      "sha256": "1775eab0ebc0b8bb7e57f391c2384376f944af2adf2475b1c767ca69962e77b4",
+      "bytes": 4457,
+      "original_body_sha256": "3c3ecf77d43d873258e62f955f0b41fad2c820cf844a454eec98ae5d08d11875",
+      "original_body_bytes": 4417
     },
     {
       "source": "docs/week15/Day1—PyTorch-GPU-Runtime.md",
-      "archive": "docs/history/20260922-before-current/week15/Day1—PyTorch-GPU-Runtime.md.txt",
-      "sha256": "ed3d7cc923cf4b05f0b5077e964fcd7dafa4d7a7c3012f3563877f655759ed2c",
-      "bytes": 17930
+      "archive": "docs/history/20260922-before-current/week15/Day1—PyTorch-GPU-Runtime.md",
+      "sha256": "cddb83df5ec374e8c86c89acf698586a00f3c9d9c852c1862c056d21317931b2",
+      "bytes": 18018,
+      "original_body_sha256": "ed3d7cc923cf4b05f0b5077e964fcd7dafa4d7a7c3012f3563877f655759ed2c",
+      "original_body_bytes": 17930
     },
     {
       "source": "docs/week15/Day2-PyTorch-Training-Runtime.md",
-      "archive": "docs/history/20260922-before-current/week15/Day2-PyTorch-Training-Runtime.md.txt",
-      "sha256": "d02042605acac0ec86c992bc7fb0e634040b9ad741e77545e1104cc625b36711",
-      "bytes": 26315
+      "archive": "docs/history/20260922-before-current/week15/Day2-PyTorch-Training-Runtime.md",
+      "sha256": "27c862a9e92732e89c203dff83438964362a50c7ce1c47303cab81a37a7182d2",
+      "bytes": 26363,
+      "original_body_sha256": "d02042605acac0ec86c992bc7fb0e634040b9ad741e77545e1104cc625b36711",
+      "original_body_bytes": 26315
     },
     {
       "source": "docs/week15/Day3-vLLM-Inference-Runtime.md",
-      "archive": "docs/history/20260922-before-current/week15/Day3-vLLM-Inference-Runtime.md.txt",
-      "sha256": "b7c434eecdfbb17610a79c60d002d716d3b77aa80ee8824e5cfca40dec17c886",
-      "bytes": 17635
+      "archive": "docs/history/20260922-before-current/week15/Day3-vLLM-Inference-Runtime.md",
+      "sha256": "fb2db9aa61da9f40ebfb888e86dd4ce2c278f433d41edfa86b2b32327f6fe496",
+      "bytes": 17707,
+      "original_body_sha256": "b7c434eecdfbb17610a79c60d002d716d3b77aa80ee8824e5cfca40dec17c886",
+      "original_body_bytes": 17635
     },
     {
       "source": "docs/week15/Day4-Runtime-Abstraction.md",
-      "archive": "docs/history/20260922-before-current/week15/Day4-Runtime-Abstraction.md.txt",
-      "sha256": "7bf3ac6ae168e20baecf3c4eb341dd60f2c575d2aa460679972f12b214941a9a",
-      "bytes": 19015
+      "archive": "docs/history/20260922-before-current/week15/Day4-Runtime-Abstraction.md",
+      "sha256": "e8a8223ee3236c942fd3b3c0640ad0c1ed77c90d1520fe0cebbe7b38033700d4",
+      "bytes": 19071,
+      "original_body_sha256": "7bf3ac6ae168e20baecf3c4eb341dd60f2c575d2aa460679972f12b214941a9a",
+      "original_body_bytes": 19015
     },
     {
       "source": "docs/week15/Day5-Benchmark-Engine.md",
-      "archive": "docs/history/20260922-before-current/week15/Day5-Benchmark-Engine.md.txt",
-      "sha256": "cac040b766c97e11ebf45b7955ebfc9b72532d7a85269e4884c2d19a909fef55",
-      "bytes": 15158
+      "archive": "docs/history/20260922-before-current/week15/Day5-Benchmark-Engine.md",
+      "sha256": "23c5ae7cd03b5b5eff17eb075b22cee3a17f12a51b15fa29a12e2be2ffc84bd4",
+      "bytes": 15230,
+      "original_body_sha256": "cac040b766c97e11ebf45b7955ebfc9b72532d7a85269e4884c2d19a909fef55",
+      "original_body_bytes": 15158
     },
     {
       "source": "docs/week15/Day6-Performance-Analyzer.md",
-      "archive": "docs/history/20260922-before-current/week15/Day6-Performance-Analyzer.md.txt",
-      "sha256": "c104138553e9df15d18140263eaaa0e0513b41bfa671845f5499bed4e88420b1",
-      "bytes": 15997
+      "archive": "docs/history/20260922-before-current/week15/Day6-Performance-Analyzer.md",
+      "sha256": "ccda6a00880202cb03e603c1c78c34286c339225f0cdb55b764aeba6a599f039",
+      "bytes": 16053,
+      "original_body_sha256": "c104138553e9df15d18140263eaaa0e0513b41bfa671845f5499bed4e88420b1",
+      "original_body_bytes": 15997
     },
     {
       "source": "docs/week15/Day7-AI-Runtime-Platform-v1-Integration.md",
-      "archive": "docs/history/20260922-before-current/week15/Day7-AI-Runtime-Platform-v1-Integration.md.txt",
-      "sha256": "73f57937d6e854cede1d2348c159a06168896237d9d9a19db6d7970663f2c3e6",
-      "bytes": 18440
+      "archive": "docs/history/20260922-before-current/week15/Day7-AI-Runtime-Platform-v1-Integration.md",
+      "sha256": "5644dcaf95fd0d9a543ca4b8f1aa2ec8d5c8e2b159b78902140621a571a41a8a",
+      "bytes": 18528,
+      "original_body_sha256": "73f57937d6e854cede1d2348c159a06168896237d9d9a19db6d7970663f2c3e6",
+      "original_body_bytes": 18440
     },
     {
       "source": "docs/week16/day1-multi-gpu-fundamentals.md",
-      "archive": "docs/history/20260922-before-current/week16/day1-multi-gpu-fundamentals.md.txt",
-      "sha256": "4e819039dc4cf4e5ff88a5d93377a160294fb2dcc76abe6824bf321b69910c80",
-      "bytes": 16553
+      "archive": "docs/history/20260922-before-current/week16/day1-multi-gpu-fundamentals.md",
+      "sha256": "8fa6ccd0ffd557f2483982898395f82c80f517f76f8374f8d379385423d7c54b",
+      "bytes": 16585,
+      "original_body_sha256": "4e819039dc4cf4e5ff88a5d93377a160294fb2dcc76abe6824bf321b69910c80",
+      "original_body_bytes": 16553
     },
     {
       "source": "docs/week16/day2-pytorch-ddp.md",
-      "archive": "docs/history/20260922-before-current/week16/day2-pytorch-ddp.md.txt",
-      "sha256": "9a74e2159db904fa9c99ba6f8f0c73869c102684caf819a551a767b08f2fb74d",
-      "bytes": 8480
+      "archive": "docs/history/20260922-before-current/week16/day2-pytorch-ddp.md",
+      "sha256": "4440368ccb84fca4fcfe8e70d25ae32f16fb32f3492f060877ce7cf3af04d67d",
+      "bytes": 8544,
+      "original_body_sha256": "9a74e2159db904fa9c99ba6f8f0c73869c102684caf819a551a767b08f2fb74d",
+      "original_body_bytes": 8480
     },
     {
       "source": "docs/week16/day3-nccl-fundamentals.md",
-      "archive": "docs/history/20260922-before-current/week16/day3-nccl-fundamentals.md.txt",
-      "sha256": "c4bf4a5be54202789b1ea3461a0a42e4016d0e6cfb45006552feb99da019ffec",
-      "bytes": 6005
+      "archive": "docs/history/20260922-before-current/week16/day3-nccl-fundamentals.md",
+      "sha256": "769246cdf3aa4db3ab92c90fb11cd4936451343ef302791c51e9dafe21e9cbd8",
+      "bytes": 6045,
+      "original_body_sha256": "c4bf4a5be54202789b1ea3461a0a42e4016d0e6cfb45006552feb99da019ffec",
+      "original_body_bytes": 6005
     },
     {
       "source": "docs/week16/day4-nccl-communication-benchmark.md",
-      "archive": "docs/history/20260922-before-current/week16/day4-nccl-communication-benchmark.md.txt",
-      "sha256": "192a007165b7a215fbf303cab2c7628f883b25903debf861e1b11c255ec19999",
-      "bytes": 4323
+      "archive": "docs/history/20260922-before-current/week16/day4-nccl-communication-benchmark.md",
+      "sha256": "9f1dade5e7ec99c01e0270b3b5d52c1d604bc37a069a618f3a09e04cb882d6c0",
+      "bytes": 4363,
+      "original_body_sha256": "192a007165b7a215fbf303cab2c7628f883b25903debf861e1b11c255ec19999",
+      "original_body_bytes": 4323
     },
     {
       "source": "docs/week16/day5-distributed-training-scaling.md",
-      "archive": "docs/history/20260922-before-current/week16/day5-distributed-training-scaling.md.txt",
-      "sha256": "ce14f4ee1ffd0e338c2252f0408bfe179d9d6e3b3611226d666947b9e4a6ee5e",
-      "bytes": 5322
+      "archive": "docs/history/20260922-before-current/week16/day5-distributed-training-scaling.md",
+      "sha256": "23e423c745409973159bf9f9bff0bd7b4e6088e731facd72380cfa49914334fb",
+      "bytes": 5370,
+      "original_body_sha256": "ce14f4ee1ffd0e338c2252f0408bfe179d9d6e3b3611226d666947b9e4a6ee5e",
+      "original_body_bytes": 5322
     },
     {
       "source": "docs/week17/day1-mpi-fundamentals.md",
-      "archive": "docs/history/20260922-before-current/week17/day1-mpi-fundamentals.md.txt",
-      "sha256": "c4b9f6e333992d2683882ed9d692c44921c2733bf2538b09550bc4236347cd53",
-      "bytes": 6602
+      "archive": "docs/history/20260922-before-current/week17/day1-mpi-fundamentals.md",
+      "sha256": "b384d03c8671f36d216015e317a7d18b39d4ace4ff7ef4c5d4414d80f4d1be04",
+      "bytes": 6658,
+      "original_body_sha256": "c4b9f6e333992d2683882ed9d692c44921c2733bf2538b09550bc4236347cd53",
+      "original_body_bytes": 6602
     },
     {
       "source": "docs/week17/day2-mpi-performance-benchmark.md",
-      "archive": "docs/history/20260922-before-current/week17/day2-mpi-performance-benchmark.md.txt",
-      "sha256": "81711fd9978e45352a2258873d82cbadb92c1d66999fc0c48354d6a205b1b0b7",
-      "bytes": 8146
+      "archive": "docs/history/20260922-before-current/week17/day2-mpi-performance-benchmark.md",
+      "sha256": "65928ff84d5cfd76bd4afdebd456a697e15df19088fbcd371baba796ba68d345",
+      "bytes": 8180,
+      "original_body_sha256": "81711fd9978e45352a2258873d82cbadb92c1d66999fc0c48354d6a205b1b0b7",
+      "original_body_bytes": 8146
     },
     {
       "source": "docs/week17/day3-hpc-communication-stack.md",
-      "archive": "docs/history/20260922-before-current/week17/day3-hpc-communication-stack.md.txt",
-      "sha256": "83d79403979460acccaa024a9a86549ec719b2a93f7509ed8bd0282405835f7c",
-      "bytes": 12692
+      "archive": "docs/history/20260922-before-current/week17/day3-hpc-communication-stack.md",
+      "sha256": "18967eb213afc7e63f368d813bd50635539d3698e9e0cbb7e522743a0cc890ee",
+      "bytes": 12716,
+      "original_body_sha256": "83d79403979460acccaa024a9a86549ec719b2a93f7509ed8bd0282405835f7c",
+      "original_body_bytes": 12692
     },
     {
       "source": "docs/week17/day4-slurm-multinode-hpc-cluster.md",
-      "archive": "docs/history/20260922-before-current/week17/day4-slurm-multinode-hpc-cluster.md.txt",
-      "sha256": "f3007aaec082a6b93674ec7bf0d2a8e213382d10860f3a47db2e6679cbe3a7cf",
-      "bytes": 12265
+      "archive": "docs/history/20260922-before-current/week17/day4-slurm-multinode-hpc-cluster.md",
+      "sha256": "299d93d83cbd354eddc3d4a5232b7453407192dccd9b3301b3eb9dd2a9c0dfcc",
+      "bytes": 12321,
+      "original_body_sha256": "f3007aaec082a6b93674ec7bf0d2a8e213382d10860f3a47db2e6679cbe3a7cf",
+      "original_body_bytes": 12265
     },
     {
       "source": "docs/week17/day5-ray-kuberay-distributed-computing.md",
-      "archive": "docs/history/20260922-before-current/week17/day5-ray-kuberay-distributed-computing.md.txt",
-      "sha256": "a4b9a95285fd2dacf01048c4b026dd2e4f2990ffc2331219d5eba15d4cf1c263",
-      "bytes": 8652
+      "archive": "docs/history/20260922-before-current/week17/day5-ray-kuberay-distributed-computing.md",
+      "sha256": "bff82cd0bf36839cf810194706696cfc92c022889c75498138212b0f14208be3",
+      "bytes": 8684,
+      "original_body_sha256": "a4b9a95285fd2dacf01048c4b026dd2e4f2990ffc2331219d5eba15d4cf1c263",
+      "original_body_bytes": 8652
     },
     {
       "source": "docs/week17/day6-cluster-scheduling-integration.md",
-      "archive": "docs/history/20260922-before-current/week17/day6-cluster-scheduling-integration.md.txt",
-      "sha256": "cfb89666fcb8a88c29190430fd17553d5fc5611714188ef936e947eb8069483f",
-      "bytes": 10294
+      "archive": "docs/history/20260922-before-current/week17/day6-cluster-scheduling-integration.md",
+      "sha256": "e82622773eea3b1af99d1d27315dca31b09135a23c18fa2e82f2bb9132809671",
+      "bytes": 10342,
+      "original_body_sha256": "cfb89666fcb8a88c29190430fd17553d5fc5611714188ef936e947eb8069483f",
+      "original_body_bytes": 10294
     },
     {
       "source": "docs/week18/day1-linux-network-troubleshooting-baseline.md",
-      "archive": "docs/history/20260922-before-current/week18/day1-linux-network-troubleshooting-baseline.md.txt",
-      "sha256": "1b53047264d37b357f3d4ab6989c642b12b01fb0141529d0cf68a747481297cf",
-      "bytes": 7758
+      "archive": "docs/history/20260922-before-current/week18/day1-linux-network-troubleshooting-baseline.md",
+      "sha256": "2d65fee0e3989bb0241faccd5b8dde3ff66cd9c67ff01549d2ad8563d4566e1a",
+      "bytes": 7792,
+      "original_body_sha256": "1b53047264d37b357f3d4ab6989c642b12b01fb0141529d0cf68a747481297cf",
+      "original_body_bytes": 7758
     },
     {
       "source": "docs/week18/day2-network-quality-bandwidth-latency-mtu.md",
-      "archive": "docs/history/20260922-before-current/week18/day2-network-quality-bandwidth-latency-mtu.md.txt",
-      "sha256": "b148d6efe96f17a3645d983029463a8bfb60c97d47a4ab8fc33ce2e697a42f47",
-      "bytes": 7451
+      "archive": "docs/history/20260922-before-current/week18/day2-network-quality-bandwidth-latency-mtu.md",
+      "sha256": "399128814b9ab2f58737935d782aa2b5b68dc26923d1f278a7e105c088891eee",
+      "bytes": 7491,
+      "original_body_sha256": "b148d6efe96f17a3645d983029463a8bfb60c97d47a4ab8fc33ce2e697a42f47",
+      "original_body_bytes": 7451
     },
     {
       "source": "docs/week18/day3-packet-level-network-failure-troubleshooting.md",
-      "archive": "docs/history/20260922-before-current/week18/day3-packet-level-network-failure-troubleshooting.md.txt",
-      "sha256": "3b5786ecf14ecdc2cc477f7d153f68f37ba0679f8c56e7ce71bd99209672c766",
-      "bytes": 7601
+      "archive": "docs/history/20260922-before-current/week18/day3-packet-level-network-failure-troubleshooting.md",
+      "sha256": "b3bdf7742d9675b6043d214a1da63b7d437a83cab279931468e0ce63ee866d16",
+      "bytes": 7635,
+      "original_body_sha256": "3b5786ecf14ecdc2cc477f7d153f68f37ba0679f8c56e7ce71bd99209672c766",
+      "original_body_bytes": 7601
     },
     {
       "source": "docs/week18/day4-kubernetes-network-troubleshooting.md",
-      "archive": "docs/history/20260922-before-current/week18/day4-kubernetes-network-troubleshooting.md.txt",
-      "sha256": "c235cb74ed6f451f2ee06be226bc7260c7a457c136c44e06ff7001ff47c93989",
-      "bytes": 11604
+      "archive": "docs/history/20260922-before-current/week18/day4-kubernetes-network-troubleshooting.md",
+      "sha256": "400ed5aa665312085e2d8acd2f45ca146684649efdaf82a320597b6e9b583c5c",
+      "bytes": 11652,
+      "original_body_sha256": "c235cb74ed6f451f2ee06be226bc7260c7a457c136c44e06ff7001ff47c93989",
+      "original_body_bytes": 11604
     },
     {
       "source": "docs/week18/day5-nccl-transport-debugging.md",
-      "archive": "docs/history/20260922-before-current/week18/day5-nccl-transport-debugging.md.txt",
-      "sha256": "403fc67aacdcbb26d3280b38b5d880b0f82b120cdc9e5bfb23e41075da4d332c",
-      "bytes": 10265
+      "archive": "docs/history/20260922-before-current/week18/day5-nccl-transport-debugging.md",
+      "sha256": "635beda38679bd94fb33821034a3e353225f80afa3b075dbf79a121509c8529b",
+      "bytes": 10305,
+      "original_body_sha256": "403fc67aacdcbb26d3280b38b5d880b0f82b120cdc9e5bfb23e41075da4d332c",
+      "original_body_bytes": 10265
     },
     {
       "source": "docs/week18/day6-gpu-nic-numa-topology.md",
-      "archive": "docs/history/20260922-before-current/week18/day6-gpu-nic-numa-topology.md.txt",
-      "sha256": "818fd29fbae9aa20ac70750d10799d6a4bce4a8373172781bf798edac2db4728",
-      "bytes": 7363
+      "archive": "docs/history/20260922-before-current/week18/day6-gpu-nic-numa-topology.md",
+      "sha256": "62aba53b3d2ad4a270a35750c20a8a5588e19b1904d36e67516cc64e05e15b8f",
+      "bytes": 7387,
+      "original_body_sha256": "818fd29fbae9aa20ac70750d10799d6a4bce4a8373172781bf798edac2db4728",
+      "original_body_bytes": 7363
     },
     {
       "source": "docs/week18/day7-distributed-communication-troubleshooting-playbook.md",
-      "archive": "docs/history/20260922-before-current/week18/day7-distributed-communication-troubleshooting-playbook.md.txt",
-      "sha256": "8672cd9543aa0dd476e9ba110423c3e35252d5384adf515c11e6ae60f19bda64",
-      "bytes": 9865
+      "archive": "docs/history/20260922-before-current/week18/day7-distributed-communication-troubleshooting-playbook.md",
+      "sha256": "9559cc6fdbfc532e04a7cb71cc9b9692e7e5d91c03d19ca143bfd5283cd29f83",
+      "bytes": 9905,
+      "original_body_sha256": "8672cd9543aa0dd476e9ba110423c3e35252d5384adf515c11e6ae60f19bda64",
+      "original_body_bytes": 9865
     },
     {
       "source": "docs/week19/day1-gpu-sharing-models.md",
-      "archive": "docs/history/20260922-before-current/week19/day1-gpu-sharing-models.md.txt",
-      "sha256": "27f94b5e7b113c896984da7f05b62267f9a12c8b7efa130204eb1d9e1b65fd01",
-      "bytes": 10137
+      "archive": "docs/history/20260922-before-current/week19/day1-gpu-sharing-models.md",
+      "sha256": "c858d1c0a79f96183edf3d6c8f46609c195949a96a1764f0629b77db13ae0df2",
+      "bytes": 10177,
+      "original_body_sha256": "27f94b5e7b113c896984da7f05b62267f9a12c8b7efa130204eb1d9e1b65fd01",
+      "original_body_bytes": 10137
     },
     {
       "source": "docs/week19/day2-kueue-gpu-admission.md",
-      "archive": "docs/history/20260922-before-current/week19/day2-kueue-gpu-admission.md.txt",
-      "sha256": "439030163df7a05ef84bb440b133f2b1547d5d1dc3ab5df17e9639805d9434c7",
-      "bytes": 11408
+      "archive": "docs/history/20260922-before-current/week19/day2-kueue-gpu-admission.md",
+      "sha256": "e0a99b91eb5b915fd000f0b3ab1acaca83391ab4bc96928d28359cd2f4a4f8f9",
+      "bytes": 11448,
+      "original_body_sha256": "439030163df7a05ef84bb440b133f2b1547d5d1dc3ab5df17e9639805d9434c7",
+      "original_body_bytes": 11408
     },
     {
       "source": "docs/week19/day3-gpu-quota-admission-queue-behavior.md",
-      "archive": "docs/history/20260922-before-current/week19/day3-gpu-quota-admission-queue-behavior.md.txt",
-      "sha256": "76b7b214f810d975f78a697020921c420a7bd8e7558df94bc41b0891c5b1b63c",
-      "bytes": 10578
+      "archive": "docs/history/20260922-before-current/week19/day3-gpu-quota-admission-queue-behavior.md",
+      "sha256": "ab44be0e0251e957c19e93de1605e7b5e11331d0bac90a9edb3a12432846714f",
+      "bytes": 10618,
+      "original_body_sha256": "76b7b214f810d975f78a697020921c420a7bd8e7558df94bc41b0891c5b1b63c",
+      "original_body_bytes": 10578
     },
     {
       "source": "docs/week19/day4-priority-preemption-multi-tenancy.md",
-      "archive": "docs/history/20260922-before-current/week19/day4-priority-preemption-multi-tenancy.md.txt",
-      "sha256": "9e8d3a6fcef83e0477508985b9d0e863842f03d95cef0942d6c87439d4056955",
-      "bytes": 10293
+      "archive": "docs/history/20260922-before-current/week19/day4-priority-preemption-multi-tenancy.md",
+      "sha256": "571c958fcf1bfe6d6f26fa7598eee4daebf2f86cdc2da7a5277f55455af2b715",
+      "bytes": 10341,
+      "original_body_sha256": "9e8d3a6fcef83e0477508985b9d0e863842f03d95cef0942d6c87439d4056955",
+      "original_body_bytes": 10293
     },
     {
       "source": "docs/week19/day5-gang-jobset-mpi.md",
-      "archive": "docs/history/20260922-before-current/week19/day5-gang-jobset-mpi.md.txt",
-      "sha256": "a86e936708d081cd29d45c5588b0f80dcf710f8d1c0fff310d03ce3c07768180",
-      "bytes": 6072
+      "archive": "docs/history/20260922-before-current/week19/day5-gang-jobset-mpi.md",
+      "sha256": "06dac247e863d698864f52acb05c63eb0884dbe91091caf023734e2600203b6f",
+      "bytes": 6120,
+      "original_body_sha256": "a86e936708d081cd29d45c5588b0f80dcf710f8d1c0fff310d03ce3c07768180",
+      "original_body_bytes": 6072
     },
     {
       "source": "docs/week19/day6-topology-aware-gpu-scheduling.md",
-      "archive": "docs/history/20260922-before-current/week19/day6-topology-aware-gpu-scheduling.md.txt",
-      "sha256": "2a6f9700873c12e71aecfafd3589138c2291aa0995424192cb95f09857237ade",
-      "bytes": 6274
+      "archive": "docs/history/20260922-before-current/week19/day6-topology-aware-gpu-scheduling.md",
+      "sha256": "b14013a25d282efece59c9bda2c33186162aa3f70ed900c2cd8494ac52f79fc6",
+      "bytes": 6322,
+      "original_body_sha256": "2a6f9700873c12e71aecfafd3589138c2291aa0995424192cb95f09857237ade",
+      "original_body_bytes": 6274
     },
     {
       "source": "docs/week19/day7-gpu-scheduling-platform-integration.md",
-      "archive": "docs/history/20260922-before-current/week19/day7-gpu-scheduling-platform-integration.md.txt",
-      "sha256": "3fe235bd2d7ce5413a37716ff29a0ae2dca4ac85dbc374bba7e26be672b8a11f",
-      "bytes": 10446
+      "archive": "docs/history/20260922-before-current/week19/day7-gpu-scheduling-platform-integration.md",
+      "sha256": "6e4d81e7094870e6c8fa87968f980878dde805a00f34bbdd4c87bbc43e64123f",
+      "bytes": 10510,
+      "original_body_sha256": "3fe235bd2d7ce5413a37716ff29a0ae2dca4ac85dbc374bba7e26be672b8a11f",
+      "original_body_bytes": 10446
     },
     {
       "source": "docs/week20/day1-rbac-serviceaccount-least-privilege.md",
-      "archive": "docs/history/20260922-before-current/week20/day1-rbac-serviceaccount-least-privilege.md.txt",
-      "sha256": "fdf8468932976e99790c421ba5ce55320cee97f8dfff88af2166f95083093647",
-      "bytes": 5648
+      "archive": "docs/history/20260922-before-current/week20/day1-rbac-serviceaccount-least-privilege.md",
+      "sha256": "78b18b75de7caf961b1506b75be9706c562dd6752ad702d780bccd2a5200a4f4",
+      "bytes": 5696,
+      "original_body_sha256": "fdf8468932976e99790c421ba5ce55320cee97f8dfff88af2166f95083093647",
+      "original_body_bytes": 5648
     },
     {
       "source": "docs/week20/day2-pod-image-secret-security.md",
-      "archive": "docs/history/20260922-before-current/week20/day2-pod-image-secret-security.md.txt",
-      "sha256": "2ec8df8f7f86968c614feeba9a6bed5efff391bd228209bca2fde60b5dba3e13",
-      "bytes": 6862
+      "archive": "docs/history/20260922-before-current/week20/day2-pod-image-secret-security.md",
+      "sha256": "e5224a8fee99437d8d40def5e101eb039ebe857dc8ee01ea3480d979bec5cb3e",
+      "bytes": 6934,
+      "original_body_sha256": "2ec8df8f7f86968c614feeba9a6bed5efff391bd228209bca2fde60b5dba3e13",
+      "original_body_bytes": 6862
     },
     {
       "source": "docs/week20/day3-networkpolicy-tenant-isolation.md",
-      "archive": "docs/history/20260922-before-current/week20/day3-networkpolicy-tenant-isolation.md.txt",
-      "sha256": "b0497c18a57e20b3220be10c2aefeeebae6dbabf535e4f5415f27eb78b3b18bc",
-      "bytes": 6287
+      "archive": "docs/history/20260922-before-current/week20/day3-networkpolicy-tenant-isolation.md",
+      "sha256": "9ecf33a72fa702b5dd510206b7045f6e46a21cf24a1ae4219f510bf268a3dfa3",
+      "bytes": 6351,
+      "original_body_sha256": "b0497c18a57e20b3220be10c2aefeeebae6dbabf535e4f5415f27eb78b3b18bc",
+      "original_body_bytes": 6287
     },
     {
       "source": "docs/week20/day4-ha-node-failure-recovery.md",
-      "archive": "docs/history/20260922-before-current/week20/day4-ha-node-failure-recovery.md.txt",
-      "sha256": "1cee3c7970bfb29418f41c8852e5d6a0078debc2a27cff8b684d35c98c1d80e3",
-      "bytes": 7807
+      "archive": "docs/history/20260922-before-current/week20/day4-ha-node-failure-recovery.md",
+      "sha256": "7f53d39395005a4a538d934ef01f9fad1ad820ce621b136856be7101e5ccddfa",
+      "bytes": 7847,
+      "original_body_sha256": "1cee3c7970bfb29418f41c8852e5d6a0078debc2a27cff8b684d35c98c1d80e3",
+      "original_body_bytes": 7807
     },
     {
       "source": "docs/week20/day5-ai-hpc-production-troubleshooting.md",
-      "archive": "docs/history/20260922-before-current/week20/day5-ai-hpc-production-troubleshooting.md.txt",
-      "sha256": "c32c9807fcf836901ace038d136e551a65826aea8a5cb73fe8482fa97e069c86",
-      "bytes": 9198
+      "archive": "docs/history/20260922-before-current/week20/day5-ai-hpc-production-troubleshooting.md",
+      "sha256": "5aa6ffbf32bdfbc3462ee73af283a33bc5bfcbcfd01bf7694c874d16e8163e9e",
+      "bytes": 9246,
+      "original_body_sha256": "c32c9807fcf836901ace038d136e551a65826aea8a5cb73fe8482fa97e069c86",
+      "original_body_bytes": 9198
     },
     {
       "source": "docs/week20/day6-ai-hpc-platform-technology-selection.md",
-      "archive": "docs/history/20260922-before-current/week20/day6-ai-hpc-platform-technology-selection.md.txt",
-      "sha256": "de0eb71506aa0a2de86e471da7d9d597f2557df4bda843dae521ac0c61da6c8d",
-      "bytes": 13254
+      "archive": "docs/history/20260922-before-current/week20/day6-ai-hpc-platform-technology-selection.md",
+      "sha256": "3f9de20403ad623674abd14d6a38768c7457bf64a0a1a913f2a4242f632c47e1",
+      "bytes": 13278,
+      "original_body_sha256": "de0eb71506aa0a2de86e471da7d9d597f2557df4bda843dae521ac0c61da6c8d",
+      "original_body_bytes": 13254
     }
   ],
   "protected_evidence_sha256": {
@@ -878,5 +1154,6 @@
     "benchmark/results/causal-lm-20260922/benchmark-source.py": "204d836224b94086fe95e12885e6a23496d01a1a20f76b1e49a593b387f72171"
   },
   "navigation_index_before_sha256": "49fafc949e02cbd259c2e9d45db4a9754ce0eb088ff7339ee20b9cf4857a2657",
-  "navigation_note": "Evidence README links are updated to archived Week outputs; all protected raw artifacts retain their hashes."
+  "navigation_note": "Evidence README links are updated to archived Week outputs; all protected raw artifacts retain their hashes.",
+  "format": "Markdown archives with rebased links; each source contains exact original body after original-week-body marker"
 }

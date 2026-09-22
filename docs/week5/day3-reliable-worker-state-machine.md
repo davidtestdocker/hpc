@@ -1,13 +1,13 @@
-<!-- current-curriculum: 2026-09-22 -->
+<!-- readable-curriculum: 2026-09-22 -->
 # Week5 Day3 — 現行 worker 狀態機
 
 [上一課](<day2-redis-persistence.md>) · [本週目錄](README.md) · [下一課](<day4-stuck-job-recovery.md>) · [全程導讀](../learning-guide.md)
 
 版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-## 先備知識與本課目標
+## 閱讀方式：不用再開 VM 或做本機測試
 
-先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「現行 worker 狀態機」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
+先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
 
 ## 概念解說
 
@@ -46,35 +46,434 @@ def reconcile_job(job, guard=lambda: None):
             job['result'] = {'message': 'Simulated dispatch failure'}
 ```
 
-## 閱讀與練習
+## 已有結果與解讀
 
-先用這張表追程式，不必一次背完 Redis API：
+### 自動工作驗收：已保存的真實結果
 
-| 讀到的狀態 | 現行 MPI 分支做什麼 | 下一步 |
+日期：2026-09-22T04:58:58.875811+00:00。環境：GKE hpc-gpu-sg，既有單 L4 叢集上的 **CPU MPI**，不是 GPU 訓練。
+
+| 情境 | 保存的結果 | 怎麼解讀 |
 |---|---|---|
-| accepted／retrying／processing | 保存 processing，再以固定名稱提交／接回 JobSet | 保存 submitted 與 jobset_name |
-| submitted，collector 回 None | 尚未拿到終態，不寫 completed | 留待下一輪 |
-| submitted，collector 回終態 | 先保存 DB status，再回寫 Redis result／finished_at | 清 queue、設 done marker |
-| completed／failed，尚未 done | 補寫 DB，再完成 queue 清理 | 設 done marker |
+| 正常工作 `f2d8df72-aef3-48bf-9d6b-6863523daa65` | `completed`；ranks `[0, 1, 2]` | 真實 MPI 程序啟動、完成並自動收回結果 |
+| worker 重啟 `a697300a-b267-4554-bdd5-2c82bb9c9eda` | `completed`；同 job 的 JobSet 數 `1` | 停止期间 Kubernetes 已完成，worker 恢復後接續收集 |
+| 模擬 dispatch 失敗 `0852fb7b-8efd-4600-b8ac-d4205554f6f3` | `failed`；retry_count `3` | 模擬提交分支耗盡重試，不是 MPI kernel crash |
 
-例如：Kubernetes 已建立 JobSet，但 worker 在寫 submitted 前停止，Redis 可能仍是 processing。下次重入 submit 會遇到同名物件；dispatcher 必須核對 owner label 才能接回，不能把所有 409 都忽略。這才是「可重試」的具體設計，不是保證所有外部副作用只發生一次。
+正常工作的 launcher log 原文摘錄（只省略 SSH known-host warning）：
 
-1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
-2. 逐支閱讀 reconcile_job，畫出 MPI 正常路徑。對照 test_worker 的重啟／回寫失敗測試，說明 submitted 為何不等於 Running。
-3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
-
-```bash
-sed -n '19,42p' 'api/worker.py'
+```text
+RANK=0 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-0-0
+RANK=1 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-1-0
+RANK=2 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-2-0
 ```
 
-這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
+驗收後的 queue 與手動端點結果，取自同份 JSON：
 
-## 怎樣判斷自己讀懂了
+```json
+{
+  "database_status": {
+    "a697300a-b267-4554-bdd5-2c82bb9c9eda": "completed",
+    "f2d8df72-aef3-48bf-9d6b-6863523daa65": "completed",
+    "0852fb7b-8efd-4600-b8ac-d4205554f6f3": "failed"
+  },
+  "queues": {
+    "job_queue": [],
+    "processing_queue": [],
+    "dead_letter_queue": [
+      "0852fb7b-8efd-4600-b8ac-d4205554f6f3"
+    ]
+  },
+  "manual_endpoint_rejections": {
+    "process-next": 409,
+    "collect-mpi": 409,
+    "recover-stuck": 409
+  }
+}
+```
 
-- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
-- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
-- 能從[本週證據／實作對照](<../evidence/automatic-worker-20260922.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
+空 job_queue／processing_queue 表示本次驗收工作已清理；failed ID 留在 dead-letter。409 是自動模式刻意拒絕手動推進端點，並非 API 故障。這些結果不保證跨 DB 原子交易、Redis 全失恢復或 node failover。
 
-## 舊版與新版本的關係
+來源：[完整原始驗收 JSON](<../evidence/automatic-worker-20260922.json>)。無須再提交一次工作。
 
-[改寫前完整教材快照](<../history/20260922-before-current/week5/day3-reliable-worker-state-machine.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。
+## 原始完整教材與當時輸出
+
+以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
+
+另有[可渲染的原版 Markdown](<../history/20260922-before-current/week5/day3-reliable-worker-state-machine.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+
+<!-- original-week-body -->
+<!-- current-learning-map -->
+> **版本同步（2026-09-22）**：下方正文保留本日原始學習／實驗紀錄，不作為現行環境操作手冊。
+> **本週現況**：新版 worker 掃描 Redis job records 並持有 lease；MPI submitted 後自動收集，終態 DB-first。舊手動 queue 操作不是主環境流程。
+> **閱讀順序**：先學本文基礎，再讀[Week5 現行對照與檢核](../learning-guide.md#week5)及[對應現行入口](../runbooks/automatic-worker.md)。
+> **操作提醒**：舊 IP、context、映像及 apply／destroy 指令不可直接照跑；先確認目標環境與現行 runbook。
+<!-- /current-learning-map -->
+
+# Week5 Day3 - Reliable Worker State Machine
+
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [api/main.py](../../api/main.py)：API、工作狀態與佇列處理
+- [compose.yaml](../../compose.yaml)：本機服務組合
+
+---
+
+## 今日平台增加什麼
+
+今天的平台從：
+
+```text
+Producer
+    ↓
+job_queue
+    ↓
+Worker
+    ↓
+Completed
+```
+
+演進成：
+
+```text
+Producer
+    ↓
+Pending Queue
+    ↓
+Processing Queue
+    ↓
+Completed
+```
+
+新增能力：
+
+* Reliable Queue 基礎
+* Processing Queue
+* Worker State Machine
+* `accepted → processing → completed`
+* `processing_started_at`
+* 避免 Job 被 Worker 取出後直接消失
+
+---
+
+# Platform Problem
+
+原本 Worker 使用：
+
+```python
+redis_client.lpop("job_queue")
+```
+
+問題是：
+
+```text
+LPOP 成功
+    ↓
+Job 從 Queue 消失
+    ↓
+Worker Crash
+    ↓
+Job Lost
+```
+
+Job 會停留在：
+
+```text
+status = accepted
+```
+
+但已經不在：
+
+```text
+job_queue
+```
+
+也不在 Worker 手上。
+
+企業平台不能接受這種 Lost Job。
+
+---
+
+# 今日知識鏈
+
+```text
+Queue
+  ↓
+Consumer
+  ↓
+Worker Failure
+  ↓
+Lost Job
+  ↓
+Processing Queue
+  ↓
+State Machine
+  ↓
+Reliable Worker
+```
+
+---
+
+# Hands-on
+
+## 1. 從 LPOP 改成 LMOVE
+
+原本：
+
+```python
+job_id = redis_client.lpop("job_queue")
+```
+
+改成：
+
+```python
+job_id = redis_client.lmove(
+    "job_queue",
+    "processing_queue",
+    "LEFT",
+    "RIGHT"
+)
+```
+
+目的：
+
+不是把 Job 從 Queue 拿出來後消失，而是：
+
+```text
+job_queue
+    ↓
+processing_queue
+```
+
+這是一個 atomic operation。
+
+---
+
+## 2. 建立 Processing State
+
+Worker 取得 Job 後，先將狀態改成：
+
+```python
+job["status"] = "processing"
+
+job["processing_started_at"] = datetime.now(
+    timezone.utc
+).isoformat()
+```
+
+目的：
+
+讓 Job Storage 與 Queue 狀態一致。
+
+```text
+Job 在 processing_queue
+        ↓
+status 也應該是 processing
+```
+
+---
+
+## 3. Job 完成後移出 Processing Queue
+
+Job 完成後：
+
+```python
+job["status"] = "completed"
+job["result"] = {
+    "message": "benchmark simulated"
+}
+```
+
+最後從 `processing_queue` 移除：
+
+```python
+redis_client.lrem(
+    "processing_queue",
+    1,
+    job_id
+)
+```
+
+為什麼不是 `LPOP`？
+
+因為多個 Worker 時，完成的 Job 不一定是 processing queue 最左邊那一筆。
+
+`LREM` 可以根據指定的 `job_id` 移除正確的 Job。
+
+---
+
+# 最終 Worker Flow
+
+```text
+job_queue
+    ↓
+LMOVE
+    ↓
+processing_queue
+    ↓
+status = processing
+    ↓
+processing_started_at
+    ↓
+status = completed
+    ↓
+LREM processing_queue
+    ↓
+completed
+```
+
+---
+
+# 驗證
+
+建立 Job：
+
+```bash
+curl -X POST http://localhost:8000/benchmark \
+  -H "Content-Type: application/json" \
+  -d '{"benchmark":"cpu"}'
+```
+
+處理 Job：
+
+```bash
+curl -X POST http://localhost:8000/worker/process-next
+```
+
+查詢 Jobs：
+
+```bash
+curl http://localhost:8000/jobs
+```
+
+驗證結果：
+
+* Job 狀態從 `accepted` 進入 `processing`
+* 完成後變成 `completed`
+* Job 具有 `processing_started_at`
+* `processing_queue` 最後為空
+
+查詢 Processing Queue：
+
+```bash
+docker exec -it hpc-ai-benchmark-platform-redis-1 redis-cli LLEN processing_queue
+```
+
+預期：
+
+```text
+0
+```
+
+---
+
+# 平台架構
+
+```text
+Client
+  ↓
+FastAPI
+  ↓
+Producer
+  ↓
+Redis job_queue
+  ↓
+LMOVE
+  ↓
+Redis processing_queue
+  ↓
+Worker
+  ↓
+Job Storage
+  ↓
+Completed
+```
+
+---
+
+# 今日重點
+
+* `LPOP` 會造成 Worker Crash 時 Job Lost。
+* Reliable Queue 需要 Pending Queue 與 Processing Queue。
+* `LMOVE` 可以 atomic 地把 Job 從一個 Queue 搬到另一個 Queue。
+* `processing_queue` 是用來追蹤正在被 Worker 處理的 Job。
+* Job 狀態要跟 Queue 狀態一致。
+* `processing_started_at` 是未來做 Stuck Job Recovery 的基礎。
+* Job 完成後必須從 `processing_queue` 移除。
+* `LREM` 比 `LPOP` 更適合移除指定 Job。
+
+---
+
+# Interview Q&A
+
+## Q1：為什麼 `LPOP` 不適合做可靠的 Worker Queue？
+
+因為 `LPOP` 會直接把 Job 從 Queue 移除。
+
+如果 Worker 在取出 Job 後 Crash，Job 不在 Queue，也沒有被完成，就會形成 Lost Job。
+
+可靠設計應該先把 Job 搬到 `processing_queue`，避免 Job 消失。
+
+---
+
+## Q2：為什麼需要 `processing_queue`？
+
+`processing_queue` 用來記錄已被 Worker 取走、但尚未完成的 Job。
+
+它讓平台可以知道：
+
+```text
+哪些 Job 正在處理
+哪些 Job 可能卡住
+哪些 Job 未來需要 Recovery
+```
+
+這是後續實作 Stuck Job Recovery、Retry、Dead Letter Queue 的基礎。
+
+---
+
+# 今日成果
+
+平台從：
+
+```text
+Simple Redis Queue
+```
+
+演進成：
+
+```text
+Reliable Worker State Machine
+```
+
+目前已具備：
+
+```text
+accepted
+    ↓
+processing
+    ↓
+completed
+```
+
+---
+
+# 下一步
+
+Week5 Day4：
+
+實作 **Stuck Job Recovery**。
+
+會處理：
+
+```text
+processing_queue
+    ↓
+timeout detection
+    ↓
+requeue
+    ↓
+retry
+```
+
+目標是讓 Worker Crash 後，卡在 `processing_queue` 的 Job 可以被重新放回 `job_queue`。

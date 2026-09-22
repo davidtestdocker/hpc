@@ -2,7 +2,7 @@
 
 ## Demo 目的
 
-展示兩個不同 failure domains：MPI child Job failure 後的 JobSet 整組 recovery，以及 node 不可排程時的 Kueue admission blockage。本文件整理 [歷史 recovery 紀錄](../history/20260922-before-current/week20/day4-ha-node-failure-recovery.md.txt)，不執行新的 failure injection。
+展示兩個不同 failure domains：MPI child Job failure 後的 JobSet 整組 recovery，以及 node 不可排程時的 Kueue admission blockage。本文件整理 [歷史 recovery 紀錄](../history/20260922-before-current/week20/day4-ha-node-failure-recovery.md)，不執行新的 failure injection。
 
 歷史 recovery experiment 使用固定名稱 **`mpi-real`**，對應 [JobSet example](../../k8s/gpu-scheduling/examples/jobset-mpi.yaml)。目前 [動態 MPI template](../../api/workloads/templates/jobset-mpi.yaml) 雖保留同類 hook／policy，不能據此宣稱 `mpi-<job_id>` 主 E2E 已重跑 recovery。
 
@@ -81,7 +81,7 @@ Cordon 時 node 仍可為 Ready，既有 Pod 繼續運行；此案例證明 Kueu
 
 | Evidence | 支持的結論 |
 |---|---|
-| [歷史 recovery 紀錄](../history/20260922-before-current/week20/day4-ha-node-failure-recovery.md.txt) | mpi-real worker failure、restarts=1、RestartJobSet、JobsReady；另有 cordon／uncordon admission 觀察 |
+| [歷史 recovery 紀錄](../history/20260922-before-current/week20/day4-ha-node-failure-recovery.md) | mpi-real worker failure、restarts=1、RestartJobSet、JobsReady；另有 cordon／uncordon admission 觀察 |
 | [固定 JobSet example](../../k8s/gpu-scheduling/examples/jobset-mpi.yaml) | `mpi-real` 名稱、exit 42 hook、failure policy 的保存實作 |
 | [動態 template](../../api/workloads/templates/jobset-mpi.yaml) | 相同 recovery 機制的設定仍存在；僅是實作 evidence，不是動態工作 recovery 的執行結果 |
 

@@ -1,13 +1,13 @@
-<!-- current-curriculum: 2026-09-22 -->
+<!-- readable-curriculum: 2026-09-22 -->
 # Week9 Day6 — VPC 與 subnet
 
 [上一課](<Day5-Terraform-Module-Refactor.md>) · [本週目錄](README.md) · [下一課](<Day7-Terraform-Multi-Environment.md>) · [全程導讀](../learning-guide.md)
 
 版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-## 先備知識與本課目標
+## 閱讀方式：不用再開 VM 或做本機測試
 
-先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「VPC 與 subnet」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
+先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
 
 ## 概念解說
 
@@ -46,24 +46,306 @@ network/subnetwork data source 讀共享網路，避免讓此 demo root 擁有�
       enabled = false
 ```
 
-## 閱讀與練習
+## 已有結果與解讀
 
-1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
-2. 找兩個 data 區塊、networking_mode 和 ip_allocation_policy，說明刪除本環境與刪除共享 VPC 為何不應綁在一起。
-3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
+### CPU 叢集重建：已保存的驗收結果
 
-```bash
-sed -n '31,54p' 'terraform/environments/gpu-sg/main.tf'
+日期：2026-09-21。環境：隔離 CPU-only GKE 重建驗收；不是主環境的多 GPU 實驗。該次叢集已清理，讀這份結果不需要重新建立。
+
+```json
+{
+  "recorded_at": "2026-09-21",
+  "scope": "fresh CPU-only GKE bootstrap and platform acceptance; excludes GPU and MPI execution",
+  "result": "pass",
+  "terraform": {
+    "apply": "3 added",
+    "post_apply_plan": "No changes",
+    "destroy": "3 destroyed",
+    "state_resources_after_destroy": 0,
+    "cluster_lookup_after_destroy": "404 Not Found"
+  },
+  "controllers": {
+    "jobset": "v0.12.0 Ready on system-pool with 100m CPU request",
+    "kueue": "v0.19.2 Ready on system-pool with Recreate deployment strategy"
+  },
+  "platform": {
+    "api": "Running on system-pool; /health healthy",
+    "redis": "Running on system-pool; connected; PVC Bound",
+    "postgres": "Running on system-pool; jobs table query succeeded; PVC Bound",
+    "overlay_diff_after_apply": "empty"
+  },
+  "security": {
+    "postgres_secret": "created from external env file; value not captured",
+    "mpi_ssh_key": "generated in temporary directory; value not captured",
+    "api_service_account_create_jobsets": "yes",
+    "api_service_account_delete_pods": "no"
+  },
+  "limitations": [
+    "gpu-pool had zero nodes because project-wide GPU quota was exhausted",
+    "no MPI workload was submitted in this CPU-only rehearsal",
+    "database initialization used create_all rather than schema migration"
+  ]
+}
 ```
 
-這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
+解讀：Terraform 建立 3 個資源、無 drift，JobSet／Kueue controllers 和 API／Redis／DB 驗收成功；create JobSet 權限允許，delete Pod 權限拒絕。最後 destroy 3、state 空、cluster 查詢 404，證明當次隔離叢集已刪除。**不包含 GPU 或 MPI 執行驗收**，也不是所有雲端資源的停費證明。
 
-## 怎樣判斷自己讀懂了
+來源：[原始 CPU bootstrap JSON](<../evidence/cpu-bootstrap-acceptance-20260921.json>)。
 
-- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
-- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
-- 能從[本週證據／實作對照](<../evidence/cpu-bootstrap-acceptance-20260921.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
+## 原始完整教材與當時輸出
 
-## 舊版與新版本的關係
+以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
 
-[改寫前完整教材快照](<../history/20260922-before-current/week9/Day6-Terraform-Network-Module.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。
+另有[可渲染的原版 Markdown](<../history/20260922-before-current/week9/Day6-Terraform-Network-Module.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+
+<!-- original-week-body -->
+<!-- current-learning-map -->
+> **版本同步（2026-09-22）**：下方正文保留本日原始學習／實驗紀錄，不作為現行環境操作手冊。
+> **本週現況**：現行 Terraform root 是 environments/gpu-sg；後續已完成全新 CPU-only 平台 bootstrap，不包含新 GPU 叢集 MPI 驗收。
+> **閱讀順序**：先學本文基礎，再讀[Week9 現行對照與檢核](../learning-guide.md#week9)及[對應現行入口](../runbooks/platform-bootstrap.md)。
+> **操作提醒**：舊 IP、context、映像及 apply／destroy 指令不可直接照跑；先確認目標環境與現行 runbook。
+<!-- /current-learning-map -->
+
+# Week9 Day6 - Terraform Network Module
+
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [terraform/environments/dev/main.tf](../../terraform/environments/dev/main.tf)
+- [terraform/modules/firewall/main.tf](../../terraform/modules/firewall/main.tf)
+- [terraform/modules/firewall/outputs.tf](../../terraform/modules/firewall/outputs.tf)
+- [terraform/modules/firewall/variables.tf](../../terraform/modules/firewall/variables.tf)
+- [terraform/modules/network/main.tf](../../terraform/modules/network/main.tf)
+- [terraform/modules/network/outputs.tf](../../terraform/modules/network/outputs.tf)
+- [terraform/modules/network/variables.tf](../../terraform/modules/network/variables.tf)
+
+---
+
+## 今日目標
+
+- 建立 Network Module
+- 建立 Firewall Module
+- 建立自訂 VPC 與 Subnet
+- 理解 Module Output 串接
+- 完成 Compute 與 Network Module 整合
+
+---
+
+# 今日成果
+
+- 建立 `modules/network`
+- 建立 `modules/firewall`
+- 建立自訂 VPC
+- 建立自訂 Subnet
+- 建立 Firewall Rule
+- Compute Module 成功引用 Network Module Output
+- 完成 Infrastructure Module 串接
+
+---
+
+# 專案架構
+
+```text
+terraform/
+├── environments/
+│   ├── dev/
+│   ├── stage/
+│   └── prod/
+└── modules/
+    ├── compute/
+    ├── network/
+    └── firewall/
+```
+
+---
+
+# Network Module
+
+建立企業常用的 Custom VPC。
+
+Terraform：
+
+```text
+Root Module
+        │
+        ▼
+Network Module
+        │
+        ├── VPC
+        └── Subnet
+```
+
+不再使用 GCP 預設 `default` Network。
+
+---
+
+# Firewall Module
+
+建立獨立 Firewall Module。
+
+目前開放：
+
+- TCP 22（SSH）
+- TCP 8000（API）
+
+Firewall 與 Compute 完全解耦，可獨立維護。
+
+---
+
+# Module Output
+
+Network Module 對外提供：
+
+```text
+network_id
+network_self_link
+subnet_id
+subnet_self_link
+```
+
+Compute Module 不直接存取：
+
+```text
+google_compute_network.this.id
+```
+
+而是透過：
+
+```text
+module.network.network_id
+```
+
+取得 Network 資訊。
+
+---
+
+# Module 串接
+
+資料流：
+
+```text
+terraform.tfvars
+        │
+        ▼
+Root Module
+        │
+        ▼
+Network Module
+        │
+        ▼
+Output
+        │
+        ▼
+Compute Module
+        │
+        ▼
+google_compute_instance
+```
+
+Module 之間只透過 Output 傳遞資料，不直接存取彼此 Resource。
+
+---
+
+# Output 的用途
+
+Output 並不只是：
+
+```bash
+terraform output
+```
+
+顯示資訊。
+
+真正用途：
+
+```text
+Module Return Value
+```
+
+提供其他 Module 使用。
+
+可理解成：
+
+```text
+variables.tf
+
+↓
+
+Function Parameter
+
+main.tf
+
+↓
+
+Function Body
+
+outputs.tf
+
+↓
+
+Return
+```
+
+---
+
+# 驗證
+
+```bash
+terraform fmt -recursive
+
+terraform validate
+
+terraform plan
+```
+
+Plan：
+
+```text
+Network
+Subnet
+Firewall
+```
+
+均建立成功。
+
+---
+
+# 今日重點
+
+- Module 是 Terraform 的可重複使用元件。
+- Output 是 Module 對外公開的介面（API）。
+- Compute 不應直接依賴 Network Resource，而應依賴 Network Module Output。
+- VPC、Subnet、Firewall 應獨立封裝成 Module，提高可維護性。
+
+---
+
+# Interview Q&A
+
+### Q1：Terraform Output 的主要用途是什麼？
+
+Output 不只是提供 `terraform output` 查詢，更重要的是作為 Module 的回傳值，使其他 Module 能透過 `module.xxx.output_name` 取得資料。
+
+---
+
+### Q2：為什麼 Compute 不直接引用 `google_compute_network.this.id`？
+
+因為 Resource 被封裝在 Network Module 內部，外部應透過 Output 存取，降低 Module 間耦合，提高重用性。
+
+---
+
+### Q3：企業為什麼會建立自己的 VPC，而不是使用 default？
+
+為了隔離不同環境（dev、stage、prod）、自行管理 Firewall、Subnet 與未來 Kubernetes、GPU、Storage 等 Infrastructure，企業通常採用 Custom VPC。
+
+---
+
+# 本日總結
+
+今天完成 Terraform Network Layer，建立可重複使用的 Network 與 Firewall Module，並成功透過 Output 串接 Compute Module。Terraform 專案開始具備企業常見的分層架構，為後續 Multi Environment 及 Kubernetes Infrastructure 奠定基礎。
+
+---
+
+# 下一步
+
+完成 Terraform Multi Environment（dev / stage / prod），並整理整體 Terraform 專案架構，完成 Week9。

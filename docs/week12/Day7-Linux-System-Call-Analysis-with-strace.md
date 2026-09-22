@@ -1,13 +1,13 @@
-<!-- current-curriculum: 2026-09-22 -->
+<!-- readable-curriculum: 2026-09-22 -->
 # Week12 Day7 — strace 與 system call
 
 [上一課](<Day6-Linux-CPU-Profiling-with-perf.md>) · [本週目錄](README.md) · [下一週](../week13/README.md) · [全程導讀](../learning-guide.md)
 
 版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-## 先備知識與本課目標
+## 閱讀方式：不用再開 VM 或做本機測試
 
-先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「strace 與 system call」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
+先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
 
 ## 概念解說
 
@@ -24,24 +24,598 @@ strace 可看到 read、write、connect 等核心介面，適合定位等待與�
 )
 ```
 
-## 閱讀與練習
+## 已有結果與解讀
 
-1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
-2. 讀 DB 連線與 timeout 設定，推演連線拒絕與查詢超時可能出現的不同跡象。需要實測時只追自己建立的測試程序，不 attach 整個主平台。
-3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
+### 這一課的結果直接看哪裡
 
-```bash
-sed -n '48,49p' 'api/database/connection.py'
+本課原本的完整教學、程式示例、結果與解讀已放回本頁下方，不再用縮短版取代它。命令是當時操作或語法示例，**不是要求你現在再執行**。
+
+概念例子的輸出只說明程式／工具行為，不冒充 VM 實測；原文沒留下的實測數值就維持未知，不用預期值補造。舊環境名稱、日期、成功與失敗照原文保留。
+
+## 原始完整教材與當時輸出
+
+以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
+
+另有[可渲染的原版 Markdown](<../history/20260922-before-current/week12/Day7-Linux-System-Call-Analysis-with-strace.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+
+<!-- original-week-body -->
+<!-- current-learning-map -->
+> **版本同步（2026-09-22）**：下方正文保留本日原始學習／實驗紀錄，不作為現行環境操作手冊。
+> **本週現況**：Linux 診斷方法繼續適用；舊 perf／strace／CPU 數據不代表主 MPI 的自動 profiling。
+> **閱讀順序**：先學本文基礎，再讀[Week12 現行對照與檢核](../learning-guide.md#week12)及[對應現行入口](../performance/performance-report.md)。
+> **操作提醒**：舊 IP、context、映像及 apply／destroy 指令不可直接照跑；先確認目標環境與現行 runbook。
+<!-- /current-learning-map -->
+
+# Week12 Day7 - Linux System Call Analysis with strace
+
+## 對應檔案
+
+本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+
+延伸對照文件：[performance-report](../performance/performance-report.md)。
+
+---
+
+## 目標
+
+本章節學習使用 Linux `strace` 分析程式與 Linux Kernel 的互動，了解 System Call 的運作方式，並學會利用 `strace` 分析 File I/O、Network I/O 與 Production 問題。
+
+完成本章後，可以回答：
+
+- 什麼是 System Call？
+- User Space 與 Kernel Space 有什麼差異？
+- 為什麼程式需要透過 Kernel 存取硬體？
+- `strace` 在分析什麼？
+- 如何分析 File I/O？
+- 如何分析 Network I/O？
+- 如何 Attach 到正在執行的 Process？
+- 如何利用 `strace` 排查 API 效能問題？
+
+---
+
+# 今日學習重點
+
+- Linux System Call
+- User Space
+- Kernel Space
+- strace
+- File I/O
+- Network I/O
+- Process Attach
+- Production Debug
+
+---
+
+# Lab Environment
+
+OS
+
+```text
+Ubuntu 24.04
 ```
 
-這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
+Environment
 
-## 怎樣判斷自己讀懂了
+```text
+Google Cloud Platform VM
+```
 
-- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
-- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
-- 能從[本週證據／實作對照](<../../benchmark/cpu/results/cpu_benchmark_20260810.md>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
+Tool
 
-## 舊版與新版本的關係
+```text
+strace 5.16
+```
 
-[改寫前完整教材快照](<../history/20260922-before-current/week12/Day7-Linux-System-Call-Analysis-with-strace.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。
+---
+
+# 為什麼需要 strace？
+
+Benchmark 可以回答：
+
+```
+程式有多快？
+```
+
+perf 可以回答：
+
+```
+CPU 時間花在哪裡？
+```
+
+strace 則回答：
+
+```
+程式正在要求 Linux Kernel 做什麼？
+```
+
+---
+
+# User Space 與 Kernel Space
+
+Linux 將程式分成：
+
+```
+User Space
+        │
+System Call
+        │
+Kernel Space
+```
+
+一般程式不能直接：
+
+- 存取 SSD
+- 存取 Network
+- 存取硬體
+
+都必須透過：
+
+```
+System Call
+```
+
+交由 Linux Kernel 處理。
+
+---
+
+# strace 是什麼？
+
+`strace`
+
+可以攔截程式所有 System Call。
+
+例如：
+
+- open()
+- read()
+- write()
+- connect()
+- send()
+- recv()
+
+因此可了解：
+
+程式究竟在做什麼。
+
+---
+
+# 第一個 strace
+
+執行：
+
+```bash
+strace ls
+```
+
+即可觀察：
+
+Linux 如何執行：
+
+```
+ls
+```
+
+---
+
+# execve()
+
+例如：
+
+```text
+execve("/usr/bin/ls", ...)
+```
+
+代表：
+
+Linux 啟動：
+
+```
+ls
+```
+
+幾乎所有 Linux 指令：
+
+- python
+- docker
+- kubectl
+- helm
+
+最後都會透過：
+
+```
+execve()
+```
+
+啟動。
+
+---
+
+# openat()
+
+例如：
+
+```text
+openat(...)
+```
+
+代表：
+
+開啟檔案。
+
+例如：
+
+- Config File
+- Library
+- Database File
+- Log File
+
+若：
+
+```
+openat()
+```
+
+停留很久，
+
+可能代表：
+
+- Disk
+- NFS
+- PVC
+- Filesystem
+
+出現問題。
+
+---
+
+# read()
+
+例如：
+
+```text
+read(...)
+```
+
+代表：
+
+Kernel
+
+從檔案、
+
+Socket、
+
+Device
+
+讀取資料。
+
+若：
+
+```
+read()
+```
+
+等待很久，
+
+可能代表：
+
+- Disk I/O
+- Network
+- Storage
+
+較慢。
+
+---
+
+# write()
+
+例如：
+
+```text
+write(...)
+```
+
+代表：
+
+將資料寫入：
+
+- Terminal
+- File
+- Socket
+
+例如：
+
+```
+printf()
+
+↓
+
+write()
+```
+
+---
+
+# connect()
+
+例如：
+
+```text
+connect(...)
+```
+
+代表：
+
+建立 TCP Connection。
+
+例如：
+
+FastAPI：
+
+```
+↓
+
+Redis
+
+↓
+
+connect()
+```
+
+或：
+
+```
+↓
+
+PostgreSQL
+
+↓
+
+connect()
+```
+
+若：
+
+```
+connect()
+```
+
+等待很久，
+
+第一個懷疑：
+
+- Redis
+- PostgreSQL
+- DNS
+- Firewall
+- Network Policy
+
+---
+
+# send()
+
+例如：
+
+```text
+sendto(...)
+```
+
+代表：
+
+透過 TCP
+
+傳送資料。
+
+例如：
+
+```
+SQL Query
+
+↓
+
+send()
+```
+
+---
+
+# recv()
+
+例如：
+
+```text
+recvfrom(...)
+```
+
+代表：
+
+等待 Server 回應。
+
+例如：
+
+```
+PostgreSQL
+
+↓
+
+recv()
+```
+
+若：
+
+```
+recv()
+```
+
+等待很久，
+
+代表：
+
+程式正在等待：
+
+- PostgreSQL
+- Redis
+- HTTP API
+- gRPC
+
+而不是 CPU 運算。
+
+---
+
+# Attach 到執行中的 Process
+
+Production
+
+通常不能重啟服務。
+
+因此：
+
+先找 PID：
+
+```bash
+ps -ef
+```
+
+再：
+
+```bash
+strace -p <PID>
+```
+
+即可分析：
+
+已執行中的 Process。
+
+---
+
+# Kubernetes
+
+在 Kubernetes：
+
+先：
+
+```bash
+kubectl exec -it <pod> -- sh
+```
+
+取得：
+
+PID：
+
+```bash
+ps -ef
+```
+
+再：
+
+```bash
+strace -p <PID>
+```
+
+即可分析：
+
+Pod 內部程式。
+
+---
+
+# 過濾 System Call
+
+只看：
+
+File：
+
+```bash
+strace -e trace=openat ls
+```
+
+只看：
+
+Network：
+
+```bash
+strace -e trace=network -p <PID>
+```
+
+只看：
+
+read / write：
+
+```bash
+strace -e trace=read,write <command>
+```
+
+Production
+
+通常都會使用：
+
+```
+-e trace
+```
+
+避免輸出過多資訊。
+
+---
+
+# Production Debug Flow
+
+```
+API 很慢
+        │
+        ▼
+top
+        │
+CPU 高？
+        │
+ ┌──────┴──────┐
+ │             │
+Yes           No
+ │             │
+ ▼             ▼
+perf         strace
+               │
+               ▼
+connect()
+recv()
+read()
+               │
+               ▼
+Redis？
+PostgreSQL？
+Disk？
+Network？
+```
+
+---
+
+# 今日重點
+
+- `strace` 用於分析程式與 Linux Kernel 的互動。
+- 所有 File、Network、Process 操作都透過 System Call 完成。
+- `openat()` 用於分析 File I/O。
+- `connect()` 用於分析 TCP Connection。
+- `recv()` 可判斷是否等待外部服務。
+- `strace -p` 可分析執行中的 Process。
+- `-e trace=` 可快速過濾指定類型的 System Call。
+
+---
+
+# Interview
+
+## Q1：`strace` 與 `perf` 有什麼差異？
+
+**答：**
+
+`perf` 用於分析 CPU 執行時間與 Hotspot；`strace` 用於分析程式呼叫的 System Call，可觀察 File I/O、Network I/O 與 Kernel 互動。
+
+---
+
+## Q2：如果 API 很慢，但 CPU 使用率很低，你會如何排查？
+
+**答：**
+
+先使用 `strace` attach 到執行中的 Process，觀察是否卡在 `connect()`、`recvfrom()` 或 `read()` 等 System Call，再判斷是否為 Redis、PostgreSQL、Disk 或 Network 問題。
+
+---
+
+## Q3：Production 為什麼通常使用 `strace -p <PID>`？
+
+**答：**
+
+因為線上服務通常不能重啟，使用 `strace -p <PID>` 可以直接附加到正在執行的 Process，觀察 System Call，而不影響服務運作。

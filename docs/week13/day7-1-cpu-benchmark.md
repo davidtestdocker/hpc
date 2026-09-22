@@ -1,13 +1,13 @@
-<!-- current-curriculum: 2026-09-22 -->
+<!-- readable-curriculum: 2026-09-22 -->
 # Week13 Day7-1 — CPU benchmark 子章
 
 [上一課](<day6-benchmark-automation.md>) · [本週目錄](README.md) · [下一課](<day7-2-storage-benchmark.md>) · [全程導讀](../learning-guide.md)
 
 版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-## 先備知識與本課目標
+## 閱讀方式：不用再開 VM 或做本機測試
 
-先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「CPU benchmark 子章」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
+先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
 
 ## 概念解說
 
@@ -26,24 +26,536 @@ stress-ng \
   --metrics-brief
 ```
 
-## 閱讀與練習
+## 已有結果與解讀
 
-1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
-2. 讀 stress-ng 腳本參數，再對照歷史 CPU 報告，列出執行時間、worker 數及機型缺一不可的原因。
-3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
+### 這一課的結果直接看哪裡
 
-```bash
-sed -n '22,25p' 'benchmark/cpu/run_stress_ng.sh'
+本課原本的完整教學、程式示例、結果與解讀已放回本頁下方，不再用縮短版取代它。命令是當時操作或語法示例，**不是要求你現在再執行**。
+
+概念例子的輸出只說明程式／工具行為，不冒充 VM 實測；原文沒留下的實測數值就維持未知，不用預期值補造。舊環境名稱、日期、成功與失敗照原文保留。
+
+## 原始完整教材與當時輸出
+
+以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
+
+另有[可渲染的原版 Markdown](<../history/20260922-before-current/week13/day7-1-cpu-benchmark.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+
+<!-- original-week-body -->
+<!-- current-learning-map -->
+> **版本同步（2026-09-22）**：下方正文保留本日原始學習／實驗紀錄，不作為現行環境操作手冊。
+> **本週現況**：最新訓練有暖機、交錯重複量測與分析；獨立 runner 未接 MPI API，API 非 MPI 分支仍為模擬。
+> **閱讀順序**：先學本文基礎，再讀[Week13 現行對照與檢核](../learning-guide.md#week13)及[對應現行入口](../performance/causal-lm-l4-20260922.md)。
+> **操作提醒**：舊 IP、context、映像及 apply／destroy 指令不可直接照跑；先確認目標環境與現行 runbook。
+<!-- /current-learning-map -->
+
+# Week13 Day7-1 - CPU Benchmark
+
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [benchmark/cpu/results/cpu_benchmark_20260810.md](../../benchmark/cpu/results/cpu_benchmark_20260810.md)
+- [benchmark/cpu/run_stress_ng.sh](../../benchmark/cpu/run_stress_ng.sh)：CPU 壓測
+- [benchmark/run_all.sh](../../benchmark/run_all.sh)：benchmark 整合入口
+
+---
+
+## 今天平台增加了什麼？
+
+本次加入 CPU Benchmark Module。
+
+使用 stress-ng 建立 CPU workload，
+並透過 Kubernetes Node Metrics 觀察 CPU Saturation。
+
+目前 Benchmark Framework 增加：
+
+- CPU workload generation
+- CPU resource observation
+- CPU saturation analysis
+
+
+---
+
+# Architecture
+
+```text
+GKE Cluster
+
+primary-pool Node VM
+        |
+        |
+ benchmark Pod
+        |
+        |
+ stress-ng
+        |
+        |
+ Node VM CPU
 ```
 
-這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-## 怎樣判斷自己讀懂了
+Benchmark Pod 不擁有自己的 CPU hardware。
 
-- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
-- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
-- 能從[本週證據／實作對照](<../../benchmark/results/causal-lm-20260922/evidence.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
+Pod 使用的是 Kubernetes Node 提供的 CPU 資源。
 
-## 舊版與新版本的關係
 
-[改寫前完整教材快照](<../history/20260922-before-current/week13/day7-1-cpu-benchmark.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。
+完整流程：
+
+```text
+stress-ng process
+
+        ↓
+
+Container
+
+        ↓
+
+Pod
+
+        ↓
+
+Kubernetes Node
+
+        ↓
+
+VM CPU
+```
+
+
+---
+
+# Environment
+
+## Kubernetes Namespace
+
+```
+hpc-platform-dev
+```
+
+
+## Benchmark Pod
+
+```
+benchmark
+```
+
+
+## Node
+
+```
+gke-hpc-dev-primary-pool-1489cf18-vxpk
+```
+
+
+## Node CPU Capacity
+
+```
+cpu: 2 cores
+```
+
+
+確認指令：
+
+```bash
+kubectl describe node <node-name> | grep -A5 Capacity
+```
+
+
+---
+
+# Tool
+
+使用：
+
+```
+stress-ng
+```
+
+
+版本：
+
+```
+stress-ng 0.15.06
+```
+
+
+stress-ng 用途：
+
+- CPU stress testing
+- System workload generation
+- Resource saturation testing
+
+
+---
+
+# Benchmark Script
+
+位置：
+
+```
+benchmark/cpu/run_stress_ng.sh
+```
+
+
+內容：
+
+```bash
+#!/bin/bash
+
+set -e
+
+CPU_WORKERS=${1:-2}
+TIMEOUT=${2:-60}
+
+echo "================================"
+echo " CPU Benchmark"
+echo "================================"
+
+echo "CPU Workers: ${CPU_WORKERS}"
+echo "Duration: ${TIMEOUT}s"
+
+stress-ng \
+  --cpu ${CPU_WORKERS} \
+  --timeout ${TIMEOUT}s \
+  --metrics-brief
+```
+
+
+執行：
+
+```bash
+./run_stress_ng.sh 2 60
+```
+
+
+參數：
+
+| Parameter | Meaning |
+|---|---|
+|2|CPU workers|
+|60|Execution duration|
+
+
+---
+
+# Benchmark Command
+
+實際執行：
+
+```bash
+stress-ng --cpu 2 --timeout 60s --metrics-brief
+```
+
+
+## --cpu 2
+
+建立兩個 CPU worker。
+
+
+因為目前 Node：
+
+```
+CPU Capacity = 2 cores
+```
+
+
+所以目標：
+
+讓 Node CPU 接近 saturation。
+
+
+---
+
+## --timeout 60s
+
+Benchmark 執行時間：
+
+```
+60 seconds
+```
+
+
+固定時間方便比較不同測試結果。
+
+
+---
+
+## --metrics-brief
+
+輸出簡化 benchmark metrics。
+
+
+---
+
+# Result
+
+
+## Before Benchmark
+
+Node:
+
+```
+CPU:
+422m
+
+CPU:
+21%
+```
+
+
+代表：
+
+```
+0.422 / 2 cores
+```
+
+約 21% CPU 使用率。
+
+
+---
+
+## During Benchmark
+
+Node:
+
+```
+CPU:
+2000m
+
+CPU:
+103%
+```
+
+
+2000m:
+
+代表：
+
+```
+2 CPU cores
+```
+
+
+CPU 已達 Node capacity。
+
+
+103% 屬於 metrics-server sampling variation。
+
+
+---
+
+# stress-ng Result
+
+
+Example:
+
+```
+stressor       bogo ops  real time
+
+cpu             92486     60.00 sec
+```
+
+
+## Bogo Ops
+
+stress-ng 自定義 workload throughput。
+
+用途：
+
+比較不同 CPU configuration 的相對效能。
+
+
+---
+
+## Real Time
+
+實際測試時間。
+
+
+---
+
+## CPU Time
+
+所有 CPU worker 累積 CPU 使用時間。
+
+
+例如：
+
+60 秒測試：
+
+```
+4 workers
+
+↓
+
+累積 CPU time 可能 > 60 秒
+```
+
+因為多核心同時運算。
+
+
+---
+
+# Observation
+
+
+## 1. Pod CPU 來源
+
+Pod 沒有自己的 CPU。
+
+
+架構：
+
+```text
+Node VM CPU
+
+        ↓
+
+Container
+
+        ↓
+
+Pod
+
+        ↓
+
+Process
+```
+
+
+Pod 使用的是 Node 提供的 CPU。
+
+
+---
+
+## 2. CPU limit 不等於實體 CPU
+
+
+例如：
+
+```yaml
+resources:
+  limits:
+    cpu: "4"
+```
+
+
+意思：
+
+Container 最多允許使用 4 CPU。
+
+
+不是：
+
+建立 4 顆 CPU。
+
+
+如果 Node:
+
+```
+CPU Capacity = 2
+```
+
+
+實際最多仍然只有：
+
+```
+2 CPU
+```
+
+
+---
+
+## 3. CPU Saturation 驗證
+
+
+測試前：
+
+```
+CPU 21%
+```
+
+
+測試中：
+
+```
+CPU 103%
+```
+
+
+代表：
+
+stress-ng 成功讓 Kubernetes Node CPU 達到 saturation。
+
+
+---
+
+# Interview Questions
+
+
+## Q1:
+
+Pod 的 CPU 從哪裡來？
+
+
+Answer:
+
+Pod 沒有自己的 CPU hardware。
+
+Pod 使用 Kubernetes Node VM 提供的 CPU，
+由 Linux scheduler 與 cgroup 控制資源。
+
+
+---
+
+## Q2:
+
+為什麼 CPU limit 設定 4 cores，
+但是實際只能使用 2 cores？
+
+
+Answer:
+
+CPU limit 是 container 使用上限，
+不是增加硬體 CPU。
+
+Node capacity 才是真正可使用的硬體資源。
+
+
+---
+
+# Completed
+
+
+Week13 Day7-1 完成：
+
+- 建立 benchmark runner
+- 固定 benchmark node
+- 安裝 stress-ng
+- 建立 CPU benchmark script
+- 完成 CPU saturation test
+- 完成 Kubernetes CPU resource analysis
+
+
+---
+
+# Next
+
+Week13 Day7-2:
+
+Storage Benchmark
+
+Tool:
+
+```
+fio
+```
+
+目標：
+
+分析：
+
+- IOPS
+- Throughput
+- Latency
+```

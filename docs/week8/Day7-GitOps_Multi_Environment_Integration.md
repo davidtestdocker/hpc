@@ -1,13 +1,13 @@
-<!-- current-curriculum: 2026-09-22 -->
+<!-- readable-curriculum: 2026-09-22 -->
 # Week8 Day7 — 多環境與 Argo 邊界
 
 [上一課](<Day6-Helm-Kustomize-Integration.md>) · [本週目錄](README.md) · [下一週](../week9/README.md) · [全程導讀](../learning-guide.md)
 
 版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-## 先備知識與本課目標
+## 閱讀方式：不用再開 VM 或做本機測試
 
-先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「多環境與 Argo 邊界」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
+先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
 
 ## 概念解說
 
@@ -33,24 +33,719 @@
       - CreateNamespace=true
 ```
 
-## 閱讀與練習
+## 已有結果與解讀
 
-1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
-2. 比较 Application path 和 values-dev 與主 api-values；列出切換需要審查的資源所有權與 prune 風險。本課只讀，不執行 argocd sync。
-3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
+### 這一課的結果直接看哪裡
 
-```bash
-sed -n '34,44p' 'argocd/application-dev.yaml'
+本課原本的完整教學、程式示例、結果與解讀已放回本頁下方，不再用縮短版取代它。命令是當時操作或語法示例，**不是要求你現在再執行**。
+
+概念例子的輸出只說明程式／工具行為，不冒充 VM 實測；原文沒留下的實測數值就維持未知，不用預期值補造。舊環境名稱、日期、成功與失敗照原文保留。
+
+## 原始完整教材與當時輸出
+
+以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
+
+另有[可渲染的原版 Markdown](<../history/20260922-before-current/week8/Day7-GitOps_Multi_Environment_Integration.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+
+<!-- original-week-body -->
+<!-- current-learning-map -->
+> **版本同步（2026-09-22）**：下方正文保留本日原始學習／實驗紀錄，不作為現行環境操作手冊。
+> **本週現況**：現行 overlay 是 gpu-sg-platform；Argo dev 仍指 overlays/dev，不能宣稱主環境已完成 GitOps 對齊。
+> **閱讀順序**：先學本文基礎，再讀[Week8 現行對照與檢核](../learning-guide.md#week8)及[對應現行入口](../../kustomize/overlays/gpu-sg-platform/kustomization.yaml)。
+> **操作提醒**：舊 IP、context、映像及 apply／destroy 指令不可直接照跑；先確認目標環境與現行 runbook。
+<!-- /current-learning-map -->
+
+# Week8 Day7 - GitOps Multi Environment Integration
+
+> 現行入口（2026-09-21）：[平台部署與驗收](../runbooks/platform-bootstrap.md)。主 overlay 已使用獨立 values；本文 dev GitOps／CI 仍屬歷史路徑，不會自動更新新的主環境 image tag。
+
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [argocd/application-dev.yaml](../../argocd/application-dev.yaml)
+- [argocd/application-prod.yaml](../../argocd/application-prod.yaml)
+- [argocd/application-stage.yaml](../../argocd/application-stage.yaml)
+- [argocd/project.yaml](../../argocd/project.yaml)
+- [helm/api/values-dev.yaml](../../helm/api/values-dev.yaml)
+- [helm/api/values-prod.yaml](../../helm/api/values-prod.yaml)
+- [helm/api/values-stage.yaml](../../helm/api/values-stage.yaml)
+- [kustomize/overlays/dev/deployment-patch.yaml](../../kustomize/overlays/dev/deployment-patch.yaml)
+- [kustomize/overlays/dev/kustomization.yaml](../../kustomize/overlays/dev/kustomization.yaml)
+- [kustomize/overlays/prod/deployment-patch.yaml](../../kustomize/overlays/prod/deployment-patch.yaml)
+- [kustomize/overlays/prod/kustomization.yaml](../../kustomize/overlays/prod/kustomization.yaml)
+- [kustomize/overlays/stage/deployment-patch.yaml](../../kustomize/overlays/stage/deployment-patch.yaml)
+- [kustomize/overlays/stage/kustomization.yaml](../../kustomize/overlays/stage/kustomization.yaml)
+
+---
+
+## 學習目標
+
+完成 GitOps 多環境平台整合，建立 Dev、Stage、Prod 三套獨立環境，透過 Helm、Kustomize、Argo CD 與 Traefik 完成完整的 GitOps 部署流程，並驗證實際流量經過 Ingress Controller 成功到達 API。
+
+---
+
+# 完成成果
+
+✅ Dev Environment
+
+✅ Stage Environment
+
+✅ Prod Environment
+
+✅ Argo CD Multi Application
+
+✅ Multi Namespace Deployment
+
+✅ Helm Values Environment Configuration
+
+✅ Traefik Ingress Routing
+
+✅ GitOps Auto Sync
+
+✅ Host-based Routing Validation
+
+---
+
+# GitOps 架構
+
+```
+Git Repository
+
+        │
+
+        ▼
+
+Argo CD
+
+        │
+
+        ▼
+
+Kustomize Overlay
+
+        │
+
+        ▼
+
+Helm Chart
+
+        │
+
+        ▼
+
+Kubernetes
 ```
 
-這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
+Git Repository 為唯一事實來源（Single Source of Truth）。
 
-## 怎樣判斷自己讀懂了
+Argo CD 持續監控 Git Repository。
 
-- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
-- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
-- 能從[本週證據／實作對照](<../evidence/platform-deployment-20260921.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
+Repository 發生變更時：
 
-## 舊版與新版本的關係
+```
+Git Push
 
-[改寫前完整教材快照](<../history/20260922-before-current/week8/Day7-GitOps_Multi_Environment_Integration.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。
+↓
+
+Argo CD Detect
+
+↓
+
+Helm Render
+
+↓
+
+Kustomize Overlay
+
+↓
+
+Apply
+
+↓
+
+Kubernetes
+```
+
+完成自動同步。
+
+---
+
+# Multi Environment
+
+建立三套完全獨立環境。
+
+## Dev
+
+Namespace
+
+```
+hpc-platform-dev
+```
+
+Image
+
+```
+hpc-ai-benchmark-platform-api:dev
+```
+
+Host
+
+```
+api-dev.hpc.local
+```
+
+---
+
+## Stage
+
+Namespace
+
+```
+hpc-platform-stage
+```
+
+Image
+
+```
+hpc-ai-benchmark-platform-api:stage
+```
+
+Host
+
+```
+api-stage.hpc.local
+```
+
+---
+
+## Prod
+
+Namespace
+
+```
+hpc-platform-prod
+```
+
+Image
+
+```
+hpc-ai-benchmark-platform-api:v1.0.0
+```
+
+Host
+
+```
+api-prod.hpc.local
+```
+
+三個環境完全隔離。
+
+每個 Namespace 都擁有自己的：
+
+- Deployment
+- Service
+- Ingress
+- Redis
+- PostgreSQL
+- HPA
+
+---
+
+# Helm
+
+Helm 負責管理所有可參數化設定。
+
+例如：
+
+```
+Image Tag
+
+Service Type
+
+Ingress Host
+
+Resources
+
+Replica Count（HPA 關閉時）
+
+HPA
+```
+
+各環境透過：
+
+```
+values-dev.yaml
+
+values-stage.yaml
+
+values-prod.yaml
+```
+
+即可產生不同 Deployment。
+
+---
+
+# Kustomize
+
+Kustomize 負責：
+
+```
+Namespace
+
+Helm Chart
+
+Deployment Patch
+```
+
+不再使用：
+
+```
+Ingress Patch
+```
+
+原因：
+
+Ingress 的：
+
+```
+spec.rules
+```
+
+屬於 List。
+
+Strategic Merge Patch
+
+會 Replace 整個 List。
+
+造成：
+
+```
+http
+
+paths
+
+backend
+```
+
+全部消失。
+
+因此：
+
+Ingress Host
+
+改由 Helm Values 管理。
+
+---
+
+# Argo CD
+
+建立三個 Application。
+
+```
+hpc-dev
+
+hpc-stage
+
+hpc-prod
+```
+
+全部狀態：
+
+```
+Synced
+
+Healthy
+```
+
+Git Push 後：
+
+Argo CD 自動同步。
+
+不需要：
+
+```
+kubectl apply
+```
+
+---
+
+# Traefik
+
+Traefik
+
+=
+
+Ingress Controller
+
+負責：
+
+讀取 Kubernetes Ingress。
+
+建立 Routing Table。
+
+依照：
+
+```
+Host
+
++
+
+Path
+```
+
+決定流量轉送位置。
+
+Traefik 本身不是 Ingress。
+
+Ingress 是規則。
+
+Traefik 是真正負責執行規則的 Controller。
+
+---
+
+# Ingress
+
+每個環境都有自己的 Host。
+
+Dev
+
+```
+api-dev.hpc.local
+```
+
+Stage
+
+```
+api-stage.hpc.local
+```
+
+Prod
+
+```
+api-prod.hpc.local
+```
+
+Ingress 依照 Host
+
+轉送到對應 Namespace 的 Service。
+
+---
+
+# Service
+
+Service 不直接知道 Pod IP。
+
+Service 透過：
+
+```
+Selector
+```
+
+找到符合 Label 的 Pod。
+
+Kubernetes 建立：
+
+```
+Endpoint
+```
+
+紀錄真正 Pod IP。
+
+Service
+
+↓
+
+Endpoint
+
+↓
+
+Pod
+
+---
+
+# 流量流程
+
+```
+Browser / curl
+
+↓
+
+DNS
+
+(/etc/hosts)
+
+↓
+
+Traefik
+
+↓
+
+Ingress
+
+↓
+
+Service
+
+↓
+
+Endpoint
+
+↓
+
+API Pod
+
+↓
+
+FastAPI
+```
+
+例如：
+
+```
+curl http://api-dev.hpc.local
+```
+
+完整流程：
+
+```
+api-dev.hpc.local
+
+↓
+
+Traefik
+
+↓
+
+Ingress
+
+↓
+
+api-service
+
+↓
+
+Endpoint
+
+↓
+
+API Pod
+
+↓
+
+GET /
+
+↓
+
+Response
+```
+
+---
+
+# 驗證
+
+確認 Argo CD
+
+```bash
+kubectl get application -n argocd
+```
+
+Expected
+
+```
+Synced
+
+Healthy
+```
+
+---
+
+確認 Ingress
+
+```bash
+kubectl get ingress -A
+```
+
+Expected
+
+```
+api-dev.hpc.local
+
+api-stage.hpc.local
+
+api-prod.hpc.local
+```
+
+---
+
+確認 API
+
+```bash
+curl http://api-dev.hpc.local
+
+curl http://api-stage.hpc.local
+
+curl http://api-prod.hpc.local
+```
+
+Expected
+
+```
+{"message":"HPC API DEV","status":"running"}
+
+{"message":"HPC API STAGE","status":"running"}
+
+{"message":"HPC API PROD","status":"running"}
+```
+
+---
+
+# 本日踩坑
+
+## 問題一
+
+使用 Kustomize Patch
+
+修改：
+
+```
+Ingress Host
+```
+
+導致：
+
+```
+http
+
+paths
+
+backend
+```
+
+全部消失。
+
+原因：
+
+```
+spec.rules
+```
+
+屬於 List。
+
+Strategic Merge Patch
+
+直接 Replace 整個 List。
+
+---
+
+## 解決方式
+
+Host
+
+改由：
+
+```
+Helm Values
+```
+
+管理。
+
+Render 後：
+
+```
+Helm
+
+↓
+
+完整 Ingress
+
+↓
+
+Kustomize
+
+↓
+
+保留 http.paths
+```
+
+避免 Patch 導致 Rule 遺失。
+
+---
+
+# 本日重點
+
+1.
+
+Helm
+
+負責：
+
+所有可參數化設定。
+
+---
+
+2.
+
+Kustomize
+
+負責：
+
+Environment Overlay。
+
+---
+
+3.
+
+Argo CD
+
+負責：
+
+GitOps 自動同步。
+
+---
+
+4.
+
+Traefik
+
+負責：
+
+Ingress Routing。
+
+---
+
+5.
+
+Service
+
+透過 Endpoint
+
+找到真正 Pod。
+
+---
+
+6.
+
+Ingress Host
+
+應由 Helm Values 管理。
+
+不要使用 Strategic Merge Patch 修改 List。
+
+---
+
+# Interview Q&A
+
+## Q1
+
+GitOps 中 Helm、Kustomize、Argo CD 三者如何分工？
+
+Helm 負責模板與參數化；Kustomize 負責不同環境 Overlay；Argo CD 持續監控 Git Repository 並自動同步到 Kubernetes。
+
+---
+
+## Q2
+
+為什麼最後把 Ingress Host 從 Kustomize Patch 改成 Helm Values？
+
+因為 Ingress 的 `spec.rules` 屬於 List，Strategic Merge Patch 會直接取代整個 Rules，導致 `http.paths` 與 `backend` 消失。Host 屬於可參數化設定，使用 Helm Values 管理更符合 Helm 的設計，也避免 Patch 覆蓋問題。

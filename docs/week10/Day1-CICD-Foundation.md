@@ -1,13 +1,13 @@
-<!-- current-curriculum: 2026-09-22 -->
+<!-- readable-curriculum: 2026-09-22 -->
 # Week10 Day1 — CI／CD 基礎
 
 [本週基礎](README.md) · [本週目錄](README.md) · [下一課](<Day2-First-GitHub-ActionsCI-Pipeline.md>) · [全程導讀](../learning-guide.md)
 
 版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-## 先備知識與本課目標
+## 閱讀方式：不用再開 VM 或做本機測試
 
-先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「CI／CD 基礎」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
+先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
 
 ## 概念解說
 
@@ -46,24 +46,256 @@ jobs:
         with:
 ```
 
-## 閱讀與練習
+## 已有結果與解讀
 
-1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
-2. 讀 on、permissions、steps，標出哪幾步只檢查、哪幾步會改外部狀態；不要為了讀教材手動觸發整條流程。
-3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
+### 已保存的本機驗證結果
 
-```bash
-sed -n '15,38p' '.github/workflows/ci.yml'
+2026-09-22 教材改寫時，在此 repo 開發環境執行並記錄：`53 passed`；三個 Helm charts lint 通過，完整主 overlay 離線渲染出 14 個物件。這是本機測試與渲染結果，**不是遠端 GitHub Actions 整條 CI 成功，也不是新雲端驗收**。
+
+目前 CI 改的是 values-dev.yaml，主 overlay 使用獨立 api-values.yaml，因此不能說 push 一定更新主展示。下方完整保留原本課程與當時輸出；不要求你再跑一次 pytest。
+
+## 原始完整教材與當時輸出
+
+以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
+
+另有[可渲染的原版 Markdown](<../history/20260922-before-current/week10/Day1-CICD-Foundation.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+
+<!-- original-week-body -->
+<!-- current-learning-map -->
+> **版本同步（2026-09-22）**：下方正文保留本日原始學習／實驗紀錄，不作為現行環境操作手冊。
+> **本週現況**：現行測試入口為 pytest tests；mock／CI 與實機證據分開。GitOps 尚未對齊主 overlay。
+> **閱讀順序**：先學本文基礎，再讀[Week10 現行對照與檢核](../learning-guide.md#week10)及[對應現行入口](../../tests/test_worker.py)。
+> **操作提醒**：舊 IP、context、映像及 apply／destroy 指令不可直接照跑；先確認目標環境與現行 runbook。
+<!-- /current-learning-map -->
+
+# Week10 Day1 - CI/CD Foundation
+
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [.github/workflows/ci.yml](../../.github/workflows/ci.yml)：CI／映像建置與 GitOps 更新
+
+---
+
+## 今日目標
+
+- 認識 CI/CD
+- 了解 GitHub Actions 架構
+- 建立 GitHub Actions 目錄
+- 規劃 HPC AI Platform Pipeline
+
+---
+
+# 今日成果
+
+- 建立 `.github/`
+- 建立 `workflows/`
+- 規劃完整 CI/CD Pipeline
+- 理解 Workflow、Job、Step 關係
+
+---
+
+# GitHub Actions 目錄
+
+```text
+.github/
+└── workflows/
 ```
 
-這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
+GitHub 只會讀取：
 
-## 怎樣判斷自己讀懂了
+```text
+.github/workflows/
+```
 
-- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
-- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
-- 能從[本週證據／實作對照](<../../tests/test_worker.py>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
+底下的 Workflow。
 
-## 舊版與新版本的關係
+---
 
-[改寫前完整教材快照](<../history/20260922-before-current/week10/Day1-CICD-Foundation.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。
+# CI 是什麼？
+
+Continuous Integration（持續整合）。
+
+每次：
+
+```text
+git push
+```
+
+都會自動：
+
+- Build
+- Test
+- Lint
+- 驗證程式
+
+目的是盡早發現問題，降低多人開發整合成本。
+
+---
+
+# CD 是什麼？
+
+Continuous Delivery / Continuous Deployment。
+
+CI 成功後：
+
+自動部署到：
+
+- Development
+- Stage
+- Production
+
+降低人工部署失誤。
+
+---
+
+# GitHub Actions
+
+GitHub 內建的 CI/CD 平台。
+
+可依事件（Event）自動執行：
+
+- Build
+- Test
+- Docker
+- Terraform
+- Kubernetes Deploy
+- Release
+
+---
+
+# GitHub Actions 架構
+
+```text
+Event
+   │
+   ▼
+Workflow
+   │
+   ▼
+Job
+   │
+   ▼
+Step
+   │
+   ▼
+Action / Script
+```
+
+---
+
+# 我們專案最終 Pipeline
+
+```text
+Developer
+
+↓
+
+git push
+
+↓
+
+GitHub Actions
+
+↓
+
+Checkout Source
+
+↓
+
+Setup Python
+
+↓
+
+Install Dependency
+
+↓
+
+Lint
+
+↓
+
+Unit Test
+
+↓
+
+Docker Build
+
+↓
+
+Image Scan
+
+↓
+
+Push Artifact Registry
+
+↓
+
+Deploy Kubernetes
+
+↓
+
+Health Check
+
+↓
+
+Done
+```
+
+這就是 Week10 最終要完成的 CI/CD 流程。
+
+---
+
+# 為什麼要先建立 `.github/workflows`
+
+GitHub Actions 只會自動偵測：
+
+```text
+.github/workflows/
+```
+
+中的 Workflow。
+
+因此所有 Pipeline 都必須放在此目錄。
+
+---
+
+# 今日重點
+
+- CI：自動驗證程式品質。
+- CD：自動部署應用程式。
+- GitHub Actions 由 Workflow、Job、Step 組成。
+- CI/CD Pipeline 應由小到大逐步建立，而非一次完成。
+
+---
+
+# Interview Q&A
+
+### Q1：CI 與 CD 有什麼差別？
+
+CI 著重於程式整合與自動驗證；CD 著重於將通過驗證的程式自動部署到目標環境。
+
+---
+
+### Q2：GitHub Actions Workflow 必須放在哪裡？
+
+必須放在：
+
+```text
+.github/workflows/
+```
+
+GitHub 才會自動偵測並執行。
+
+---
+
+### Q3：Workflow、Job、Step 的關係？
+
+Workflow 是一條 Pipeline；Workflow 由多個 Job 組成；每個 Job 再由多個 Step 組成，Step 執行實際的 Action 或 Script。
+
+---
+
+# 本日總結
+
+今天完成 GitHub Actions Foundation，建立 CI/CD 專案結構，理解 GitHub Actions 的執行流程，並完成 HPC AI Performance Platform 後續企業級 CI/CD Pipeline 的整體規劃。

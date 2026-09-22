@@ -1,13 +1,13 @@
-<!-- current-curriculum: 2026-09-22 -->
+<!-- readable-curriculum: 2026-09-22 -->
 # Week14 Day6 — Dashboard 與實驗驗證
 
 [上一課](<Day5-GPU-Metrics-Monitoring-integration.md>) · [本週目錄](README.md) · [下一週](../week15/README.md) · [全程導讀](../learning-guide.md)
 
 版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-## 先備知識與本課目標
+## 閱讀方式：不用再開 VM 或做本機測試
 
-先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Dashboard 與實驗驗證」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
+先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
 
 ## 概念解說
 
@@ -31,24 +31,363 @@
 LLM、multi-GPU scaling 或 RDMA 結論；也尚未接入 MPI API 的 benchmark dispatcher。
 ```
 
-## 閱讀與練習
+## 已有結果與解讀
 
-1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
-2. 讀 causal LM 報告限制段，區分 allocated、reserved、nvidia-smi used；回答圖表上 GPU 忙為何不代表模型吞吐已最優。
-3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
+### 這一課的結果直接看哪裡
 
-```bash
-sed -n '73,81p' 'docs/performance/causal-lm-l4-20260922.md'
+本課原本的完整教學、程式示例、結果與解讀已放回本頁下方，不再用縮短版取代它。命令是當時操作或語法示例，**不是要求你現在再執行**。
+
+概念例子的輸出只說明程式／工具行為，不冒充 VM 實測；原文沒留下的實測數值就維持未知，不用預期值補造。舊環境名稱、日期、成功與失敗照原文保留。
+
+## 原始完整教材與當時輸出
+
+以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
+
+另有[可渲染的原版 Markdown](<../history/20260922-before-current/week14/Day6-gpu-dashboard-establish-and-gpuworkload-verification.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+
+<!-- original-week-body -->
+<!-- current-learning-map -->
+> **版本同步（2026-09-22）**：下方正文保留本日原始學習／實驗紀錄，不作為現行環境操作手冊。
+> **本週現況**：現行是一張 L4，time-sharing shares 不是多 GPU；舊 P100 監控結果保留原環境歸屬。
+> **閱讀順序**：先學本文基礎，再讀[Week14 現行對照與檢核](../learning-guide.md#week14)及[對應現行入口](../evidence/README.md)。
+> **操作提醒**：舊 IP、context、映像及 apply／destroy 指令不可直接照跑；先確認目標環境與現行 runbook。
+<!-- /current-learning-map -->
+
+# Week14 Day6：GPU Dashboard 建立與 GPU Workload 驗證
+
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [benchmark/k8s/dcgm-exporter-remote.yaml](../../benchmark/k8s/dcgm-exporter-remote.yaml)
+- [helm/grafana-10.5.15/grafana/dashboards/custom-dashboard.json](../../helm/grafana-10.5.15/grafana/dashboards/custom-dashboard.json)
+- [helm/prometheus/templates/configmap.yaml](../../helm/prometheus/templates/configmap.yaml)
+
+---
+
+## 今日目標
+
+今天將 GPU Metrics 建立為 Grafana Dashboard，並透過實際 GPU Workload 驗證 Dashboard 是否能即時反映 GPU 狀態。
+
+今日流程：
+
+```text
+GPU Workload
+      │
+      ▼
+Tesla P100
+      │
+      ▼
+DCGM Exporter
+      │
+      ▼
+Prometheus
+      │
+      ▼
+Grafana Dashboard
 ```
 
-這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
+---
 
-## 怎樣判斷自己讀懂了
+## 1. 建立 GPU Dashboard
 
-- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
-- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
-- 能從[本週證據／實作對照](<../performance/causal-lm-l4-20260922.md>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
+Grafana：
 
-## 舊版與新版本的關係
+```text
+Dashboards
+    ↓
+New Dashboard
+    ↓
+Add Visualization
+```
 
-[改寫前完整教材快照](<../history/20260922-before-current/week14/Day6-gpu-dashboard-establish-and-gpuworkload-verification.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。
+Data Source：
+
+```text
+Prometheus
+```
+
+---
+
+## 2. GPU Utilization Panel
+
+Title：
+
+```text
+GPU Utilization
+```
+
+PromQL：
+
+```promql
+DCGM_FI_DEV_GPU_UTIL
+```
+
+Unit：
+
+```text
+Percent (0-100)
+```
+
+用途：
+
+```text
+顯示 GPU 使用率 (%)
+```
+
+---
+
+## 3. GPU Temperature Panel
+
+Title：
+
+```text
+GPU Temperature
+```
+
+PromQL：
+
+```promql
+DCGM_FI_DEV_GPU_TEMP
+```
+
+Unit：
+
+```text
+Celsius (°C)
+```
+
+用途：
+
+```text
+監控 GPU 即時溫度。
+```
+
+---
+
+## 4. GPU Power Panel
+
+Title：
+
+```text
+GPU Power
+```
+
+PromQL：
+
+```promql
+DCGM_FI_DEV_POWER_USAGE
+```
+
+Unit：
+
+```text
+Watts (W)
+```
+
+用途：
+
+```text
+監控 GPU 即時功耗。
+```
+
+---
+
+## 5. VRAM Used Panel
+
+Title：
+
+```text
+VRAM Used
+```
+
+PromQL：
+
+```promql
+DCGM_FI_DEV_FB_USED
+```
+
+Unit：
+
+```text
+Mebibytes (MiB)
+```
+
+用途：
+
+```text
+監控目前已使用 GPU Memory。
+```
+
+---
+
+## 6. VRAM Free Panel
+
+Title：
+
+```text
+VRAM Free
+```
+
+PromQL：
+
+```promql
+DCGM_FI_DEV_FB_FREE
+```
+
+Unit：
+
+```text
+Mebibytes (MiB)
+```
+
+用途：
+
+```text
+監控剩餘 GPU Memory。
+```
+
+---
+
+## 7. VRAM Total Panel
+
+Title：
+
+```text
+VRAM Total
+```
+
+PromQL：
+
+```promql
+DCGM_FI_DEV_FB_TOTAL
+```
+
+Unit：
+
+```text
+Mebibytes (MiB)
+```
+
+用途：
+
+```text
+顯示 GPU 總記憶體容量。
+```
+
+---
+
+## 8. GPU Stress Program
+
+建立：
+
+```text
+gpu_stress.cu
+```
+
+編譯：
+
+```bash
+nvcc gpu_stress.cu -o gpu_stress
+```
+
+執行：
+
+```bash
+./gpu_stress
+```
+
+停止：
+
+```text
+Ctrl + C
+```
+
+GPU Stress 持續對 GPU 執行 CUDA Kernel，以產生穩定 GPU Workload。
+
+---
+
+## 9. Dashboard 驗證
+
+GPU Workload 執行前：
+
+| Metric | 狀態 |
+|------|------|
+| GPU Utilization | 約 0% |
+| GPU Temperature | 約 51°C |
+| VRAM Used | 0 MiB |
+| VRAM Free | 約 16270 MiB |
+
+GPU Workload 執行後：
+
+| Metric | 狀態 |
+|------|------|
+| GPU Utilization | 約 100% |
+| GPU Temperature | 約 60°C |
+| VRAM Used | 約 256 MiB |
+| VRAM Free | 約 16000 MiB |
+
+代表 Dashboard 能即時反映 GPU 狀態變化。
+
+---
+
+## 10. GPU Monitoring 驗證
+
+驗證 GPU Workload 對監控指標的影響：
+
+```text
+GPU Workload
+        │
+        ▼
+GPU Utilization ↑
+GPU Temperature ↑
+GPU Power ↑
+VRAM Used ↑
+VRAM Free ↓
+```
+
+Grafana Dashboard 可即時顯示 GPU 工作負載的變化。
+
+---
+
+## 11. Day6 架構
+
+```text
+GPU Stress Program
+        │
+        ▼
+Tesla P100-PCIE-16GB
+        │
+        ▼
+CUDA Runtime
+        │
+        ▼
+NVIDIA Driver
+        │
+        ▼
+nv-hostengine
+        │
+        ▼
+DCGM Exporter
+        │
+        ▼
+Prometheus
+        │
+        ▼
+Grafana Dashboard
+```
+
+---
+
+## Day6 完成結果
+
+完成 GPU Dashboard 建立，並成功透過 GPU Workload 驗證：
+
+- GPU Utilization
+- GPU Temperature
+- GPU Power
+- VRAM Used
+- VRAM Free
+- VRAM Total
+
+所有 GPU Metrics 均能由 Grafana 即時監控，完成 GPU Observability Dashboard 驗證。

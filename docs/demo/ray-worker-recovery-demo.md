@@ -17,7 +17,7 @@
 
 ## Observed Symptoms
 
-[歷史排障紀錄](../history/20260922-before-current/week20/day5-ai-hpc-production-troubleshooting.md.txt) 與 [runbook](../runbooks/ai-hpc-job-troubleshooting.md) 保存以下觀察。Resource mismatch 時 Kubernetes Pods 為 Running，但 Ray resources 為 CPU=3、GPU=0；task 要求 CPU=1、GPU=1：
+[歷史排障紀錄](../history/20260922-before-current/week20/day5-ai-hpc-production-troubleshooting.md) 與 [runbook](../runbooks/ai-hpc-job-troubleshooting.md) 保存以下觀察。Resource mismatch 時 Kubernetes Pods 為 Running，但 Ray resources 為 CPU=3、GPU=0；task 要求 CPU=1、GPU=1：
 
 ```text
 {'CPU': 1.0, 'GPU': 1.0}: 1+ pending tasks/actors
@@ -64,7 +64,7 @@ Worker Pod 消失
 | Evidence | 可確認的內容 |
 |---|---|
 | [Recovery RayJob](../../ray-worker-recovery-job.yaml) | `max_retries=2`、soft affinity、TARGET_NODE_ID／TARGET_IP／TASK_HOST 輸出設計 |
-| [歷史排障紀錄](../history/20260922-before-current/week20/day5-ai-hpc-production-troubleshooting.md.txt) | Resource mismatch、NODE_DIED、另一 Ray node 的 retry、KubeRay 補 worker |
+| [歷史排障紀錄](../history/20260922-before-current/week20/day5-ai-hpc-production-troubleshooting.md) | Resource mismatch、NODE_DIED、另一 Ray node 的 retry、KubeRay 補 worker |
 | [Runbook](../runbooks/ai-hpc-job-troubleshooting.md) | attempt 0 FAILED → attempt 1 RUNNING 的 state 摘錄 |
 
 ## Limitation

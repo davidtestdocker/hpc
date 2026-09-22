@@ -34,6 +34,8 @@ def prose_only(text):
 
 def anchors(text):
     result = set(re.findall(r'<a\s+id="([^"]+)"', text))
+    # Only the new reading section is audited as current navigation.
+    text = text.split('<!-- original-week-body -->', 1)[0]
     for heading in re.findall(r"^#{1,6}\s+(.+)$", prose_only(text), re.MULTILINE):
         slug = re.sub(r"[^\w\- ]", "", heading.lower()).replace(" ", "-")
         result.add(slug)
@@ -54,21 +56,24 @@ def check():
             errors.append(f"Archive changed: {archived.relative_to(ROOT)}")
         current = ROOT / record["source"]
         text = current.read_text()
-        if not text.startswith("<!-- current-curriculum: 2026-09-22 -->"):
+        if not text.startswith("<!-- readable-curriculum: 2026-09-22 -->"):
             errors.append(f"Not a current lesson: {current.relative_to(ROOT)}")
-        for section in ["## 概念解說", "## 閱讀與練習", "## 舊版與新版本的關係"]:
+        for section in ["## 概念解說", "## 已有結果與解讀", "## 原始完整教材與當時輸出"]:
             if section not in text:
                 errors.append(f"Missing {section}: {current.relative_to(ROOT)}")
-        # Every lesson embeds a reading excerpt and a matching read-only source command.
-        source_match = re.search(r"sed -n '(\d+),(\d+)p' '([^']+)'", text)
-        if not source_match:
-            errors.append(f"Missing source exercise: {current.relative_to(ROOT)}")
+        # The original detailed lesson is directly in the original .md, byte-identical.
+        marker = '<!-- original-week-body -->\n'
+        if marker not in text:
+            errors.append(f"Missing full original lesson: {current.relative_to(ROOT)}")
         else:
-            start, end, source = source_match.groups()
-            expected = "\n".join(line.rstrip() for line in
-                                 (ROOT / source).read_text().splitlines()[int(start)-1:int(end)])
-            if expected not in text:
-                errors.append(f"Stale source excerpt: {current.relative_to(ROOT)}")
+            body = text.split(marker, 1)[1].encode()
+            if (len(body) != record['original_body_bytes']
+                    or hashlib.sha256(body).hexdigest() != record['original_body_sha256']):
+                errors.append(f"Original body changed: {current.relative_to(ROOT)}")
+        if archived.suffix != '.md':
+            errors.append(f"Archive is not Markdown: {archived}")
+    if list(ARCHIVE.rglob('*.md.txt')):
+        errors.append('Text-only Markdown archives still present')
     for name, digest in manifest["protected_evidence_sha256"].items():
         if hashlib.sha256((ROOT / name).read_bytes()).hexdigest() != digest:
             errors.append(f"Raw evidence changed: {name}")
@@ -79,14 +84,15 @@ def check():
         pages.add(page)
     pages.update({ROOT / "README.md", ROOT / "docs/learning-guide.md",
                   ROOT / "docs/current-environment.md", ARCHIVE / "README.md"})
-    # Include all current docs and the archive index; .md.txt snapshots are raw text.
-    pages.update((ROOT / "docs").rglob("*.md"))
+    # Audit current navigation; historical Markdown has preserved legacy syntax.
+    pages.update(p for p in (ROOT / "docs").rglob("*.md")
+                 if not p.is_relative_to(ARCHIVE) or p.name == 'README.md')
     count = 0
     for page in sorted(pages):
         if not page.exists():
             continue
         try:
-            text = prose_only(page.read_text())
+            text = prose_only(page.read_text().split('<!-- original-week-body -->', 1)[0])
         except ValueError as exc:
             errors.append(f"{page.relative_to(ROOT)}: {exc}")
             continue

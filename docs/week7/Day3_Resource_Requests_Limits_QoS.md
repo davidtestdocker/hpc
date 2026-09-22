@@ -1,13 +1,13 @@
-<!-- current-curriculum: 2026-09-22 -->
+<!-- readable-curriculum: 2026-09-22 -->
 # Week7 Day3 — Requests、limits 與 QoS
 
 [上一課](<Day2_Secret.md>) · [本週目錄](README.md) · [下一課](<Day4_Liveness_and_Readiness_Probe.md>) · [全程導讀](../learning-guide.md)
 
 版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-## 先備知識與本課目標
+## 閱讀方式：不用再開 VM 或做本機測試
 
-先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Requests、limits 與 QoS」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
+先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
 
 ## 概念解說
 
@@ -46,24 +46,410 @@ resources:
 # 存活探針失敗達門檻時，kubelet 會重啟容器。
 ```
 
-## 閱讀與練習
+## 已有結果與解讀
 
-1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
-2. 對照 worker 的 request／limit，設想可用 CPU request 不足時查看 events，而不是先增加 retry 次數。解釋 Pending 和 OOMKilled 不同。
-3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
+### CPU 叢集重建：已保存的驗收結果
 
-```bash
-sed -n '137,160p' 'helm/api/values.yaml'
+日期：2026-09-21。環境：隔離 CPU-only GKE 重建驗收；不是主環境的多 GPU 實驗。該次叢集已清理，讀這份結果不需要重新建立。
+
+```json
+{
+  "recorded_at": "2026-09-21",
+  "scope": "fresh CPU-only GKE bootstrap and platform acceptance; excludes GPU and MPI execution",
+  "result": "pass",
+  "terraform": {
+    "apply": "3 added",
+    "post_apply_plan": "No changes",
+    "destroy": "3 destroyed",
+    "state_resources_after_destroy": 0,
+    "cluster_lookup_after_destroy": "404 Not Found"
+  },
+  "controllers": {
+    "jobset": "v0.12.0 Ready on system-pool with 100m CPU request",
+    "kueue": "v0.19.2 Ready on system-pool with Recreate deployment strategy"
+  },
+  "platform": {
+    "api": "Running on system-pool; /health healthy",
+    "redis": "Running on system-pool; connected; PVC Bound",
+    "postgres": "Running on system-pool; jobs table query succeeded; PVC Bound",
+    "overlay_diff_after_apply": "empty"
+  },
+  "security": {
+    "postgres_secret": "created from external env file; value not captured",
+    "mpi_ssh_key": "generated in temporary directory; value not captured",
+    "api_service_account_create_jobsets": "yes",
+    "api_service_account_delete_pods": "no"
+  },
+  "limitations": [
+    "gpu-pool had zero nodes because project-wide GPU quota was exhausted",
+    "no MPI workload was submitted in this CPU-only rehearsal",
+    "database initialization used create_all rather than schema migration"
+  ]
+}
 ```
 
-這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
+解讀：Terraform 建立 3 個資源、無 drift，JobSet／Kueue controllers 和 API／Redis／DB 驗收成功；create JobSet 權限允許，delete Pod 權限拒絕。最後 destroy 3、state 空、cluster 查詢 404，證明當次隔離叢集已刪除。**不包含 GPU 或 MPI 執行驗收**，也不是所有雲端資源的停費證明。
 
-## 怎樣判斷自己讀懂了
+來源：[原始 CPU bootstrap JSON](<../evidence/cpu-bootstrap-acceptance-20260921.json>)。
 
-- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
-- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
-- 能從[本週證據／實作對照](<../evidence/platform-after-training-20260922.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
+## 原始完整教材與當時輸出
 
-## 舊版與新版本的關係
+以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
 
-[改寫前完整教材快照](<../history/20260922-before-current/week7/Day3_Resource_Requests_Limits_QoS.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。
+另有[可渲染的原版 Markdown](<../history/20260922-before-current/week7/Day3_Resource_Requests_Limits_QoS.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+
+<!-- original-week-body -->
+<!-- current-learning-map -->
+> **版本同步（2026-09-22）**：下方正文保留本日原始學習／實驗紀錄，不作為現行環境操作手冊。
+> **本週現況**：現行 API 與 worker 分開部署；API HPA 不等於 worker 擴縮，Secret 不應保存真實密碼。
+> **閱讀順序**：先學本文基礎，再讀[Week7 現行對照與檢核](../learning-guide.md#week7)及[對應現行入口](../../helm/api/templates/worker.yaml)。
+> **操作提醒**：舊 IP、context、映像及 apply／destroy 指令不可直接照跑；先確認目標環境與現行 runbook。
+<!-- /current-learning-map -->
+
+# Week7 Day3 - Resource Requests, Limits and QoS
+
+## 對應檔案
+
+以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+
+- [k8s/api-deployment.yaml](../../k8s/api-deployment.yaml)
+
+---
+
+## 今日平台增加什麼
+
+今天平台新增 Kubernetes Resource Management。
+
+API Pod 開始具備：
+
+* CPU Requests
+* Memory Requests
+* CPU Limits
+* Memory Limits
+
+並了解 Kubernetes 如何根據 Requests、Limits 決定 Pod 的排程與 QoS（Quality of Service）。
+
+---
+
+# Platform Problem
+
+如果 Pod 沒有設定資源需求：
+
+```yaml
+containers:
+  - name: api
+```
+
+Kubernetes 不知道：
+
+* 至少需要多少 CPU
+* 至少需要多少 Memory
+* 最多可以使用多少資源
+
+結果可能造成：
+
+* 單一 Pod 耗盡 Node CPU
+* Memory OOM
+* 其他 Pod 被影響
+* Node 不穩定
+
+---
+
+# 今日知識鏈
+
+```text
+Node
+   │
+Scheduler
+   │
+Requests
+   │
+Pod
+   │
+Limits
+   │
+QoS
+```
+
+---
+
+# Requests
+
+Requests 表示：
+
+> Pod 至少需要多少資源才能被排程。
+
+本課程設定：
+
+```yaml
+requests:
+  cpu: "100m"
+  memory: "128Mi"
+```
+
+代表：
+
+* CPU：0.1 Core
+* Memory：128 MiB
+
+Scheduler 必須找到符合條件的 Node。
+
+---
+
+# Limits
+
+Limits 表示：
+
+> Pod 最多可以使用多少資源。
+
+設定：
+
+```yaml
+limits:
+  cpu: "500m"
+  memory: "512Mi"
+```
+
+代表：
+
+* CPU 最多 0.5 Core
+* Memory 最多 512 MiB
+
+超過限制時：
+
+CPU：
+
+* 被 Linux CFS Throttle（限速）
+
+Memory：
+
+* 被 Kubernetes OOMKilled
+
+---
+
+# Hands-on
+
+修改：
+
+```text
+k8s/api-deployment.yaml
+```
+
+新增：
+
+```yaml
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+```
+
+重新部署：
+
+```bash
+kubectl apply -f k8s/api-deployment.yaml
+
+kubectl rollout status deployment api -n hpc-platform
+```
+
+驗證：
+
+```bash
+kubectl describe pod -n hpc-platform -l app=api
+```
+
+結果：
+
+```text
+Limits:
+  cpu:     500m
+  memory:  512Mi
+
+Requests:
+  cpu:     100m
+  memory:  128Mi
+```
+
+---
+
+# QoS（Quality of Service）
+
+Kubernetes 依 Requests 與 Limits 將 Pod 分為三種等級。
+
+## BestEffort
+
+沒有設定任何 Resources。
+
+```yaml
+containers:
+  - name: api
+```
+
+最容易在資源不足時被 OOM Kill。
+
+---
+
+## Burstable
+
+Requests 與 Limits 不相同。
+
+例如：
+
+```yaml
+requests:
+  cpu: 100m
+  memory: 128Mi
+
+limits:
+  cpu: 500m
+  memory: 512Mi
+```
+
+本課程 API 使用此模式。
+
+兼顧資源保證與彈性。
+
+企業最常見。
+
+---
+
+## Guaranteed
+
+Requests 與 Limits 完全相同。
+
+例如：
+
+```yaml
+requests:
+  cpu: 500m
+  memory: 512Mi
+
+limits:
+  cpu: 500m
+  memory: 512Mi
+```
+
+通常給：
+
+* Database
+* Kafka
+* ZooKeeper
+* 關鍵服務
+
+提供最高優先保障。
+
+---
+
+# 驗證 QoS
+
+執行：
+
+```bash
+kubectl describe pod <pod-name> -n hpc-platform
+```
+
+確認：
+
+```text
+QoS Class: Burstable
+```
+
+代表：
+
+Requests ≠ Limits。
+
+---
+
+# 平台架構
+
+```text
+Node
+ │
+ ├── Scheduler
+ │
+ ▼
+API Pod
+ │
+ ├── Requests
+ │
+ ├── Limits
+ │
+ └── QoS: Burstable
+```
+
+---
+
+# 今日重點
+
+* Requests 決定排程最低需求。
+* Limits 決定 Pod 可使用的最大資源。
+* CPU 超過 Limits 會被 Throttle。
+* Memory 超過 Limits 會被 OOMKilled。
+* QoS 由 Requests 與 Limits 決定。
+* Burstable 是企業最常見的 QoS。
+
+---
+
+# Interview Q&A
+
+## Q1：Requests 和 Limits 差在哪？
+
+Requests 是 Scheduler 排程依據，代表最低保證。
+
+Limits 是 Pod 可使用的最高資源限制。
+
+---
+
+## Q2：CPU 和 Memory 超過 Limits 的結果一樣嗎？
+
+不一樣。
+
+CPU：
+
+* Throttle（限速）
+
+Memory：
+
+* OOMKilled（直接終止容器）
+
+---
+
+## Q3：什麼是 Burstable？
+
+當 Requests 與 Limits 不相同時，Pod 的 QoS 為 Burstable。
+
+能保證最低資源，同時允許在 Node 有餘裕時使用更多資源。
+
+---
+
+# 今日成果
+
+API Pod 已具備完整的 Resource Management：
+
+```text
+Requests
+      │
+      ▼
+Scheduler
+      │
+      ▼
+Pod
+      │
+      ├── CPU Limit
+      ├── Memory Limit
+      └── QoS：Burstable
+```
+
+平台開始具備生產環境的資源管理能力。
+
+---
+
+# 下一步
+
+Week7 Day4：
+
+Liveness Probe、Readiness Probe 與 Kubernetes Self-healing。
