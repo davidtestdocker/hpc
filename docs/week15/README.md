@@ -2,6 +2,8 @@
 
 現行教材版本：2026-09-22。先讀本頁，再按 Day 順序閱讀；不必先讀懂整個專案。
 
+本週每日教材已完成逐篇文件核對。先讀各課頁首的修正與結果邊界，再讀完整原文；沒有 raw log 的課程不冒充實測。全套見[稽核清單](../audits/curriculum-content-audit.md)與[問題總表](../audits/curriculum-findings.md)。
+
 ## 先備與學習方式
 
 先完成 [Week14](../week14/README.md)。遇到陌生名詞先回前週，不必邊猜邊背架構。 每一課先解釋概念，再直接讀現行補充、已保存結果與原本完整教學。原本完整教材與輸出已放回每一課下半部；前面是現行補充與已有結果，無須重新操作。
@@ -23,7 +25,7 @@ runtime abstraction 是程式接口設計，不代表所有 adapter 都已接到
 ## 每日閱讀順序
 
 - [Day1：PyTorch GPU runtime](<Day1—PyTorch-GPU-Runtime.md>)
-- [Day2：現行 causal LM 訓練](<Day2-PyTorch-Training-Runtime.md>)
+- [Day2：合成資料訓練與現行版本差異](<Day2-PyTorch-Training-Runtime.md>)
 - [Day3：vLLM inference](<Day3-vLLM-Inference-Runtime.md>)
 - [Day4：Runtime abstraction](<Day4-Runtime-Abstraction.md>)
 - [Day5：Benchmark engine](<Day5-Benchmark-Engine.md>)

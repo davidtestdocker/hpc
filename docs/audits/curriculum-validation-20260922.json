@@ -1,0 +1,23 @@
+{
+  "date": "2026-09-22",
+  "environment": "Local repository /root/hpc-ai-benchmark-platform; no cloud or workload execution",
+  "command": "python3 scripts/check_curriculum.py",
+  "report": {
+    "passed": true,
+    "scope": "structure_links_and_preservation_only",
+    "content_reviewed": 138,
+    "content_pending": 0,
+    "lessons": 138,
+    "weekly_introductions": 20,
+    "pages_checked": 188,
+    "local_links_checked": 1964,
+    "protected_evidence_files": 44,
+    "errors": []
+  },
+  "whitespace_check": {
+    "command": "git -c core.whitespace=-blank-at-eol diff --check",
+    "exit_code": 0,
+    "note": "Preserves intentional Markdown trailing spaces in original lesson bodies"
+  },
+  "limitation": "Static checks do not prove runtime availability or correctness of every historical experiment. Content review findings are recorded separately."
+}

@@ -3,62 +3,33 @@
 
 [上一課](<Day3-Linux-Disk-Performance-Analysis.md>) · [本週目錄](README.md) · [下一課](<Day5-Linux-CPU-Benchmark-with-sysbench.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：歷史timer設定，無事故時序。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+sar也能帶interval即時採樣／輸出檔案，不是只能讀歷史；本例timer十分鐘不等於工具只支援十分鐘。其他工具也能把輸出保存，22:30 timeout是設想非真事故。[sysstat手冊](https://github.com/sysstat/sysstat/blob/master/man/sar.in)。
 
-單次 snapshot 無法描述整段事件；要對齊工作開始／結束、時區、取樣頻率與重啟時間。歷史資料可以證明當時觀察，不代表現在仍有同樣瓶頸。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-歷史 Linux baseline 不是現行 MPI job 的自動 profiling；新硬體需重新建立基線。
-
-本課對照：[docs/evidence/README.md](<../evidence/README.md>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```text
-| Linux Performance | [CPU analysis](../history/20260922-before-current/week12/Day1-Linux-CPU-Performance-Analysis.md)、[perf](../history/20260922-before-current/week12/Day6-Linux-CPU-Profiling-with-perf.md)、[strace](../history/20260922-before-current/week12/Day7-Linux-System-Call-Analysis-with-strace.md)、[CPU report](../../benchmark/cpu/results/cpu_benchmark_20260810.md) | Linux CPU／process／system-call 診斷紀錄與 stress-ng CPU saturation baseline | 歷史環境的輸出／報告；不是主 MPI job 的自動 profiling 或跨機型可直接比較的結果 |
-| RBAC / Security | [API JobSet RBAC](../../k8s/security/api-jobset-rbac.yaml)、[RBAC 驗證](../history/20260922-before-current/week20/day1-rbac-serviceaccount-least-privilege.md)、[Pod hardening](../history/20260922-before-current/week20/day2-pod-image-secret-security.md)、[NetworkPolicy 實測](network-policy-validation-20260921.json) | API namespace-scoped JobSet 權限設定；歷史 benchmark-runner 允許／拒絕；隔離 Calico GKE ingress baseline／allow／deny／recovery | benchmark-runner 與 api-jobset-runner 是不同身份；NetworkPolicy 實測不在主 cluster，未涵蓋 egress、跨 namespace 或全平台 hardening |
-| Terraform / GitOps | [Terraform 證據](terraform-gpu-sg-20260921.md)、[CPU-only bootstrap 驗收](cpu-bootstrap-acceptance-20260921.json)、[gpu-sg root](../../terraform/environments/gpu-sg/main.tf)、[歷史 GitOps 紀錄](../history/20260922-before-current/week10/Day7-GitHub-Actions-GitOps-自動部署-ArgoCD.md) | 主環境 import 零 drift；全新 CPU-only cluster 完成 controllers／Secrets／queues／平台 bootstrap、health／RBAC／PVC 驗收及銷毀 | 不涵蓋全新 GPU cluster MPI 執行；缺 remote state；Argo dev 仍指舊 overlays/dev |
-| L4 Causal LM / CUDA Profiling | [9/22 報告](../performance/causal-lm-l4-20260922.md)、[原始證據與 hashes](../../benchmark/results/causal-lm-20260922/evidence.json) | 13M causal LM、文字 byte tokens、交錯三次量測、兩份 CUDA traces、同步 nvidia-smi 遙測 | 單 L4 time-sharing；非 pretrained LLM 品質或多 GPU 結論；獨立 runner 尚未接 MPI API |
-
-## Capability Matrix
-
-狀態是證據標記，可同時存在，不是成熟度分數：
-
-- **Implemented**：repo 有對應程式、script 或 declarative manifest；以「範圍」欄為準。
-- **Validated**：repo 保存範圍內的執行或觀察結果；本索引使用既有 evidence，未重新執行實驗。
-- **Documented**：有可追溯的說明與結果入口。
-- **Partial**：該列涵蓋的能力仍有未整合或未驗證部分，明列於最後一欄。
-
-| 分類 | 範圍 | 狀態 | Partial 邊界／未完成項目 |
-|---|---|---|---|
-| Platform | API submission、背景 polling worker、MPI dispatch／rank execution／terminal collection | Implemented · Validated · Documented · Partial | 9/22 自動結果回收與重啟接續已驗證；仍缺 artifact storage、跨 DB／Redis 原子交易與 full lifecycle state machine |
-| Distributed Compute | MPI JobSet、Ray tasks／recovery、Slurm multi-node MPI | Implemented · Validated · Documented · Partial | 各自獨立；Ray／Slurm 未接 API；Ray retry evidence 到 RUNNING，Slurm 歷史 compute VM 已移除 |
-| GPU / AI Performance | 13M causal LM training／CUDA profiling、歷史 DDP／vLLM／NCCL | Implemented · Validated · Documented · Partial | 單 L4 time-sharing、byte corpus；無 pretrained LLM 品質、multi-node GPU scaling／RDMA 結論 |
-| Scheduling | Kueue queue／quota／priority／preemption／TAS | Implemented · Validated · Documented · Partial | 單實體 GPU node 的 quota／placement 實驗；無 multi-node／cross-zone TAS 驗證 |
-| Observability | API metrics、Prometheus／Grafana／DCGM 設定與歷史監控 | Implemented · Validated · Documented · Partial | 缺主 E2E per-job metrics／result 關聯；舊 P100 dashboard evidence 與目前 L4 分開 |
-| Infrastructure | Terraform、bootstrap、Helm、Kustomize、Argo CD | Implemented · Validated · Documented · Partial | 全新 CPU-only cluster 已完成 Terraform、controllers、queues、Secrets、platform apply／acceptance／destroy；Spot GPU rehearsal 被全域 quota 阻擋並清理，尚缺全新 GPU MPI 執行、remote state 與 Argo CD 對齊 |
-| Security | Namespace RBAC、Pod hardening、NetworkPolicy manifests | Implemented · Validated · Documented · Partial | 隔離 Calico GKE 已驗證 ingress packet allow／deny／recovery；主 cluster enforcement、egress／跨 namespace 與全平台 hardening未完成 |
-| Troubleshooting | Kueue、JobSet、Ray、Slurm、NCCL failure-domain 定位 | Implemented · Validated · Documented · Partial | 有 failure scripts／hooks 與紀錄；單 GPU node 無 node failover，Slurm 未驗證恢復，非完整 HA 認證 |
-```
+本次核對：本課沒有對應獨立程式；依文內命令及觀察核對，不硬接其他元件。
 
 ## 已有結果與解讀
 
-### 這一課的結果直接看哪裡
+來源：[記錄／示例原文](<Day4-Linux-Historical-Performance-Analysis.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-本課原本的完整教學、程式示例、結果與解讀已放回本頁下方，不再用縮短版取代它。命令是當時操作或語法示例，**不是要求你現在再執行**。
+```text
+OnCalendar=*:00/10
+```
 
-概念例子的輸出只說明程式／工具行為，不冒充 VM 實測；原文沒留下的實測數值就維持未知，不用預期值補造。舊環境名稱、日期、成功與失敗照原文保留。
+文內timer說明不是保存sa檔；沒有昨天事故曲線可讀，不宣稱已診斷該事故。
+
+**仍缺的證據／不能證明的事：** 缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week12/Day4-Linux-Historical-Performance-Analysis.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

@@ -3,62 +3,33 @@
 
 [上一課](<day1-rbac-serviceaccount-least-privilege.md>) · [本週目錄](README.md) · [下一課](<day3-networkpolicy-tenant-isolation.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：歷史安全Pod與現存設定。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+完整securityContext與digest只在此測試Pod，不是全專案已套用；API Docker非root也不自動等於readonly/seccomp/dropALL。digest固定內容不保證無漏洞或可信來源。
 
-image digest 用於追溯內容，securityContext 限制執行權限，Secret mount 提供憑證。任何單一設定都不等於全面 hardening，init container 改權限也需看實際需要。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-保留所有歷史成功與失敗；不宣稱 node failover、Redis 全失恢復或跨資料庫原子交易。
-
-本課對照：[api/workloads/templates/jobset-mpi.yaml](<../../api/workloads/templates/jobset-mpi.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```yaml
-              initContainers:
-                - name: prepare-ssh
-                  # 容器映像及標籤，決定執行的檔案系統與程式版本。
-                  image: mpioperator/mpi-pi:openmpi
-                  # 程序身分、權限與作業系統安全設定。
-                  securityContext:
-                    runAsUser: 0
-                  # 覆寫容器入口指令；多行字串中的 Shell 語法由指定的 shell 解讀。
-                  command:
-                    - /bin/sh
-                    - -lc
-                    - |
-                      set -e
-                      cp /ssh-secret/id_ed25519 /ssh-work/id_ed25519
-                      chown 1000:1000 /ssh-work/id_ed25519
-                      chmod 600 /ssh-work/id_ed25519
-                  # 把已宣告的 volume 掛載到容器中的指定路徑。
-                  volumeMounts:
-                    - name: ssh-secret
-                      # 容器內可見的掛載路徑。
-                      mountPath: /ssh-secret
-                      # 是否以唯讀方式掛載，限制容器透過此掛載點寫入。
-                      readOnly: true
-                    - name: ssh-work
-```
+本次核對：[k8s/security/rbac-api-test.yaml](<../../k8s/security/rbac-api-test.yaml>)、[docker/Dockerfile](<../../docker/Dockerfile>)
 
 ## 已有結果與解讀
 
-### 這一課的結果直接看哪裡
+來源：[記錄／示例原文](<day2-pod-image-secret-security.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-本課原本的完整教學、程式示例、結果與解讀已放回本頁下方，不再用縮短版取代它。命令是當時操作或語法示例，**不是要求你現在再執行**。
+```text
+94e9e444bcba979c2ea12e27ae39bee4cd10bc7041a472c4727a558e213744e6
+```
 
-概念例子的輸出只說明程式／工具行為，不冒充 VM 實測；原文沒留下的實測數值就維持未知，不用預期值補造。舊環境名稱、日期、成功與失敗照原文保留。
+保留歷史HTTP結果，無新漏洞掃描／credential rotation證據；不把從Git移除現檔說成歷史秘密已清除。
+
+**仍缺的證據／不能證明的事：** 缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week20/day2-pod-image-secret-security.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

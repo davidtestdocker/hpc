@@ -3,102 +3,33 @@
 
 [上一課](<day5-dockerize-api.md>) · [本週目錄](README.md) · [下一週](../week5/README.md) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：歷史 health／log／metrics 摘錄。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+現行 /metrics 由 Instrumentator 提供 Prometheus 格式；工作數量 JSON 位於 /job-metrics，不能照舊文向 /metrics 期待 JSON。/health 固定回 healthy，只表示路由可回應；Redis 檢查在 /health/redis，未等同 PostgreSQL、worker、Kubernetes 全鏈路健康。process_monitor.py 未接入這些端點，也不提供這裡的 jobs 指標。
 
-/health 目前只回程序層訊號；/health/redis 才 ping Redis，/metrics 則暴露 HTTP 指標。三者都不等於 MPI 工作完成，也不涵蓋全部資料庫失敗模式。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-現行 GKE 主線；本機先用 mock 測試學習，不需要先拿雲端權限。
-
-本課對照：[api/main.py](<../../api/main.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```python
-def health():
-    return {
-        "status": "healthy"
-    }
-
-# 以 ping 檢查 Redis，連線失敗轉成 HTTP 503。
-@app.get("/health/redis")
-def redis_health():
-    try:
-        redis_client.ping()
-
-        return {
-            "status": "healthy",
-            "redis": "connected"
-        }
-
-    except ConnectionError:
-        raise HTTPException(
-            status_code=503,
-            detail="Redis unavailable"
-        )
-
-
-# 列出 API 支援的 benchmark 名稱。
-```
+本次核對：[api/main.py](<../../api/main.py>)、[monitoring/process_monitor.py](<../../monitoring/process_monitor.py>)
 
 ## 已有結果與解讀
 
-### 自動工作驗收：已保存的真實結果
-
-日期：2026-09-22T04:58:58.875811+00:00。環境：GKE hpc-gpu-sg，既有單 L4 叢集上的 **CPU MPI**，不是 GPU 訓練。
-
-| 情境 | 保存的結果 | 怎麼解讀 |
-|---|---|---|
-| 正常工作 `f2d8df72-aef3-48bf-9d6b-6863523daa65` | `completed`；ranks `[0, 1, 2]` | 真實 MPI 程序啟動、完成並自動收回結果 |
-| worker 重啟 `a697300a-b267-4554-bdd5-2c82bb9c9eda` | `completed`；同 job 的 JobSet 數 `1` | 停止期间 Kubernetes 已完成，worker 恢復後接續收集 |
-| 模擬 dispatch 失敗 `0852fb7b-8efd-4600-b8ac-d4205554f6f3` | `failed`；retry_count `3` | 模擬提交分支耗盡重試，不是 MPI kernel crash |
-
-正常工作的 launcher log 原文摘錄（只省略 SSH known-host warning）：
+來源：[記錄／示例原文](<day6-monitoring-integration.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
 ```text
-RANK=0 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-0-0
-RANK=1 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-1-0
-RANK=2 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-2-0
+INFO:api.main:Received benchmark request: cpu
 ```
 
-驗收後的 queue 與手動端點結果，取自同份 JSON：
+這行是舊文保存的 application log，僅表示收到請求，不證明工作執行成功。舊文另記 total_jobs=2、queued_jobs=1、completed_jobs=1，是當時數值，不是即時狀態。
 
-```json
-{
-  "database_status": {
-    "a697300a-b267-4554-bdd5-2c82bb9c9eda": "completed",
-    "f2d8df72-aef3-48bf-9d6b-6863523daa65": "completed",
-    "0852fb7b-8efd-4600-b8ac-d4205554f6f3": "failed"
-  },
-  "queues": {
-    "job_queue": [],
-    "processing_queue": [],
-    "dead_letter_queue": [
-      "0852fb7b-8efd-4600-b8ac-d4205554f6f3"
-    ]
-  },
-  "manual_endpoint_rejections": {
-    "process-next": 409,
-    "collect-mpi": 409,
-    "recover-stuck": 409
-  }
-}
-```
-
-空 job_queue／processing_queue 表示本次驗收工作已清理；failed ID 留在 dead-letter。409 是自動模式刻意拒絕手動推進端點，並非 API 故障。這些結果不保證跨 DB 原子交易、Redis 全失恢復或 node failover。
-
-來源：[完整原始驗收 JSON](<../evidence/automatic-worker-20260922.json>)。無須再提交一次工作。
+**仍缺的證據／不能證明的事：** 缺這次教材對應的原始 HTTP headers、完整 application log 與即時依賴檢查；不以後來的實驗倒填成本課當時結果。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week4/day6-monitoring-integration.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

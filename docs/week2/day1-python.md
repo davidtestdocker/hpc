@@ -3,62 +3,35 @@
 
 [本週基礎](README.md) · [本週目錄](README.md) · [下一課](<day2-function.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：程式可推導示例，非實機 log。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+檔案實際在 examples/hello.py，原文 repo 根目錄 python3 hello.py 的路徑不對。monitor 目錄樹中其他模組沒有實作。Python 名稱綁定物件；「由上到下逐行執行」只是入門直線流程，函式／分支／迴圈會改變控制流程。
 
-job_id 是字串，retry_count 是整數，job 是 dict。型別決定能做的操作，例如字串加字串是串接；從環境變數讀到的數字要轉型後才能當秒數使用。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-本週先閱讀與執行純 Python 小例子；不要直接啟動依賴雲端的 worker。
-
-本課對照：[api/main.py](<../../api/main.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```python
-    job = {
-    "job_id": job_id,
-    "benchmark": request.benchmark,
-    "simulate_failure": request.simulate_failure,
-    "status": "accepted",
-    "result": None,
-    "retry_count": 0
-    }
-
-    session = SessionLocal()
-
-    db_job = Job(
-        job_id=job_id,
-        benchmark=job["benchmark"],
-        status=job["status"],
-        retry_count=job["retry_count"],
-        created_at=datetime.now(timezone.utc)
-    )
-
-    # add 將 ORM 物件加入本次 Session，等待 flush／commit 寫入。
-    try:
-        session.add(db_job)
-        session.commit()
-    finally:
-```
+本次核對：[examples/hello.py](<../../examples/hello.py>)、[monitoring/process_monitor.py](<../../monitoring/process_monitor.py>)
 
 ## 已有結果與解讀
 
-### 這一課的結果直接看哪裡
+來源：[記錄／示例原文](<../../examples/hello.py>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-本課原本的完整教學、程式示例、結果與解讀已放回本頁下方，不再用縮短版取代它。命令是當時操作或語法示例，**不是要求你現在再執行**。
+```text
+cpu_usage = 15
 
-概念例子的輸出只說明程式／工具行為，不冒充 VM 實測；原文沒留下的實測數值就維持未知，不用預期值補造。舊環境名稱、日期、成功與失敗照原文保留。
+print(cpu_usage)
+```
+
+現存 hello.py 的 cpu_usage 是寫死的 15，所以程式語意上的輸出是 15；不是讀到 CPU 使用率 15%。本次未執行該程式。舊文的 Step 1／2／3 是另一段文內示例，不是此檔的輸出。
+
+**仍缺的證據／不能證明的事：** 沒有這份 hello.py 的獨立執行 log 或系統取樣結果；15 只能標為固定值示例。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week2/day1-python.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

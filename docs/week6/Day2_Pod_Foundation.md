@@ -3,100 +3,33 @@
 
 [上一課](<Day1_Kubernetes_Foundation.md>) · [本週目錄](README.md) · [下一課](<Day3_Deployment_Foundation.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：概念課，無 Pod lifecycle 實測。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+Pod phase 有 Pending、Running、Succeeded、Failed、Unknown；Deleted 不是 phase。Running 不保證 Ready 或所有容器健康，原圖也不是必經單一路徑。[官方生命週期](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/)。同 Pod 共用網路，但 volume 必須宣告並分別掛載，不是自動共用各容器整個檔案系統；容器可各自重啟，不能把共同生命週期理解成永遠同時啟停。[官方 Pod 說明](https://kubernetes.io/docs/concepts/workloads/pods/)。「Container 永遠在 Pod 內」僅適用 Kubernetes 工作負載語境。
 
-同一 Pod 的容器共用網路，可透過 localhost 通訊；不同 Pod 要用服務／網路連線。Pod Running 不保證應用 Ready，更不保證工作 completed。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-K3s 是獨立基礎練習選項，不是本次主環境；雲端修改只依 runbook。
-
-本課對照：[helm/api/templates/worker.yaml](<../../helm/api/templates/worker.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```yaml
-  template:
-    metadata:
-      labels:
-        app: {{ include "api.fullname" . }}-worker
-    spec:
-      # 沿用 namespace 最小 RBAC 身分，允許建立／讀取 JobSet 與回收 launcher log。
-      serviceAccountName: {{ .Values.worker.serviceAccountName }}
-      # 預設排入 system-pool；worker 負責協調，自己不申請 GPU。
-      nodeSelector:
-        {{- toYaml .Values.worker.nodeSelector | nindent 8 }}
-      containers:
-        - name: worker
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          # 覆寫映像預設的 Uvicorn 命令，啟動獨立 Python worker。
-          command: ["python", "-m", "api.worker"]
-          envFrom:
-            # ConfigMap 提供服務位址與輪詢設定；密碼沿用外部建立的 Secret。
-            - configMapRef:
-                name: {{ include "api.fullname" . }}-config
-            - secretRef:
-                name: postgres-secret
-          resources:
-            # requests 供排程器計算容量，limits 限制容器 CPU／記憶體上限。
-```
+本次核對：[k8s/api-deployment.yaml](<../../k8s/api-deployment.yaml>)
 
 ## 已有結果與解讀
 
-### CPU 叢集重建：已保存的驗收結果
+來源：[記錄／示例原文](<Day2_Pod_Foundation.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-日期：2026-09-21。環境：隔離 CPU-only GKE 重建驗收；不是主環境的多 GPU 實驗。該次叢集已清理，讀這份結果不需要重新建立。
-
-```json
-{
-  "recorded_at": "2026-09-21",
-  "scope": "fresh CPU-only GKE bootstrap and platform acceptance; excludes GPU and MPI execution",
-  "result": "pass",
-  "terraform": {
-    "apply": "3 added",
-    "post_apply_plan": "No changes",
-    "destroy": "3 destroyed",
-    "state_resources_after_destroy": 0,
-    "cluster_lookup_after_destroy": "404 Not Found"
-  },
-  "controllers": {
-    "jobset": "v0.12.0 Ready on system-pool with 100m CPU request",
-    "kueue": "v0.19.2 Ready on system-pool with Recreate deployment strategy"
-  },
-  "platform": {
-    "api": "Running on system-pool; /health healthy",
-    "redis": "Running on system-pool; connected; PVC Bound",
-    "postgres": "Running on system-pool; jobs table query succeeded; PVC Bound",
-    "overlay_diff_after_apply": "empty"
-  },
-  "security": {
-    "postgres_secret": "created from external env file; value not captured",
-    "mpi_ssh_key": "generated in temporary directory; value not captured",
-    "api_service_account_create_jobsets": "yes",
-    "api_service_account_delete_pods": "no"
-  },
-  "limitations": [
-    "gpu-pool had zero nodes because project-wide GPU quota was exhausted",
-    "no MPI workload was submitted in this CPU-only rehearsal",
-    "database initialization used create_all rather than schema migration"
-  ]
-}
+```text
+Succeeded / Failed
 ```
 
-解讀：Terraform 建立 3 個資源、無 drift，JobSet／Kueue controllers 和 API／Redis／DB 驗收成功；create JobSet 權限允許，delete Pod 權限拒絕。最後 destroy 3、state 空、cluster 查詢 404，證明當次隔離叢集已刪除。**不包含 GPU 或 MPI 執行驗收**，也不是所有雲端資源的停費證明。
+這是原文生命週期示意，不是 kubectl 輸出。原文沒有保存本課建立的獨立 Pod YAML 或觀測各階段的 log，不能說已做過完整生命週期測試。
 
-來源：[原始 CPU bootstrap JSON](<../evidence/cpu-bootstrap-acceptance-20260921.json>)。
+**仍缺的證據／不能證明的事：** 沒有三個 Pod 的完整資源快照；api＋log-agent＋otel 是構想，不是現有 API manifest 的容器清單。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week6/Day2_Pod_Foundation.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

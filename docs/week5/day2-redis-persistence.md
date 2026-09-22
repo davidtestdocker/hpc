@@ -3,87 +3,33 @@
 
 [上一課](<day1-redis-foundation.md>) · [本週目錄](README.md) · [下一課](<day3-reliable-worker-state-machine.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：有日期與環境的持久化驗收。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+現有 Compose 設定 appendonly yes 與 /data named volume，Helm 則按 persistence.enabled 掛 PVC；兩者不是同一環境。持久化磁碟不等於備份、HA 或零資料遺失。原文 503 說明只可對應 /health/redis 捕捉 ConnectionError 的路徑，不能泛化成所有 API／所有 Redis 例外都回 503。原文「企業最常見」沒有證據，不作結論。
 
-PVC 使資料能跨 Pod 替換保存，AOF 是 Redis 的持久化機制；磁碟、程序與邏輯資料的故障範圍不同。PVC 不等於離線備份，也不保證任何資料遺失都可恢復。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-主 overlay 啟用獨立 api-worker；手動 /worker/* 返回 409。
-
-本課對照：[helm/redis/templates/deployment.yaml](<../../helm/redis/templates/deployment.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```yaml
-              mountPath: /data
-          {{- end }}
-      {{- if .Values.persistence.enabled }}
-      volumes:
-        - name: redis-data
-          persistentVolumeClaim:
-            claimName: {{ .Values.persistence.claimName }}
-      {{- end }}
-```
+本次核對：[api/main.py](<../../api/main.py>)、[compose.yaml](<../../compose.yaml>)、[helm/redis/templates/deployment.yaml](<../../helm/redis/templates/deployment.yaml>)、[helm/redis/templates/pvc.yaml](<../../helm/redis/templates/pvc.yaml>)
 
 ## 已有結果與解讀
 
-### Redis 持久化：已保存結果
+來源：[記錄／示例原文](<../evidence/redis-persistence-migration-20260921.json>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-日期：2026-09-21。環境：`gke_project-4b82f780-0a12-4087-b94_asia-southeast1-a_hpc-gpu-sg`／`hpc-platform-dev`。驗收前所有來源 DB 為空，不是非空資料備份還原。
-
-```json
-{
-  "passed": true,
-  "steps": [
-    {
-      "time": "2026-09-21T09:24:19.579997+00:00",
-      "step": "preconditions passed",
-      "source_uid": "1857a5ad-ebd4-4728-bcf1-49d021c738a6",
-      "api_replicas": 1
-    },
-    {
-      "time": "2026-09-21T09:24:20.630917+00:00",
-      "step": "API stopped; HPA with minReplicas > 0 is inactive at zero replicas"
-    },
-    {
-      "time": "2026-09-21T09:24:22.142971+00:00",
-      "step": "writes paused; all databases confirmed empty"
-    },
-    {
-      "time": "2026-09-21T09:24:23.553226+00:00",
-      "step": "Redis deployment and new PVC applied"
-    },
-    {
-      "time": "2026-09-21T09:24:41.853190+00:00",
-      "step": "Redis ready",
-      "pvc_phase": "Bound"
-    },
-    {
-      "time": "2026-09-21T09:24:55.278216+00:00",
-      "step": "marker survived Pod replacement; test marker removed"
-    },
-    {
-      "time": "2026-09-21T09:25:12.885888+00:00",
-      "step": "API restored; empty-database migration and graceful restart verified"
-    }
-  ]
-}
+```text
+"step": "marker survived Pod replacement; test marker removed"
 ```
 
-解讀：PVC Bound 後，測試 marker 在 Pod replacement 後仍存在，API 隨後恢復。這證明當次 graceful Pod replacement 的持久化，不等於磁碟遺失、非空遷移或完整災難恢復。無須你再停一次服務。
+2026-09-21，GKE hpc-gpu-sg／hpc-platform-dev：先停止寫入並確認所有 Redis databases 為空，再套用新 PVC；PVC 為 Bound，測試 key 在 Pod 替換後保留，最後移除測試 key 並恢復 API。這是後來的 Kubernetes 驗收，不是舊 Docker Compose 實驗。
 
-來源：[原始 Redis 驗收 JSON](<../evidence/redis-persistence-migration-20260921.json>)。
+**仍缺的證據／不能證明的事：** 沒有非空資料遷移、突然斷電、磁碟損毀、Redis 全失或備份還原驗收。舊 Compose 成功清單缺獨立 log；本份新證據驗證的是空資料遷移與正常 Pod 替換。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week5/day2-redis-persistence.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

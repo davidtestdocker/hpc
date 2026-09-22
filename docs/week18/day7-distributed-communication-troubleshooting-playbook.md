@@ -3,62 +3,33 @@
 
 [上一課](<day6-gpu-nic-numa-topology.md>) · [本週目錄](README.md) · [下一週](../week19/README.md) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：既有案例整理，非新端到端驗收。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+這是排查指南，不是已執行雙node訓練故障實驗。低bandwidth/retrans也可能受端點CPU影響，不能直接定案fabric；單NUMA guest不排除宿主問題。
 
-先確定卡在准入、placement、連線、程序啟動還是 collective，再為每層指定觀察。好的 runbook 要有成功判準、失敗下一步與停止條件，不是堆一串命令。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-本週可用 CPU 學主機網路；不把 CPU 測試或 Socket fallback 當 RDMA 硬體實測。
-
-本課對照：[docs/runbooks/ai-hpc-job-troubleshooting.md](<../runbooks/ai-hpc-job-troubleshooting.md>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```text
-# AI/HPC Job Troubleshooting Runbook
-
-## Troubleshooting Order
-
-遇到 AI/HPC Job 無法執行、卡住或失敗時，依序確認：
-
-    1. Queue / Admission
-    2. Scheduler / Placement
-    3. Node / CPU / GPU Resource
-    4. Container / Process
-    5. Distributed Runtime
-    6. Network / NCCL
-    7. Application
-
-不要一開始就直接看 application log。
-
----
-
-## 1. Kubernetes / Kueue
-
-### Workload 尚未 Admission
-
-檢查：
-
-```
+本次核對：[runtime/pytorch/ddp_test.py](<../../runtime/pytorch/ddp_test.py>)、[benchmark/network/run_iperf3.sh](<../../benchmark/network/run_iperf3.sh>)
 
 ## 已有結果與解讀
 
-### 這一課的結果直接看哪裡
+來源：[記錄／示例原文](<day7-distributed-communication-troubleshooting-playbook.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-本課原本的完整教學、程式示例、結果與解讀已放回本頁下方，不再用縮短版取代它。命令是當時操作或語法示例，**不是要求你現在再執行**。
+```text
+NET/IB : No device found
+```
 
-概念例子的輸出只說明程式／工具行為，不冒充 VM 實測；原文沒留下的實測數值就維持未知，不用預期值補造。舊環境名稱、日期、成功與失敗照原文保留。
+綜合Day1～6，沒有新增獨立量測；各案例不同VM／叢集不能拼成同一時刻完整健康證明。
+
+**仍缺的證據／不能證明的事：** 缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week18/day7-distributed-communication-troubleshooting-playbook.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

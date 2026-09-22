@@ -3,102 +3,35 @@
 
 [上一課](<day4-stuck-job-recovery.md>) · [本週目錄](README.md) · [下一課](<day6-postgresql-foundation.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：有日期的模擬失敗與 DLQ 結果。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+新版只有 simulate_failure 分支累計到三次後 failed；真實依賴例外由 tick 記錄並下輪重試，沒有同樣三次上限／退避，不能宣稱已完整避免無限重試。MPI 回報 failed 是另一種終態來源。模擬 dispatch 失敗不是真的殺死 worker 或 MPI process。DLQ 表示目前策略停止處理，不證明錯誤永遠不可修復；也沒有自動告警／重送功能。
 
-simulate_failure 分支會累計三次後 failed 並進 dead-letter；真實依賴例外由 tick 記錄後下輪重試，不是每種錯誤都三次耗盡。重試需要能辨識同一工作，否則可能產生重複副作用。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-主 overlay 啟用獨立 api-worker；手動 /worker/* 返回 409。
-
-本課對照：[api/worker.py](<../../api/worker.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```python
-        if job.get('simulate_failure'):
-            # 僅此模擬故障累計三次後 failed；真實依賴例外由 tick 記錄並於下輪重試。
-            job['retry_count'] = job.get('retry_count', 0) + 1
-            job['status'] = 'failed' if job['retry_count'] >= 3 else 'retrying'
-            job['result'] = {'message': 'Simulated dispatch failure'}
-        elif job['benchmark'] == 'mpi':
-            name = main.submit_mpi_jobset(job_id)
-            job['status'] = 'submitted'
-            job['result'] = {'jobset_name': name, 'message': 'MPI JobSet submitted'}
-        else:
-            job['status'] = 'completed'
-            job['result'] = {'message': 'benchmark simulated'}
-        guard()
-        main.persist_job_status(job_id, job['status'])
-        guard()
-        redis.set(key, json.dumps(job))
-    elif state == 'submitted' and job['benchmark'] == 'mpi':
-        # submitted 只代表已提交；collector 回傳 None 表示尚未取得終態。
-        update = main.collect_mpi_jobset(job['result']['jobset_name'])
-        if update is None:
-            return
-        guard()
-        main.persist_job_status(job_id, update['status'])
-        job.update(update)
-```
+本次核對：[api/main.py](<../../api/main.py>)、[api/worker.py](<../../api/worker.py>)
 
 ## 已有結果與解讀
 
-### 自動工作驗收：已保存的真實結果
-
-日期：2026-09-22T04:58:58.875811+00:00。環境：GKE hpc-gpu-sg，既有單 L4 叢集上的 **CPU MPI**，不是 GPU 訓練。
-
-| 情境 | 保存的結果 | 怎麼解讀 |
-|---|---|---|
-| 正常工作 `f2d8df72-aef3-48bf-9d6b-6863523daa65` | `completed`；ranks `[0, 1, 2]` | 真實 MPI 程序啟動、完成並自動收回結果 |
-| worker 重啟 `a697300a-b267-4554-bdd5-2c82bb9c9eda` | `completed`；同 job 的 JobSet 數 `1` | 停止期间 Kubernetes 已完成，worker 恢復後接續收集 |
-| 模擬 dispatch 失敗 `0852fb7b-8efd-4600-b8ac-d4205554f6f3` | `failed`；retry_count `3` | 模擬提交分支耗盡重試，不是 MPI kernel crash |
-
-正常工作的 launcher log 原文摘錄（只省略 SSH known-host warning）：
+來源：[記錄／示例原文](<../evidence/automatic-worker-20260922.json>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
 ```text
-RANK=0 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-0-0
-RANK=1 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-1-0
-RANK=2 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-2-0
+"message": "Simulated dispatch failure"
+      },
+      "retry_count": 3
 ```
 
-驗收後的 queue 與手動端點結果，取自同份 JSON：
+這是 2026-09-22 GKE hpc-gpu-sg／hpc-platform-dev 的已保存自動 worker 驗收，不是 Week5 舊 Compose 的當日重跑。0852fb7b-8efd-4600-b8ac-d4205554f6f3 最終 failed，Redis retry_count=3，dead_letter_queue 保存同一 ID，job_queue 與 processing_queue 均為空。
 
-```json
-{
-  "database_status": {
-    "a697300a-b267-4554-bdd5-2c82bb9c9eda": "completed",
-    "f2d8df72-aef3-48bf-9d6b-6863523daa65": "completed",
-    "0852fb7b-8efd-4600-b8ac-d4205554f6f3": "failed"
-  },
-  "queues": {
-    "job_queue": [],
-    "processing_queue": [],
-    "dead_letter_queue": [
-      "0852fb7b-8efd-4600-b8ac-d4205554f6f3"
-    ]
-  },
-  "manual_endpoint_rejections": {
-    "process-next": 409,
-    "collect-mpi": 409,
-    "recover-stuck": 409
-  }
-}
-```
-
-空 job_queue／processing_queue 表示本次驗收工作已清理；failed ID 留在 dead-letter。409 是自動模式刻意拒絕手動推進端點，並非 API 故障。這些結果不保證跨 DB 原子交易、Redis 全失恢復或 node failover。
-
-來源：[完整原始驗收 JSON](<../evidence/automatic-worker-20260922.json>)。無須再提交一次工作。
+**仍缺的證據／不能證明的事：** 本份不是 MPI process 故障注入或實際 Kubernetes API 連續失敗測試。retry_count=3 是此模擬的三次失敗計數，不應改述成初次失敗後再重試三次；DB 目前只同步 status，不能拿 Redis 計數當作 PostgreSQL 已核對。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week5/day5-retry-strategy-and-deadletter-que.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

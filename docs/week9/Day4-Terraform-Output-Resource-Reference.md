@@ -3,95 +3,33 @@
 
 [上一課](<Day3-Terraform-Apply-State-Resource-Lifecycle.md>) · [本週目錄](README.md) · [下一課](<Day5-Terraform-Module-Refactor.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：歷史 output 摘錄。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+terraform output 顯示保存的 state output，不保證 cloud 最新實況；resource 引用值在規劃／apply 時解析，不是每次讀取就即時刷新。資源依賴取決於真實引用，不能一概 firewall 必須晚於 VM。
 
-output 引用實際管理資源屬性，可供後續取得 credentials 或 bootstrap。輸出 pool_name 不能推論現有 node 數、Ready 狀態或 GPU 可執行性。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-本週只讀設定與既有證據；雲端 apply／destroy 須依 runbook 明確確認目標，GPU quota 固定一張。
-
-本課對照：[terraform/environments/gpu-sg/outputs.tf](<../../terraform/environments/gpu-sg/outputs.tf>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```hcl
-output "cluster_name" {
-  description = "Managed GKE cluster name"
-  value       = google_container_cluster.this.name
-}
-
-output "cluster_location" {
-  description = "Zonal location used by kubectl credential commands"
-  value       = google_container_cluster.this.location
-}
-
-output "system_pool_name" {
-  description = "CPU platform node pool"
-  value       = google_container_node_pool.system.name
-}
-
-output "gpu_pool_name" {
-  description = "L4 time-sharing node pool"
-  value       = google_container_node_pool.gpu.name
-}
-```
+本次核對：[terraform/modules/compute/outputs.tf](<../../terraform/modules/compute/outputs.tf>)、[terraform/environments/stage/outputs.tf](<../../terraform/environments/stage/outputs.tf>)
 
 ## 已有結果與解讀
 
-### CPU 叢集重建：已保存的驗收結果
+來源：[記錄／示例原文](<Day4-Terraform-Output-Resource-Reference.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-日期：2026-09-21。環境：隔離 CPU-only GKE 重建驗收；不是主環境的多 GPU 實驗。該次叢集已清理，讀這份結果不需要重新建立。
-
-```json
-{
-  "recorded_at": "2026-09-21",
-  "scope": "fresh CPU-only GKE bootstrap and platform acceptance; excludes GPU and MPI execution",
-  "result": "pass",
-  "terraform": {
-    "apply": "3 added",
-    "post_apply_plan": "No changes",
-    "destroy": "3 destroyed",
-    "state_resources_after_destroy": 0,
-    "cluster_lookup_after_destroy": "404 Not Found"
-  },
-  "controllers": {
-    "jobset": "v0.12.0 Ready on system-pool with 100m CPU request",
-    "kueue": "v0.19.2 Ready on system-pool with Recreate deployment strategy"
-  },
-  "platform": {
-    "api": "Running on system-pool; /health healthy",
-    "redis": "Running on system-pool; connected; PVC Bound",
-    "postgres": "Running on system-pool; jobs table query succeeded; PVC Bound",
-    "overlay_diff_after_apply": "empty"
-  },
-  "security": {
-    "postgres_secret": "created from external env file; value not captured",
-    "mpi_ssh_key": "generated in temporary directory; value not captured",
-    "api_service_account_create_jobsets": "yes",
-    "api_service_account_delete_pods": "no"
-  },
-  "limitations": [
-    "gpu-pool had zero nodes because project-wide GPU quota was exhausted",
-    "no MPI workload was submitted in this CPU-only rehearsal",
-    "database initialization used create_all rather than schema migration"
-  ]
-}
+```text
+vm_internal_ip = "10.140.0.3"
 ```
 
-解讀：Terraform 建立 3 個資源、無 drift，JobSet／Kueue controllers 和 API／Redis／DB 驗收成功；create JobSet 權限允許，delete Pod 權限拒絕。最後 destroy 3、state 空、cluster 查詢 404，證明當次隔離叢集已刪除。**不包含 GPU 或 MPI 執行驗收**，也不是所有雲端資源的停費證明。
+保存的是當時 e2-medium VM 私有 IP，不是可連線現行服務；本次不讀可能含敏感資料的 state。
 
-來源：[原始 CPU bootstrap JSON](<../evidence/cpu-bootstrap-acceptance-20260921.json>)。
+**仍缺的證據／不能證明的事：** 缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week9/Day4-Terraform-Output-Resource-Reference.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

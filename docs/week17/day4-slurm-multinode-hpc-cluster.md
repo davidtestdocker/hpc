@@ -3,72 +3,33 @@
 
 [上一課](<day3-hpc-communication-stack.md>) · [本週目錄](README.md) · [下一課](<day5-ray-kuberay-distributed-computing.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：歷史Slurm雙VM啟動與失敗。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+mpi_hello只印rank不印hostname也未做應用資料交換；搭配allocation/hostname舊紀錄支持跨機啟動，不是跨機AllReduce／頻寬驗收。host清單寫死非通用allocation動態解析；linuxproc不等於cgroup資源隔離。
 
-partition 組織節點，allocation 分配資源，task 數與 node 數不同。現有歷史案例有兩台 CPU VM 的 MPI，但計算 VM 後來被移除，不能直接使用舊節點名重跑。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-Slurm／Ray 是獨立實驗教材與已保存歷史案例，不當作目前可用服務。
-
-本課對照：[mpi-multinode.slurm](<../../mpi-multinode.slurm>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```text
-# Slurm 批次工作：sbatch 讀取資源需求，取得 allocation 後執行下方 Shell 指令。
-# Shell 語法：${變數} 取值，${1:-預設值} 讀取參數並提供預設；$(...) 取得指令輸出。
-# 行尾反斜線延續同一指令；| 把標準輸出傳給下一指令；> 覆寫檔案，>> 附加內容。
-
-# SBATCH 是排程器指令，非普通說明註解：工作名稱，顯示於 squeue。
-#SBATCH --job-name=mpi-multinode
-# SBATCH 是排程器指令，非普通說明註解：指定使用的 Slurm 分區。
-#SBATCH --partition=cpu
-# SBATCH 是排程器指令，非普通說明註解：申請節點數。
-#SBATCH --nodes=2
-# SBATCH 是排程器指令，非普通說明註解：每個節點執行的 task 數量。
-#SBATCH --ntasks-per-node=2
-# SBATCH 是排程器指令，非普通說明註解：工作開始後使用的目錄。
-#SBATCH --chdir=/tmp
-# SBATCH 是排程器指令，非普通說明註解：標準輸出檔案；%j 由 Slurm 替換為 job ID。
-#SBATCH --output=/tmp/mpi-multinode-%j.out
-
-# Show Slurm allocation information.
-echo "JOB_ID=$SLURM_JOB_ID"
-echo "NODELIST=$SLURM_JOB_NODELIST"
-echo "NTASKS=$SLURM_NTASKS"
-
-# Launch 4 MPI ranks across two compute nodes.
-# 啟動 MPI 程序；-np 指定 rank 數，--host 指定主機與 slots，需各主機都有相同執行檔。
-```
+本次核對：[mpi-multinode.slurm](<../../mpi-multinode.slurm>)、[mpi_hello.c](<../../mpi_hello.c>)
 
 ## 已有結果與解讀
 
-### 已保存的 Slurm CPU 多節點结果
-
-環境：歷史 hpc-demo controller／compute-01、compute-02 CPU VM；不是目前 GKE／GPU。日期依下方原始教材，未另推定新日期。
+來源：[記錄／示例原文](<day4-slurm-multinode-hpc-cluster.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
 ```text
 JOB_ID=14
-NODELIST=compute-[01-02]
-NTASKS=4
-Hello from rank 0 out of 4 processes
-Hello from rank 1 out of 4 processes
-Hello from rank 3 out of 4 processes
-Hello from rank 2 out of 4 processes
 ```
 
-這證明該次 allocation 和四 ranks 啟動。後來的失敗紀錄為 `State=DOWN+NOT_RESPONDING`、job PENDING，原因是 VM 已不存在但 Slurm 仍留節點設定；沒有修復成功紀錄，不能寫成成功恢復。完整原文與输出保留在下方，不需重建 VM。
+保存4rank與兩compute node文內記錄；OSU編譯失敗、無共享檔案系統、PMI問題仍如實保留。
+
+**仍缺的證據／不能證明的事：** 缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week17/day4-slurm-multinode-hpc-cluster.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

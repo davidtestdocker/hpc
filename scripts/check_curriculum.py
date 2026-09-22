@@ -108,7 +108,42 @@ def check():
             elif (parsed.fragment and destination.suffix == ".md"
                   and unquote(parsed.fragment) not in anchors(destination.read_text())):
                 errors.append(f"Broken anchor: {page.relative_to(ROOT)} -> {target}")
-    return {"passed": not errors, "lessons": len(records), "weekly_introductions": 20,
+    # Structural success must never be presented as a complete content review.
+    audit_path = ROOT / "docs/audits/curriculum-content-audit.json"
+    reviewed = 0
+    if audit_path.exists():
+        audit = json.loads(audit_path.read_text())
+        entries = audit["lessons"]
+        expected = {record["source"] for record in records}
+        if len(entries) != len(expected) or {entry["source"] for entry in entries} != expected:
+            errors.append("Content audit ledger does not match lesson inventory")
+        for entry in entries:
+            if entry["status"] not in {"reviewed", "pending"}:
+                errors.append(f"Unknown audit status: {entry['source']}")
+            if entry["status"] == "reviewed":
+                reviewed += 1
+                for field in ("evidence_kind", "evidence_source", "excerpt", "interpretation",
+                              "corrections", "missing", "reviewed_at", "scope"):
+                    if not entry.get(field):
+                        errors.append(f"Reviewed lesson missing {field}: {entry['source']}")
+                source = ROOT / entry.get("evidence_source", "")
+                if not source.is_file():
+                    errors.append(f"Missing excerpt source: {entry['source']}")
+                else:
+                    source_text = source.read_text()
+                    # Do not validate an excerpt against our own inserted copy.
+                    source_text = source_text.split('<!-- original-week-body -->\n', 1)[-1]
+                    if entry.get("excerpt", "") not in source_text:
+                        errors.append(f"Excerpt not present in original source: {entry['source']}")
+                if set(entry.get("checked_files", [])) != set(entry.get("reviewed_files_sha256", {})):
+                    errors.append(f"Implementation hash coverage mismatch: {entry['source']}")
+                for name, digest in entry.get("reviewed_files_sha256", {}).items():
+                    path = ROOT / name
+                    if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+                        errors.append(f"Reviewed implementation changed; re-review required: {name}")
+    return {"passed": not errors, "scope": "structure_links_and_preservation_only",
+            "content_reviewed": reviewed, "content_pending": len(records) - reviewed,
+            "lessons": len(records), "weekly_introductions": 20,
             "pages_checked": len(pages), "local_links_checked": count,
             "protected_evidence_files": len(manifest["protected_evidence_sha256"]),
             "errors": errors}

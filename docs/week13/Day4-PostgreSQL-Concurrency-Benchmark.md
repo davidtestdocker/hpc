@@ -3,62 +3,33 @@
 
 [上一課](<Day3-PostgreSQL-Benchmark.md>) · [本週目錄](README.md) · [下一課](<day5-resource-monitoring.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：歷史併發比較。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+同時改client、threads與總交易數，不能當純單變因比較。表中50client的303.47ms與164.76TPS關係大致相符；最佳點只限已測點，缺低於10client和重複量測。
 
-更多 clients 可能提高吞吐，也可能增加鎖等待、連線競爭與尾延遲。連線池大小限制同時查詢數，增加 HTTP worker 不一定讓 DB 更快。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-Day7 的子章按 7-1 到 7-7 閱讀，最後讀 day7-benchmark-report；不新增負載或覆寫舊結果。
-
-本課對照：[api/database/connection.py](<../../api/database/connection.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```python
-from sqlalchemy import create_engine
-
-# 讀取環境變數，未設定時使用第二個引數的預設值。
-POSTGRES_HOST = os.getenv(
-    "POSTGRES_HOST",
-    "postgres-service"
-)
-
-# 讀取環境變數，未設定時使用第二個引數的預設值。
-POSTGRES_PORT = os.getenv(
-    "POSTGRES_PORT",
-    "5432"
-)
-
-# 讀取環境變數，未設定時使用第二個引數的預設值。
-POSTGRES_DB = os.getenv(
-    "POSTGRES_DB",
-    "hpc_platform"
-)
-
-# 讀取環境變數，未設定時使用第二個引數的預設值。
-POSTGRES_USER = os.getenv(
-    "POSTGRES_USER",
-    "hpc"
-```
+本次核對：[benchmark/postgres/run_pgbench.sh](<../../benchmark/postgres/run_pgbench.sh>)
 
 ## 已有結果與解讀
 
-### 這一課的結果直接看哪裡
+來源：[記錄／示例原文](<Day4-PostgreSQL-Concurrency-Benchmark.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-本課原本的完整教學、程式示例、結果與解讀已放回本頁下方，不再用縮短版取代它。命令是當時操作或語法示例，**不是要求你現在再執行**。
+```text
+150.34
+```
 
-概念例子的輸出只說明程式／工具行為，不冒充 VM 實測；原文沒留下的實測數值就維持未知，不用預期值補造。舊環境名稱、日期、成功與失敗照原文保留。
+10→100client：204.63→150.34TPS、48.87→665.17ms，僅支持此條件下增併發未改善，瓶頸仍是候選。
+
+**仍缺的證據／不能證明的事：** 缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week13/Day4-PostgreSQL-Concurrency-Benchmark.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

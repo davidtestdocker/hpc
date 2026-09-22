@@ -3,100 +3,33 @@
 
 [上一課](<Day4_Service_Foundation.md>) · [本週目錄](README.md) · [下一課](<Day6_Deploy_API_and_Redis.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：歷史 K3s 節點輸出摘錄。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+which 沒輸出只能說 PATH 找不到，不能證明機器未安裝。原 curl | sh 安裝命令沒有固定版本，不是可重現版本證據，也不用重跑。Node Ready 與一次 kubectl 成功不能證明所有控制面、儲存、網路、應用功能正常；排程還受資源與限制影響。Compose 也有服務名稱解析，原文「缺少 Service Discovery」太絕對。列出的 kube-system 元件是舊案例，不可直接套到 GKE。
 
-K3s 可用於學習 Kubernetes 基本物件，但 GKE 的 node labels、GPU 整合、儲存類別與雲端認證不可原樣搬過去。把主 overlay 套進不同叢集前需重新確認依賴。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-K3s 是獨立基礎練習選項，不是本次主環境；雲端修改只依 runbook。
-
-本課對照：[scripts/platform.py](<../../scripts/platform.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```python
-CONTEXT = "gke_project-4b82f780-0a12-4087-b94_asia-southeast1-a_hpc-gpu-sg"
-
-
-def command(args):
-    # 統一由 repo 根目錄執行外部工具，並以 timeout 避免認證或 API server 卡住。
-    try:
-        result = subprocess.run(
-            args, cwd=ROOT, capture_output=True, text=True, timeout=60, check=False
-        )
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        raise RuntimeError(f"{args[0]} unavailable or timed out") from exc
-    if result.returncode:
-        # Avoid putting credential-plugin stderr into saved evidence.
-        raise RuntimeError(f"command failed (exit {result.returncode}): {' '.join(args)}")
-    return result.stdout
-
-
-def render():
-    # 只渲染 Kustomize／Helm，不會套用任何資源到叢集。
-    return command([
-        "kubectl", "kustomize", "kustomize/overlays/gpu-sg-platform",
-        "--enable-helm", "--load-restrictor", "LoadRestrictionsNone",
-    ])
-
-```
+本次核對：本課沒有對應獨立程式；依文內命令及觀察核對，不硬接其他元件。
 
 ## 已有結果與解讀
 
-### CPU 叢集重建：已保存的驗收結果
+來源：[記錄／示例原文](<Day5_K3s_Foundation.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-日期：2026-09-21。環境：隔離 CPU-only GKE 重建驗收；不是主環境的多 GPU 實驗。該次叢集已清理，讀這份結果不需要重新建立。
-
-```json
-{
-  "recorded_at": "2026-09-21",
-  "scope": "fresh CPU-only GKE bootstrap and platform acceptance; excludes GPU and MPI execution",
-  "result": "pass",
-  "terraform": {
-    "apply": "3 added",
-    "post_apply_plan": "No changes",
-    "destroy": "3 destroyed",
-    "state_resources_after_destroy": 0,
-    "cluster_lookup_after_destroy": "404 Not Found"
-  },
-  "controllers": {
-    "jobset": "v0.12.0 Ready on system-pool with 100m CPU request",
-    "kueue": "v0.19.2 Ready on system-pool with Recreate deployment strategy"
-  },
-  "platform": {
-    "api": "Running on system-pool; /health healthy",
-    "redis": "Running on system-pool; connected; PVC Bound",
-    "postgres": "Running on system-pool; jobs table query succeeded; PVC Bound",
-    "overlay_diff_after_apply": "empty"
-  },
-  "security": {
-    "postgres_secret": "created from external env file; value not captured",
-    "mpi_ssh_key": "generated in temporary directory; value not captured",
-    "api_service_account_create_jobsets": "yes",
-    "api_service_account_delete_pods": "no"
-  },
-  "limitations": [
-    "gpu-pool had zero nodes because project-wide GPU quota was exhausted",
-    "no MPI workload was submitted in this CPU-only rehearsal",
-    "database initialization used create_all rather than schema migration"
-  ]
-}
+```text
+hpc-demo   Ready    control-plane   v1.36.2+k3s1
 ```
 
-解讀：Terraform 建立 3 個資源、無 drift，JobSet／Kueue controllers 和 API／Redis／DB 驗收成功；create JobSet 權限允許，delete Pod 權限拒絕。最後 destroy 3、state 空、cluster 查詢 404，證明當次隔離叢集已刪除。**不包含 GPU 或 MPI 執行驗收**，也不是所有雲端資源的停費證明。
+這是舊教材保存的 hpc-demo 節點文字，日期及完整原始 log 未保存。版本字串照原文保留，不等於今天安裝過該版本；目前主專案驗收使用 GKE，不是這台 K3s。
 
-來源：[原始 CPU bootstrap JSON](<../evidence/cpu-bootstrap-acceptance-20260921.json>)。
+**仍缺的證據／不能證明的事：** 沒有 installer log、完整 nodes JSON、套件選項或系統 Pod 清單；不能用後來 GKE 驗收證明舊 K3s 各元件當時的狀態。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week6/Day5_K3s_Foundation.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

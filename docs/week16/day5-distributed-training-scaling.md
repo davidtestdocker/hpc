@@ -3,62 +3,33 @@
 
 [上一課](<day4-nccl-communication-benchmark.md>) · [本週目錄](README.md) · [下一週](../week17/README.md) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：歷史CPU scaling摘要。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+程式無共同起始barrier、未取最慢rank時間、profiler也計入；各rank自行randn未固定seed，非同一資料集嚴格切分。1/2worker的CPUlimit與全域batch亦不同，不能只歸因通訊。
 
-總 batch 與每 rank batch 關係會改變運算量；同機 CPU workers 共享核心與記憶體，增加 workers 可能更慢。profiler 可找同步開銷，但控制條件先要成立。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-現有 CPU／Gloo、單 rank NCCL 與單 GPU 訓練分開保存；未驗證多 GPU scaling。
-
-本課對照：[runtime/pytorch/distributed_scaling.py](<../../runtime/pytorch/distributed_scaling.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```python
-from torch.utils.data.distributed import DistributedSampler
-
-
-# 程式主要流程；檔案直接執行時由最下方入口呼叫。
-def main():
-    # torchrun provides distributed environment variables.
-    # os.environ.get 讀取 torchrun 提供的環境變數；int 把字串轉成整數。
-    world_size = int(os.environ.get("WORLD_SIZE", "1"))
-    local_rank = int(os.environ.get("LOCAL_RANK", "0"))
-
-    distributed = world_size > 1
-
-    use_cuda = torch.cuda.is_available()
-
-    if distributed:
-        # 條件運算式 A if 條件 else B：GPU 選 NCCL，CPU 選 Gloo。
-        backend = "nccl" if use_cuda else "gloo"
-        # 初始化分散式通訊群組；torchrun 提供 rank、world size 與 rendezvous 環境。
-        dist.init_process_group(backend=backend)
-
-    rank = dist.get_rank() if distributed else 0
-
-    if use_cuda:
-        # 把本程序綁到 local_rank 對應的 GPU，避免同節點所有程序使用同一張卡。
-```
+本次核對：[runtime/pytorch/distributed_scaling.py](<../../runtime/pytorch/distributed_scaling.py>)
 
 ## 已有結果與解讀
 
-### 這一課的結果直接看哪裡
+來源：[記錄／示例原文](<day5-distributed-training-scaling.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-本課原本的完整教學、程式示例、結果與解讀已放回本頁下方，不再用縮短版取代它。命令是當時操作或語法示例，**不是要求你現在再執行**。
+```text
+throughput=5549.91 samples/s
+```
 
-概念例子的輸出只說明程式／工具行為，不冒充 VM 實測；原文沒留下的實測數值就維持未知，不用預期值補造。舊環境名稱、日期、成功與失敗照原文保留。
+5813.76→5549.91為舊觀測約0.955x／47.7%，不是已隔離變因的硬體scaling結論；缺完整raw重複量測。
+
+**仍缺的證據／不能證明的事：** 缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week16/day5-distributed-training-scaling.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

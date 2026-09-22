@@ -3,102 +3,33 @@
 
 [上一課](<day1-platform-api-design.md>) · [本週目錄](README.md) · [下一課](<day3-job-identity.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：歷史 REST 回應摘錄。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+舊文沒有 body 的 POST 是舊版介面；現行 POST /benchmark 需要含 benchmark 字串的 JSON。BenchmarkRequest 沒有 enum／allowlist，列出四個名字也不表示程式會拒絕其他字串。
 
-GET 查詢通常不應啟動運算；POST /benchmark 表示提交請求。HTTP 200 與 job.status=completed 是不同層的成功，不能把提交回應當成 benchmark 結果。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-現行 GKE 主線；本機先用 mock 測試學習，不需要先拿雲端權限。
-
-本課對照：[api/main.py](<../../api/main.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```python
-@app.post("/benchmark")
-def create_benchmark(request: BenchmarkRequest):
-    logger.info(
-        "Received benchmark request: %s",
-        request.benchmark
-    )
-
-    # uuid4 產生隨機識別碼；str 轉成字串，作為 Redis key 與回應中的 job_id。
-    job_id = str(uuid4())
-
-    job = {
-    "job_id": job_id,
-    "benchmark": request.benchmark,
-    "simulate_failure": request.simulate_failure,
-    "status": "accepted",
-    "result": None,
-    "retry_count": 0
-    }
-
-    session = SessionLocal()
-
-    db_job = Job(
-        job_id=job_id,
-        benchmark=job["benchmark"],
-```
+本次核對：[api/main.py](<../../api/main.py>)、[api/worker.py](<../../api/worker.py>)
 
 ## 已有結果與解讀
 
-### 自動工作驗收：已保存的真實結果
-
-日期：2026-09-22T04:58:58.875811+00:00。環境：GKE hpc-gpu-sg，既有單 L4 叢集上的 **CPU MPI**，不是 GPU 訓練。
-
-| 情境 | 保存的結果 | 怎麼解讀 |
-|---|---|---|
-| 正常工作 `f2d8df72-aef3-48bf-9d6b-6863523daa65` | `completed`；ranks `[0, 1, 2]` | 真實 MPI 程序啟動、完成並自動收回結果 |
-| worker 重啟 `a697300a-b267-4554-bdd5-2c82bb9c9eda` | `completed`；同 job 的 JobSet 數 `1` | 停止期间 Kubernetes 已完成，worker 恢復後接續收集 |
-| 模擬 dispatch 失敗 `0852fb7b-8efd-4600-b8ac-d4205554f6f3` | `failed`；retry_count `3` | 模擬提交分支耗盡重試，不是 MPI kernel crash |
-
-正常工作的 launcher log 原文摘錄（只省略 SSH known-host warning）：
+來源：[記錄／示例原文](<day2-rest-api-design.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
 ```text
-RANK=0 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-0-0
-RANK=1 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-1-0
-RANK=2 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-2-0
+{"benchmarks":["cpu","memory","disk_io"]}
 ```
 
-驗收後的 queue 與手動端點結果，取自同份 JSON：
+這是舊 GET /benchmarks 清單；目前另有 mpi。名稱出現在清單不等於存在真實效能測試：worker 只有 mpi 提交真實 JobSet，其餘分支回 benchmark simulated。
 
-```json
-{
-  "database_status": {
-    "a697300a-b267-4554-bdd5-2c82bb9c9eda": "completed",
-    "f2d8df72-aef3-48bf-9d6b-6863523daa65": "completed",
-    "0852fb7b-8efd-4600-b8ac-d4205554f6f3": "failed"
-  },
-  "queues": {
-    "job_queue": [],
-    "processing_queue": [],
-    "dead_letter_queue": [
-      "0852fb7b-8efd-4600-b8ac-d4205554f6f3"
-    ]
-  },
-  "manual_endpoint_rejections": {
-    "process-next": 409,
-    "collect-mpi": 409,
-    "recover-stuck": 409
-  }
-}
-```
-
-空 job_queue／processing_queue 表示本次驗收工作已清理；failed ID 留在 dead-letter。409 是自動模式刻意拒絕手動推進端點，並非 API 故障。這些結果不保證跨 DB 原子交易、Redis 全失恢復或 node failover。
-
-來源：[完整原始驗收 JSON](<../evidence/automatic-worker-20260922.json>)。無須再提交一次工作。
+**仍缺的證據／不能證明的事：** 此課沒有實際 CPU／memory／disk benchmark 數值；不得把 accepted 或清單當成工作執行完成。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week4/day2-rest-api-design.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

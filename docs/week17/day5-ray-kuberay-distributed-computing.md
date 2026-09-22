@@ -3,73 +3,33 @@
 
 [上一課](<day4-slurm-multinode-hpc-cluster.md>) · [本週目錄](README.md) · [下一課](<day6-cluster-scheduling-integration.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：歷史RayJob狀態。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+Ray CPU是邏輯排程資源，num_cpus不是OS核心綁定。現存RayJob只有6個短task，Actor在課文示例不在該YAML；無anti-affinity不能保证重建仍跨兩node。
 
-KubeRay 管理 Ray Pod，Ray scheduler 依自己的資源宣告分派 task。Pod Running 但 Ray GPU=0 時，num_gpus=1 task 仍可 pending；不同控制迴圈負責不同恢复。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-Slurm／Ray 是獨立實驗教材與已保存歷史案例，不當作目前可用服務。
-
-本課對照：[docs/demo/ray-worker-recovery-demo.md](<../demo/ray-worker-recovery-demo.md>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-````text
-透過兩個既有案例展示 Kubernetes、Ray scheduler 與 KubeRay controller 的責任邊界：resource mismatch，以及 worker 消失後的 task retry。本文件整理 historical evidence，供面試時依設定、症狀與結果展示；本輪未重跑實驗，也未接入主 MPI E2E。
-
-## Failure Scenario
-
-環境設定見 [RayCluster](../../ray-cluster.yaml)：Ray 2.47.1、namespace `ray-system`、cluster `hpc-ray`，CPU worker group 的 desired replicas 為 2。
-
-| 案例 | Trigger | 對應實作 |
-|---|---|---|
-| Resource mismatch | CPU Ray cluster 上提交要求 `num_gpus=1` 的 task | [mismatch RayJob](../../ray-resource-mismatch-job.yaml) |
-| Worker recovery | 長時間 task 執行中，刪除承載它的 Ray worker Pod，造成 Ray node disappearance | [recovery RayJob](../../ray-worker-recovery-job.yaml) |
-
-這是兩個分開的案例；GPU pending task 不是後面 recovery 測試的 long_task。
-
-## Observed Symptoms
-
-[歷史排障紀錄](../history/20260922-before-current/week20/day5-ai-hpc-production-troubleshooting.md) 與 [runbook](../runbooks/ai-hpc-job-troubleshooting.md) 保存以下觀察。Resource mismatch 時 Kubernetes Pods 為 Running，但 Ray resources 為 CPU=3、GPU=0；task 要求 CPU=1、GPU=1：
-
-```text
-{'CPU': 1.0, 'GPU': 1.0}: 1+ pending tasks/actors
-```
-
-Worker recovery 案例的 task state 摘錄：
-
-```text
-````
+本次核對：[ray-cluster.yaml](<../../ray-cluster.yaml>)、[ray-job.yaml](<../../ray-job.yaml>)
 
 ## 已有結果與解讀
 
-### 已保存的 Ray 結果
-
-環境：獨立 Ray 2.47.1 CPU cluster，namespace ray-system；時間依下方原始紀錄，不冒充今天的服務狀態。
+來源：[記錄／示例原文](<day5-ray-kuberay-distributed-computing.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
 ```text
-{'CPU': 1.0, 'GPU': 1.0}: 1+ pending tasks/actors
-
-attempt_number: 0
-state: FAILED
-error_type: NODE_DIED
-
-attempt_number: 1
-state: RUNNING
+JOB STATUS: SUCCEEDED
 ```
 
-前一個案例是 CPU Ray cluster 無法滿足 GPU task，Pod Running 不代表 task 可排程。後一個是另一項故障實驗：worker 消失後 task 在其他 Ray node 重試到 RUNNING；沒有最終 SUCCEEDED 證據。兩個案例不可混成同一工作。下方保留原始教學與輸出，無須再開服務。
+舊hpc-dev兩K8s nodes／3Ray nodes，不能當主MPI API整合或GPU Ray成果。
+
+**仍缺的證據／不能證明的事：** 缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week17/day5-ray-kuberay-distributed-computing.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

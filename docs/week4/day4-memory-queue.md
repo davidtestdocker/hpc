@@ -3,102 +3,34 @@
 
 [上一課](<day3-job-identity.md>) · [本週目錄](README.md) · [下一課](<day5-dockerize-api.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：歷史模擬 worker 結果。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+jobs={} 和 job_queue=[] 是歷史程序內儲存，不是目前實作。現行 API 先 commit PostgreSQL，再以 Redis transaction 發布 record 和 queue；背景 worker 掃描 job records，因此不能套用舊 list FIFO 圖來保證目前工作的執行順序。AUTOMATIC_WORKER=true 時舊 process-next 入口回 409。
 
-Python list 只在單一程序記憶體中，程序重啟或 API 多副本就無法共享一致的待處理列表。現行以 Redis record 保存工作，worker 掃描 record 接續，不只依賴 queue 中還有 ID。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-現行 GKE 主線；本機先用 mock 測試學習，不需要先拿雲端權限。
-
-本課對照：[api/worker.py](<../../api/worker.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```python
-    for key in redis.scan_iter(match='job:*', count=100):
-        job_id = key.removeprefix('job:')
-        if redis.get(f'worker:done:{job_id}'):
-            continue
-        # 不等待其他持有者；thread_local=False 讓續期執行緒可使用相同 lock token。
-        lock = redis.lock(f'worker:lock:{job_id}', timeout=120, blocking=False,
-                          thread_local=False)
-        if not lock.acquire(blocking=False):
-            continue
-        finished = threading.Event()
-        lost = threading.Event()
-
-        def renew(finished=finished, lock=lock, lost=lost):
-            """每 30 秒把 lease 有效期重設為 120 秒；失敗後通知主流程停止發布。"""
-            # 預設參數固定本次迴圈的物件，避免執行緒引用到下一筆工作的變數。
-            while not finished.wait(30):
-                try:
-                    lock.extend(120, replace_ttl=True)
-                except Exception:
-                    logger.exception('Worker lease renewal failed')
-                    lost.set()
-                    return
-
-        def guard(lost=lost, lock=lock):
-```
+本次核對：[api/main.py](<../../api/main.py>)、[api/worker.py](<../../api/worker.py>)
 
 ## 已有結果與解讀
 
-### 自動工作驗收：已保存的真實結果
-
-日期：2026-09-22T04:58:58.875811+00:00。環境：GKE hpc-gpu-sg，既有單 L4 叢集上的 **CPU MPI**，不是 GPU 訓練。
-
-| 情境 | 保存的結果 | 怎麼解讀 |
-|---|---|---|
-| 正常工作 `f2d8df72-aef3-48bf-9d6b-6863523daa65` | `completed`；ranks `[0, 1, 2]` | 真實 MPI 程序啟動、完成並自動收回結果 |
-| worker 重啟 `a697300a-b267-4554-bdd5-2c82bb9c9eda` | `completed`；同 job 的 JobSet 數 `1` | 停止期间 Kubernetes 已完成，worker 恢復後接續收集 |
-| 模擬 dispatch 失敗 `0852fb7b-8efd-4600-b8ac-d4205554f6f3` | `failed`；retry_count `3` | 模擬提交分支耗盡重試，不是 MPI kernel crash |
-
-正常工作的 launcher log 原文摘錄（只省略 SSH known-host warning）：
+來源：[記錄／示例原文](<day4-memory-queue.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
 ```text
-RANK=0 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-0-0
-RANK=1 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-1-0
-RANK=2 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-2-0
+status = completed
+result = benchmark simulated
 ```
 
-驗收後的 queue 與手動端點結果，取自同份 JSON：
+這只證明舊教材記錄了模擬完成，不包含 CPU 耗時或吞吐。現在仍有非 MPI 模擬分支，不能把 completed 一律解讀成真實效能量測。
 
-```json
-{
-  "database_status": {
-    "a697300a-b267-4554-bdd5-2c82bb9c9eda": "completed",
-    "f2d8df72-aef3-48bf-9d6b-6863523daa65": "completed",
-    "0852fb7b-8efd-4600-b8ac-d4205554f6f3": "failed"
-  },
-  "queues": {
-    "job_queue": [],
-    "processing_queue": [],
-    "dead_letter_queue": [
-      "0852fb7b-8efd-4600-b8ac-d4205554f6f3"
-    ]
-  },
-  "manual_endpoint_rejections": {
-    "process-next": 409,
-    "collect-mpi": 409,
-    "recover-stuck": 409
-  }
-}
-```
-
-空 job_queue／processing_queue 表示本次驗收工作已清理；failed ID 留在 dead-letter。409 是自動模式刻意拒絕手動推進端點，並非 API 故障。這些結果不保證跨 DB 原子交易、Redis 全失恢復或 node failover。
-
-來源：[完整原始驗收 JSON](<../evidence/automatic-worker-20260922.json>)。無須再提交一次工作。
+**仍缺的證據／不能證明的事：** 舊模擬沒有獨立 raw log；程序內 queue 也沒有跨程序共享或重啟持久性。DB 與 Redis 並非同一原子交易。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week4/day4-memory-queue.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

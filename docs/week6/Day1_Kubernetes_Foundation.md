@@ -3,100 +3,33 @@
 
 [本週基礎](README.md) · [本週目錄](README.md) · [下一課](<Day2_Pod_Foundation.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：概念課與副本設定，非故障驗收。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+不能說 Docker 完全不會自動重啟：可配置 restart policy；這與跨節點排程、控制器維持副本是不同能力。[Docker 官方說明](https://docs.docker.com/engine/containers/start-containers-automatically/)。容器程序退出可能在原 Pod 內重啟，不一定重建 Pod；不要把 container crash 與 Pod 被刪除混為一談。Kubernetes 透過 kubelet 和 runtime 執行容器，並非完全不管理容器，也不必依賴 Docker Engine。
 
-kubectl 對 API server 送出宣告，controller 再逐步收斂；apply 成功只表示宣告被接受。CRD 讓 JobSet／Kueue 類型可被辨識，還需要對應 controller 才能執行協調。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-K3s 是獨立基礎練習選項，不是本次主環境；雲端修改只依 runbook。
-
-本課對照：[scripts/bootstrap_cluster.py](<../../scripts/bootstrap_cluster.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```python
-def download_controller(name, target):
-    # Release URL 與 digest 同時鎖定，避免相同操作取得不同或遭竄改的 manifest。
-    metadata = CONTROLLERS[name]
-    with urllib.request.urlopen(metadata["url"], timeout=60) as response:
-        content = response.read()
-    digest = hashlib.sha256(content).hexdigest()
-    if digest != metadata["sha256"]:
-        raise RuntimeError(f"{name} manifest checksum mismatch")
-    target.write_bytes(content)
-
-
-def validate_postgres_env(path):
-    # 僅回傳鍵名集合；錯誤與 evidence 都不包含密碼值。
-    values = {}
-    for raw_line in path.read_text().splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#"):
-            continue
-        if "=" not in line:
-            raise RuntimeError("PostgreSQL env file 格式錯誤")
-        key, value = line.split("=", 1)
-        values[key.strip()] = value.strip()
-    required = {"POSTGRES_USER", "POSTGRES_PASSWORD"}
-    if any(not values.get(key) for key in required):
-```
+本次核對：[k8s/api-deployment.yaml](<../../k8s/api-deployment.yaml>)、[k8s/api-service.yaml](<../../k8s/api-service.yaml>)、[compose.yaml](<../../compose.yaml>)
 
 ## 已有結果與解讀
 
-### CPU 叢集重建：已保存的驗收結果
+來源：[記錄／示例原文](<../../k8s/api-deployment.yaml>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-日期：2026-09-21。環境：隔離 CPU-only GKE 重建驗收；不是主環境的多 GPU 實驗。該次叢集已清理，讀這份結果不需要重新建立。
-
-```json
-{
-  "recorded_at": "2026-09-21",
-  "scope": "fresh CPU-only GKE bootstrap and platform acceptance; excludes GPU and MPI execution",
-  "result": "pass",
-  "terraform": {
-    "apply": "3 added",
-    "post_apply_plan": "No changes",
-    "destroy": "3 destroyed",
-    "state_resources_after_destroy": 0,
-    "cluster_lookup_after_destroy": "404 Not Found"
-  },
-  "controllers": {
-    "jobset": "v0.12.0 Ready on system-pool with 100m CPU request",
-    "kueue": "v0.19.2 Ready on system-pool with Recreate deployment strategy"
-  },
-  "platform": {
-    "api": "Running on system-pool; /health healthy",
-    "redis": "Running on system-pool; connected; PVC Bound",
-    "postgres": "Running on system-pool; jobs table query succeeded; PVC Bound",
-    "overlay_diff_after_apply": "empty"
-  },
-  "security": {
-    "postgres_secret": "created from external env file; value not captured",
-    "mpi_ssh_key": "generated in temporary directory; value not captured",
-    "api_service_account_create_jobsets": "yes",
-    "api_service_account_delete_pods": "no"
-  },
-  "limitations": [
-    "gpu-pool had zero nodes because project-wide GPU quota was exhausted",
-    "no MPI workload was submitted in this CPU-only rehearsal",
-    "database initialization used create_all rather than schema migration"
-  ]
-}
+```text
+replicas: 1
 ```
 
-解讀：Terraform 建立 3 個資源、無 drift，JobSet／Kueue controllers 和 API／Redis／DB 驗收成功；create JobSet 權限允許，delete Pod 權限拒絕。最後 destroy 3、state 空、cluster 查詢 404，證明當次隔離叢集已刪除。**不包含 GPU 或 MPI 執行驗收**，也不是所有雲端資源的停費證明。
+目前這份舊 API manifest 的期望副本為 1；教材三個 API 是說明 desired state 的假設，不是保存的三副本部署結果。原文也明說當天沒有安裝 Kubernetes。
 
-來源：[原始 CPU bootstrap JSON](<../evidence/cpu-bootstrap-acceptance-20260921.json>)。
+**仍缺的證據／不能證明的事：** 沒有本課三副本故障注入、修復時間或完整 docker ps log；設定與概念圖不當作執行證據。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week6/Day1_Kubernetes_Foundation.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

@@ -3,71 +3,33 @@
 
 [本週基礎](README.md) · [本週目錄](README.md) · [下一課](<Day2-PyTorch-Training-Runtime.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：歷史GPU功能驗證。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+現行runtime.py已改成class並import runtime.base；舊overlay只掛runtime.py等平面檔，未掛base.py/套件結構，不能保證舊直接python /runtime/runtime.py入口仍可用。初始化及一次matmul不是training benchmark。
 
-torch.cuda.is_available 只驗證 runtime 可見性，還要實際建立 tensor 並執行 CUDA 工作。nvidia-smi 顯示的 CUDA 相容版本不一定是 PyTorch 內建 runtime 版本。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-單 L4／小模型可重現實驗；無 pretrained 品質、多 GPU 或 RDMA 結論。
-
-本課對照：[scripts/run_causal_lm_benchmark.py](<../../scripts/run_causal_lm_benchmark.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```python
-            'image': 'pytorch/pytorch:2.12.0-cuda12.6-cudnn9-runtime',
-            'command': ['sh', '-c', 'python /benchmark/causal_lm_benchmark.py && sleep 900'],
-            'resources': {'requests': {'cpu': '2', 'memory': '6Gi', 'nvidia.com/gpu': '1'},
-                          'limits': {'cpu': '4', 'memory': '10Gi', 'nvidia.com/gpu': '1'}},
-            'volumeMounts': [{'name': 'script', 'mountPath': '/benchmark', 'readOnly': True},
-                             {'name': 'results', 'mountPath': '/results'}]}],
-        'volumes': [{'name': 'script', 'configMap': {'name': name}},
-                    {'name': 'results', 'emptyDir': {}}],
-    }}
-    manifests = yaml.safe_dump_all([cm, pod])
-    (output / 'manifest.yaml').write_text(manifests)
-    # create 遇到同名資源會失敗，避免覆寫其他實驗；這一步可能留下部分已建立資源。
-    print(kubectl(['create', '-f', '-'], manifests.encode()).decode(), flush=True)
-    # monotonic 不受系統校時影響；Running 只代表容器存活，還要看到完成標記。
-    deadline = time.monotonic() + 900
-    while time.monotonic() < deadline:
-        status = json.loads(kubectl(['get', 'pod', name, '-o', 'json']))
-        (output / 'pod.json').write_text(json.dumps(status, indent=2) + '\n')
-        phase = status['status']['phase']
-        if phase == 'Running':
-            log = kubectl(['logs', name]).decode()
-            (output / 'run.log').write_text(log)
-            if 'BENCHMARK_COMPLETE' in log:
-                break
-```
+本次核對：[runtime/pytorch/runtime.py](<../../runtime/pytorch/runtime.py>)、[kustomize/overlays/gpu-sg/kustomization.yaml](<../../kustomize/overlays/gpu-sg/kustomization.yaml>)
 
 ## 已有結果與解讀
 
-### 單 L4 訓練：已保存的實測數據
+來源：[記錄／示例原文](<Day1—PyTorch-GPU-Runtime.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-日期：2026-09-22；環境：GKE hpc-gpu-sg、單 NVIDIA L4、PyTorch 2.12.0+cu126。模型為 13M causal LM、byte tokenizer，不是 pretrained 大模型。20 warmup、40 measured steps，各 batch 三次交錯量測。
+```text
+Result Device: cuda:0
+```
 
-| Batch | 次數 | Mean byte tokens/s | Mean step ms | Peak allocated MiB | Throughput CV |
-|---:|---:|---:|---:|---:|---:|
-| 8 | 3 | 110,785 | 18.50 | 375.02 | 3.21% |
-| 16 | 3 | 200,841 | 20.39 | 532.39 | 0.42% |
+此舊log對應當時P100實作；現行最後sleep不是持續GPU負載。
 
-結果：吞吐 **+81.29%**，每步時間 **+10.25%**，顯存峰值 **+41.96%**。每步工作量加倍，所以不是「每步變快」，也不能推出模型品質更好。
-
-另做的五步 CUDA profiling：batch 8／16 的 multi-tensor kernel 累積時間約 21.71／21.72 ms，GEMM 約 12.27／23.84 ms。這支持每步固定 optimizer 成本被較大 batch 攤薄的推論；kernel 時間總和不是 wall time，也不直接證明 compute-bound 或 memory-bound。
-
-你不需要再跑 GPU：[保存的摘要](<../../benchmark/results/causal-lm-20260922/summary.json>)、[原始逐步數據](<../../benchmark/results/causal-lm-20260922/result.json>)、[完整解讀與限制](<../performance/causal-lm-l4-20260922.md>)已足夠直接閱讀。
+**仍缺的證據／不能證明的事：** 缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week15/Day1—PyTorch-GPU-Runtime.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

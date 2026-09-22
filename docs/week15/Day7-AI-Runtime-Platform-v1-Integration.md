@@ -3,71 +3,33 @@
 
 [上一課](<Day6-Performance-Analyzer.md>) · [本週目錄](README.md) · [下一週](../week16/README.md) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：20260817單L4推論JSON。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+架構圖analyzer→Prometheus沒有實作；training分析是人工解讀，並非同一自動流程。現行gpu-sg overlay vLLM副本0，主MPI overlay另一路；不可照舊文直接移除GPU taint。
 
-runner 產生 Pod／ConfigMap、等待完成、收回 raw bundle，成功後清理本次資源；這是一條獨立實驗流程，不是 MPI 完成後接著訓練。失敗會保留診斷資料。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-單 L4／小模型可重現實驗；無 pretrained 品質、多 GPU 或 RDMA 結論。
-
-本課對照：[scripts/run_causal_lm_benchmark.py](<../../scripts/run_causal_lm_benchmark.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```python
-def run(context, name, output):
-    """用明確 context 和唯一名稱執行一次實驗；失敗時保留現場供排查。"""
-    # exist_ok=False 防止重跑覆寫舊證據；目錄建立後即保存本次輸入。
-    output.mkdir(parents=True, exist_ok=False)
-    base = ['kubectl', '--context', context, '--request-timeout=30s', '-n', 'hpc-platform-dev']
-
-    def kubectl(args, data=None):
-        """以參數陣列呼叫 kubectl；可用 stdin 傳 manifest，失敗立即拋出例外。"""
-        return subprocess.check_output(base + args, input=data, timeout=90)
-
-    # corpus 和程式可能日後改動，因此本次快照與現行原始碼分開保存。
-    source = (ROOT / 'benchmark/gpu/causal_lm_benchmark.py').read_text()
-    corpus = (ROOT / 'README.md').read_text()
-    (output / 'corpus.txt').write_text(corpus)
-    (output / 'benchmark-source.py').write_text(source)
-    cm = {'apiVersion': 'v1', 'kind': 'ConfigMap', 'metadata': {'name': name},
-          'data': {'causal_lm_benchmark.py': source, 'corpus.txt': corpus}}
-    # nodeSelector 決定 GPU pool；toleration 允許接受 GPU taint。
-    # nvidia.com/gpu=1 在此叢集是一個 time-sharing share，不是額外建立一張 GPU。
-    # 成功後 sleep 保留容器供 exec 取檔；emptyDir 隨 Pod 刪除，必須先收回結果。
-    pod = {'apiVersion': 'v1', 'kind': 'Pod', 'metadata': {'name': name,
-           'labels': {'app': 'causal-lm-benchmark'}}, 'spec': {
-        'restartPolicy': 'Never', 'activeDeadlineSeconds': 1200,
-        'nodeSelector': {'cloud.google.com/gke-nodepool': 'gpu-pool'},
-```
+本次核對：[analysis/performance_analyzer.py](<../../analysis/performance_analyzer.py>)、[kustomize/overlays/gpu-sg/kustomization.yaml](<../../kustomize/overlays/gpu-sg/kustomization.yaml>)、[runtime/vllm/runtime.py](<../../runtime/vllm/runtime.py>)
 
 ## 已有結果與解讀
 
-### 單 L4 訓練：已保存的實測數據
+來源：[記錄／示例原文](<../../benchmark/results/day7-vllm.json>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-日期：2026-09-22；環境：GKE hpc-gpu-sg、單 NVIDIA L4、PyTorch 2.12.0+cu126。模型為 13M causal LM、byte tokenizer，不是 pretrained 大模型。20 warmup、40 measured steps，各 batch 三次交錯量測。
+```text
+"completed": 16
+```
 
-| Batch | 次數 | Mean byte tokens/s | Mean step ms | Peak allocated MiB | Throughput CV |
-|---:|---:|---:|---:|---:|---:|
-| 8 | 3 | 110,785 | 18.50 | 375.02 | 3.21% |
-| 16 | 3 | 200,841 | 20.39 | 532.39 | 0.42% |
+JSON保存16成功0失敗、5.325req/s、TTFT68.677ms，是當日推論驗證，不是今日GPU服務或主API整合驗收。
 
-結果：吞吐 **+81.29%**，每步時間 **+10.25%**，顯存峰值 **+41.96%**。每步工作量加倍，所以不是「每步變快」，也不能推出模型品質更好。
-
-另做的五步 CUDA profiling：batch 8／16 的 multi-tensor kernel 累積時間約 21.71／21.72 ms，GEMM 約 12.27／23.84 ms。這支持每步固定 optimizer 成本被較大 batch 攤薄的推論；kernel 時間總和不是 wall time，也不直接證明 compute-bound 或 memory-bound。
-
-你不需要再跑 GPU：[保存的摘要](<../../benchmark/results/causal-lm-20260922/summary.json>)、[原始逐步數據](<../../benchmark/results/causal-lm-20260922/result.json>)、[完整解讀與限制](<../performance/causal-lm-l4-20260922.md>)已足夠直接閱讀。
+**仍缺的證據／不能證明的事：** 原始 benchmark JSON 及其 date 欄位已保存；缺固定映像 digest、完整環境快照與重複量測，不能作目前服務可用性或通用容量保證。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week15/Day7-AI-Runtime-Platform-v1-Integration.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

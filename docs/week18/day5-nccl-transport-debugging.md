@@ -3,62 +3,33 @@
 
 [上一課](<day4-kubernetes-network-troubleshooting.md>) · [本週目錄](README.md) · [下一課](<day6-gpu-nic-numa-topology.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：單rank NCCL transport raw。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+引用raw來自Week16 nccl-benchmark-csgjr，不能當另一次nccl-transport-debug完整log。cudaDriverVersion13030是CUDA driver API版本，不是NVIDIA驅動套件版本；不直接照舊文移除node taint。
 
-找不到 IB 裝置後選 Socket 可能是正常 fallback。要判斷通訊成功須看 ranks、初始化及實際 collective，不是只截一行 WARN。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-本週可用 CPU 學主機網路；不把 CPU 測試或 Socket fallback 當 RDMA 硬體實測。
-
-本課對照：[docs/demo/nccl-transport-fallback-demo.md](<../demo/nccl-transport-fallback-demo.md>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-````text
-從保存的 NCCL raw log 說明 transport discovery、IB 初始化失敗與 Socket fallback 的判讀。來源為 [原始單 GPU log](../../benchmark/results/week16-day4-nccl-single-gpu.txt) 與 [transport 排障紀錄](../history/20260922-before-current/week18/day5-nccl-transport-debugging.md)；本輪未執行 NCCL test。
-
-## NCCL Transport Discovery
-
-歷史環境為 **1 GPU（NVIDIA L4）、1 rank、1 node，沒有 RDMA hardware**。紀錄中的 `NCCL_NET_PLUGIN=spcx` 使 NCCL 嘗試載入 Spectrum-X plugin；plugin library 可載入，但底層沒有可用 IB／RDMA device。
-
-面試展示時先開 raw log，依序查看 plugin discovery、NET/IB、NET/Socket、communicator initialization，再確認 rank／node 數量。這些輸出描述 backend selection，不能單憑它們判斷跨機傳輸效能。
-
-## Observed Log
-
-以下逐行摘自 raw log，省略其他中間行，沒有改寫訊息：
-
-```text
-nccl-benchmark-csgjr:1:1 [0] NCCL INFO NET/Plugin: Loaded net plugin SPCX (v12)
-nccl-benchmark-csgjr:1:1 [0] NCCL INFO NET/IB : No device found.
-nccl-benchmark-csgjr:1:1 [0] NCCL INFO Failed to initialize NET plugin SPCX
-nccl-benchmark-csgjr:1:1 [0] NCCL INFO Failed to initialize NET plugin IB
-nccl-benchmark-csgjr:1:1 [0] NCCL INFO NET/Socket : Using [0]eth0:10.56.0.6<0>
-nccl-benchmark-csgjr:1:1 [0] NCCL INFO Initialized NET plugin Socket
-nccl-benchmark-csgjr:1:1 [0] NCCL INFO Assigned NET plugin Socket to comm
-nccl-benchmark-csgjr:1:1 [0] NCCL INFO Using network Socket
-nccl-benchmark-csgjr:1:1 [0] NCCL INFO comm 0x59e6b47a3b40 rank 0 nRanks 1 nNodes 1 localRanks 1 localRank 0 MNNVL 0
-nccl-benchmark-csgjr:1:1 [0] NCCL INFO ncclCommInitRankConfig comm 0x59e6b47a3b40 rank 0 nranks 1 cudaDev 0 nvmlDev 0 busId 30 commId 0xa3c39faff10c2201 - Init COMPLETE
-```
-````
+本次核對：[helm/pytorch-runtime/templates/nccl-benchmark-job.yaml](<../../helm/pytorch-runtime/templates/nccl-benchmark-job.yaml>)
 
 ## 已有結果與解讀
 
-### 這一課的結果直接看哪裡
+來源：[記錄／示例原文](<../../benchmark/results/week16-day4-nccl-single-gpu.txt>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-本課原本的完整教學、程式示例、結果與解讀已放回本頁下方，不再用縮短版取代它。命令是當時操作或語法示例，**不是要求你現在再執行**。
+```text
+Using network Socket
+```
 
-概念例子的輸出只說明程式／工具行為，不冒充 VM 實測；原文沒留下的實測數值就維持未知，不用預期值補造。舊環境名稱、日期、成功與失敗照原文保留。
+支持Socket plugin被選用與單rank初始化，不證明跨nodeTCP流量／RDMA頻寬。
+
+**仍缺的證據／不能證明的事：** 單 rank raw log 已保存；缺精確執行日期與完整部署快照，也沒有多 GPU／跨節點通訊結果。本輪未重跑。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week18/day5-nccl-transport-debugging.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

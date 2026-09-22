@@ -3,102 +3,33 @@
 
 [本週基礎](README.md) · [本週目錄](README.md) · [下一課](<day2-redis-persistence.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：歷史 Redis ping 摘錄。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+把狀態移出 API 記憶體，解決的是 API 重啟後共享狀態問題，不自動保證 Redis 本身重啟後資料仍在。現行提交先 commit DB，再用 Redis transaction 寫 job record 和 queue；背景 worker 掃描 job:*，不是舊 LPOP consumer。GET /jobs 仍使用 KEYS，不要因 worker 使用 SCAN 就說所有路徑都已改好。工作數量端點現在是 /job-metrics。
 
-job:<id> 的 JSON 是工作資料，job_queue 是 ID 清單。API 在同一 Redis pipeline transaction 發布兩者，避免 Redis 內只寫一半；但前面的 PostgreSQL commit 不在該交易中。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-主 overlay 啟用獨立 api-worker；手動 /worker/* 返回 409。
-
-本課對照：[api/main.py](<../../api/main.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```python
-    with redis_client.pipeline() as pipe:
-        pipe.set(f"job:{job_id}", json.dumps(job))
-        pipe.rpush('job_queue', job_id)
-        pipe.execute()
-    return {
-        "message": "benchmark request received",
-        "job_id": job_id,
-        "benchmark": request.benchmark,
-        "status": "accepted",
-        "next_step": f"Check job status at GET /jobs/{job_id}"
-    }
-
-#第八週要改成scan而不是keys方式
-# 讀取 job:* 對應的工作；KEYS 會掃描鍵空間，資料量大時有阻塞風險。
-@app.get("/jobs")
-def get_jobs():
-
-    job_keys = redis_client.keys("job:*")
-
-    jobs = []
-
-    for key in job_keys:
-        # loads 把 JSON 字串還原成 Python 字典或清單。
-        job = json.loads(
-```
+本次核對：[api/main.py](<../../api/main.py>)、[api/worker.py](<../../api/worker.py>)、[compose.yaml](<../../compose.yaml>)、[requirements.txt](<../../requirements.txt>)
 
 ## 已有結果與解讀
 
-### 自動工作驗收：已保存的真實結果
-
-日期：2026-09-22T04:58:58.875811+00:00。環境：GKE hpc-gpu-sg，既有單 L4 叢集上的 **CPU MPI**，不是 GPU 訓練。
-
-| 情境 | 保存的結果 | 怎麼解讀 |
-|---|---|---|
-| 正常工作 `f2d8df72-aef3-48bf-9d6b-6863523daa65` | `completed`；ranks `[0, 1, 2]` | 真實 MPI 程序啟動、完成並自動收回結果 |
-| worker 重啟 `a697300a-b267-4554-bdd5-2c82bb9c9eda` | `completed`；同 job 的 JobSet 數 `1` | 停止期间 Kubernetes 已完成，worker 恢復後接續收集 |
-| 模擬 dispatch 失敗 `0852fb7b-8efd-4600-b8ac-d4205554f6f3` | `failed`；retry_count `3` | 模擬提交分支耗盡重試，不是 MPI kernel crash |
-
-正常工作的 launcher log 原文摘錄（只省略 SSH known-host warning）：
+來源：[記錄／示例原文](<day1-redis-foundation.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
 ```text
-RANK=0 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-0-0
-RANK=1 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-1-0
-RANK=2 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-2-0
+PONG
 ```
 
-驗收後的 queue 與手動端點結果，取自同份 JSON：
+舊教材保存 PONG，表示當時 redis-cli ping 得到回覆，不足以證明 API 建立工作、worker 執行與結果保存都成功。舊文 KeyError 的 job_id 是佔位示例，沒有獨立 traceback。
 
-```json
-{
-  "database_status": {
-    "a697300a-b267-4554-bdd5-2c82bb9c9eda": "completed",
-    "f2d8df72-aef3-48bf-9d6b-6863523daa65": "completed",
-    "0852fb7b-8efd-4600-b8ac-d4205554f6f3": "failed"
-  },
-  "queues": {
-    "job_queue": [],
-    "processing_queue": [],
-    "dead_letter_queue": [
-      "0852fb7b-8efd-4600-b8ac-d4205554f6f3"
-    ]
-  },
-  "manual_endpoint_rejections": {
-    "process-next": 409,
-    "collect-mpi": 409,
-    "recover-stuck": 409
-  }
-}
-```
-
-空 job_queue／processing_queue 表示本次驗收工作已清理；failed ID 留在 dead-letter。409 是自動模式刻意拒絕手動推進端點，並非 API 故障。這些結果不保證跨 DB 原子交易、Redis 全失恢復或 node failover。
-
-來源：[完整原始驗收 JSON](<../evidence/automatic-worker-20260922.json>)。無須再提交一次工作。
+**仍缺的證據／不能證明的事：** 本課沒保存 LRANGE 的實際 job ID、完整 HTTP 回應或精確日期；PONG 不能當作持久化或完整平台驗收。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week5/day1-redis-foundation.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

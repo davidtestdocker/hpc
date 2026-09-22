@@ -3,62 +3,33 @@
 
 [上一課](<day1-why-docker.md>) · [本週目錄](README.md) · [下一課](<day3-image-container.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：版本佔位示例，非驗收。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+docker --version 主要確認 CLI 版本，不證明能連 daemon；compose version 也不證明服務部署成功。現行 Dockerfile 是映像設定，不能補當時 host 的安裝證據。此課不再被列作精確版本驗收。
 
-Docker CLI 是客戶端，daemon 才建立容器；CLI 能印版本不等於能連 daemon。權限錯誤和 daemon 未啟動需分開，不要靠開放 socket 給所有人解決。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-本週以檢查與離線讀設定為主；不要求安裝另一個 Docker daemon 或啟動正式服務。
-
-本課對照：[docker/Dockerfile](<../../docker/Dockerfile>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```text
-FROM python:3.12-slim
-
-# 設定容器環境變數：停用 .pyc 輸出，並讓 Python 日誌即時輸出。
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
-
-# 設定後续 RUN／COPY 與啟動程式使用的工作目錄。
-WORKDIR /app
-
-# 建置映像時執行 Shell 指令；&& 只在前一指令成功後繼續。
-RUN groupadd --system app \
-    && useradd --system --gid app app
-
-# 從建置 context 複製檔案；--chown 設定檔案擁有者。
-COPY requirements.txt .
-
-# 建置映像時執行 Shell 指令；&& 只在前一指令成功後繼續。
-RUN python -m pip install --no-cache-dir --upgrade pip \
-    && python -m pip install --no-cache-dir -r requirements.txt
-
-# 從建置 context 複製檔案；--chown 設定檔案擁有者。
-COPY --chown=app:app api ./api
-# 從建置 context 複製檔案；--chown 設定檔案擁有者。
-COPY --chown=app:app monitoring ./monitoring
-```
+本次核對：[docker/Dockerfile](<../../docker/Dockerfile>)
 
 ## 已有結果與解讀
 
-### 這一課的結果直接看哪裡
+來源：[記錄／示例原文](<day2-install-docker.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-本課原本的完整教學、程式示例、結果與解讀已放回本頁下方，不再用縮短版取代它。命令是當時操作或語法示例，**不是要求你現在再執行**。
+```text
+Docker version 29.x.x
+```
 
-概念例子的輸出只說明程式／工具行為，不冒充 VM 實測；原文沒留下的實測數值就維持未知，不用預期值補造。舊環境名稱、日期、成功與失敗照原文保留。
+29.x.x 和同頁 Compose v5.x.x 都是佔位版本，不是可追溯的完整版本輸出。不能據此認定該版 Docker Engine 與 daemon 均正常。
+
+**仍缺的證據／不能證明的事：** 缺完整版本號、日期、host 資訊、daemon 連線／容器驗收 log；沒有證據就保持缺證，不要求使用者重裝。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week3/day2-install-docker.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

@@ -3,62 +3,33 @@
 
 [上一課](<Day4-Pytest-API-Testing-Foundation.md>) · [本週目錄](README.md) · [下一課](<Day6-Docker-Build-inCI.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：Mock 設計與成功敘述。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+FakeRedis 的 set/rpush 僅回固定值，不保存資料；FakeSession commit 不碰DB。這些測試不證明 Redis transaction、DB constraint 或實際連線。API contract 變更應先確認意圖，不是為通過測試任意改 assertion。
 
-worker 測試用假的 Redis／DB／Kubernetes 觸發真實難重現的失敗窗口。重點不是 mock 越多越好，而是確認有沒有測到 DB-first、409 owner 與 lease 失效等契約。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-只跑本機測試／離線讀 CI；不觸發 push、映像發佈或 Argo 同步。
-
-本課對照：[tests/test_worker.py](<../../tests/test_worker.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```python
-def test_dispatch_recovers_without_queue_entry(store, state):
-    data, _ = store
-    data[f'job:{JOB_ID}'] = json.dumps(job(state))
-    worker.tick()
-    assert json.loads(data[f'job:{JOB_ID}'])['status'] == 'submitted'
-    main.submit_mpi_jobset.assert_called_once_with(JOB_ID)
-
-
-@pytest.mark.parametrize('terminal', ['completed', 'failed'])
-def test_collects_terminal_status_automatically(store, monkeypatch, terminal):
-    data, _ = store
-    data[f'job:{JOB_ID}'] = json.dumps(job('submitted'))
-    monkeypatch.setattr(main, 'collect_mpi_jobset', lambda _: {
-        'status': terminal, 'result': {'ranks': [0, 1, 2]}})
-    worker.tick()
-    saved = json.loads(data[f'job:{JOB_ID}'])
-    assert saved['status'] == terminal
-    assert saved['result']['ranks'] == [0, 1, 2]
-    assert 'finished_at' in saved
-    main.persist_job_status.assert_called_with(JOB_ID, terminal)
-
-
-def test_db_outage_leaves_submitted_for_retry(store, monkeypatch):
-    data, _ = store
-```
+本次核對：[tests/conftest.py](<../../tests/conftest.py>)、[tests/test_api.py](<../../tests/test_api.py>)、[.github/workflows/ci.yml](<../../.github/workflows/ci.yml>)
 
 ## 已有結果與解讀
 
-### 已保存的本機驗證結果
+來源：[記錄／示例原文](<Day5-Pytest-MockCI-Integration.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-2026-09-22 教材改寫時，在此 repo 開發環境執行並記錄：`53 passed`；三個 Helm charts lint 通過，完整主 overlay 離線渲染出 14 個物件。這是本機測試與渲染結果，**不是遠端 GitHub Actions 整條 CI 成功，也不是新雲端驗收**。
+```text
+FakeRedis
+```
 
-目前 CI 改的是 values-dev.yaml，主 overlay 使用獨立 api-values.yaml，因此不能說 push 一定更新主展示。下方完整保留原本課程與當時輸出；不要求你再跑一次 pytest。
+原文 Pytest全過缺獨立本課summary；目前函式測試範圍已說明，不宣稱 HTTP整合測試。
+
+**仍缺的證據／不能證明的事：** 缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week10/Day5-Pytest-MockCI-Integration.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

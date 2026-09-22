@@ -3,62 +3,35 @@
 
 [上一課](<day5-dictionary.md>) · [本週目錄](README.md) · [下一課](<day7-stdout.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：歷史教材輸出（跨頁接回）。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+Week2 的舊程式讓 child stdout 直接繼承終端機；現行檔已使用 capture_output=True、text=True，再 print(result.stdout)。兩者輸出形狀可相近，但捕捉方式不同，不能稱程式完全相同。現行程式只呼叫 ps -eo pid,comm、擷取字串並印出；沒有 PPID、CPU、RSS、狀態、JSON 或長駐採樣。check=False 且未檢查 returncode，不能僅依 Python 結束就判定 ps 成功。
 
-subprocess.run 用參數列表啟動外部命令，capture_output 接住輸出，timeout 限制等待。returncode 非零表示命令未按成功契約結束；不應把認證 stderr 原樣寫進公開證據。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-本週先閱讀與執行純 Python 小例子；不要直接啟動依賴雲端的 worker。
-
-本課對照：[scripts/platform.py](<../../scripts/platform.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```python
-def command(args):
-    # 統一由 repo 根目錄執行外部工具，並以 timeout 避免認證或 API server 卡住。
-    try:
-        result = subprocess.run(
-            args, cwd=ROOT, capture_output=True, text=True, timeout=60, check=False
-        )
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        raise RuntimeError(f"{args[0]} unavailable or timed out") from exc
-    if result.returncode:
-        # Avoid putting credential-plugin stderr into saved evidence.
-        raise RuntimeError(f"command failed (exit {result.returncode}): {' '.join(args)}")
-    return result.stdout
-
-
-def render():
-    # 只渲染 Kustomize／Helm，不會套用任何資源到叢集。
-    return command([
-        "kubectl", "kustomize", "kustomize/overlays/gpu-sg-platform",
-        "--enable-helm", "--load-restrictor", "LoadRestrictionsNone",
-    ])
-
-
-def ready_nodes(nodes, pool, gpu=False):
-    # Ready 還不夠：節點也必須可排程；GPU 檢查另外要求公布 NVIDIA 資源。
-```
+本次核對：[monitoring/process_monitor.py](<../../monitoring/process_monitor.py>)
 
 ## 已有結果與解讀
 
-### 這一課的結果直接看哪裡
+來源：[記錄／示例原文](<../week3/day6-containerize-monitoring.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-本課原本的完整教學、程式示例、結果與解讀已放回本頁下方，不再用縮短版取代它。命令是當時操作或語法示例，**不是要求你現在再執行**。
+```text
+PID COMMAND
+1   python3
+7   ps
+```
 
-概念例子的輸出只說明程式／工具行為，不冒充 VM 實測；原文沒留下的實測數值就維持未知，不用預期值補造。舊環境名稱、日期、成功與失敗照原文保留。
+Week2 Day6 本頁只有「可以看到相同結果」的文字，沒有實際 PID 清單。已接回 Week3 Day6 保存的容器輸出；這是另一課的歷史案例，並非證明 Week2 當天跑過相同 PID。
+
+**仍缺的證據／不能證明的事：** 舊文未記錄此執行的精確日期、映像 digest 或独立原始 log；只能稱為舊教材保存的容器輸出，不能稱本次重跑或最新映像驗收。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week2/day6-subprocess.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

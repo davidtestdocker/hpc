@@ -10,6 +10,8 @@
 
 第一次學習請從[基礎到現行專案導讀](docs/learning-guide.md)開始：Week1 起依序學習，每週再對照現行實作與驗證；不需要先看懂下面整張架構圖。
 
+教材文件核對已完成：Week1～20 共 138／138 篇已逐篇核對、修正頁首，20 個每週入口同步更新。這不表示每課都有實測或所有程式缺陷已修復；已有輸出、示例與缺證據分開標示。見[教材稽核清單](docs/audits/curriculum-content-audit.md)及[重要差異與未驗證範圍](docs/audits/curriculum-findings.md)。不需要再開 VM 補跑才能閱讀。
+
 | 能力 | 實際交付與結果 | 原始證據 |
 |---|---|---|
 | 部署與重建 | 主平台重新部署；全新 CPU-only GKE 完成 controllers／平台 bootstrap、health／RBAC／PVC 驗收與銷毀 | [部署](docs/evidence/platform-deployment-20260921.json)、[重建](docs/evidence/cpu-bootstrap-acceptance-20260921.json) |

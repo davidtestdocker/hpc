@@ -1,0 +1,2743 @@
+{
+  "scope": "逐篇內容稽核，非程式執行驗收；pending 絕不可當作通過",
+  "lessons": [
+    {
+      "source": "docs/week1/day1-linux-process.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史教材輸出（跨頁接回）",
+      "checked_files": [
+        "monitoring/process_monitor.py",
+        "docker/Dockerfile",
+        "compose.yaml"
+      ],
+      "evidence_source": "docs/week3/day6-containerize-monitoring.md",
+      "excerpt": "PID COMMAND\n1   python3\n7   ps",
+      "interpretation": "這段輸出是 Week3 Day6 保存的 hpc-monitor:v5 容器案例：PID 1 是 Python 主程序，PID 7 是它呼叫的 ps。它說明容器內程序列舉，不是 Week1 Ubuntu VM 的完整程序清單。現在直接放在本頁，不需重新執行。",
+      "corrections": "現行程式只呼叫 ps -eo pid,comm、擷取字串並印出；沒有 PPID、CPU、RSS、狀態、JSON 或長駐採樣。check=False 且未檢查 returncode，不能僅依 Python 結束就判定 ps 成功。 benchmark.py 沒有保存為檔案，原文 python benchmark.py 只能當示意。Linux 實際排程執行緒；四個實體核心不必然等於四個邏輯 CPU，也不能一概推為最多四個程序。原文約 150 個程序只是 Week1 的文字觀察，與這份兩程序輸出是不同環境。",
+      "missing": "舊文未記錄此執行的精確日期、映像 digest 或独立原始 log；只能稱為舊教材保存的容器輸出，不能稱本次重跑或最新映像驗收。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "monitoring/process_monitor.py": "4a90fc64e3199cc94d0e666fd89384de1a5249fda08623f3300c0bd88e49d3db",
+        "docker/Dockerfile": "5f96137e56bf3ced6fc447cf604bb678753f55341cbd0028675bddd441dc41a3",
+        "compose.yaml": "0ae9ba3566372808ee1a39d71261e2f02abc65ebac43a28c03bd6035d8060342"
+      }
+    },
+    {
+      "source": "docs/week1/day2-cpu-scheduler.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史教材數值摘錄",
+      "checked_files": [],
+      "evidence_source": "docs/week1/day2-cpu-scheduler.md",
+      "excerpt": "- `yes` 的 CPU 使用率接近 100%",
+      "interpretation": "同頁另保存 nproc 輸出 4，以及兩個 yes 均接近 100% 的文字觀察。這是當時 GCP Ubuntu VM 的敘述，不是現行 Pod 量測，也不是 helm worker resources 的測試結果。",
+      "corrections": "nproc 反映程序可用處理單位，不足以判定實體核心數。兩個 yes 的 CPU 百分比不證明永久固定在兩顆核心；需另外有 per-CPU／placement 資料。單一執行緒最多使用一個邏輯 CPU 的時間，不能泛化成每個多執行緒程序都只能一顆。移除把 worker YAML 當本課結果的錯置對照。",
+      "missing": "沒有當時 top 完整原始輸出、CPU topology、精確日期或獨立 log；不補造核心綁定結論。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    },
+    {
+      "source": "docs/week1/day3-context-switch.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史教材觀察，缺直接計數",
+      "checked_files": [],
+      "evidence_source": "docs/week1/day3-context-switch.md",
+      "excerpt": "- 每個 Process CPU 使用率約 75%～85%",
+      "interpretation": "原文描述在可用處理單位為 4 的環境啟動五個 yes。四份 CPU 時間平均分給五個單執行緒程序，約 80% 是合理解釋；這仍只是 top 百分比的觀察。",
+      "corrections": "沒有 context-switch 計數就不能說已量得切換增加多少或其效能成本；執行緒少於 CPU 時也會因阻塞／喚醒而切換。process_monitor.py 不量 cs，原先對照錯誤，已從現行說明移除。",
+      "missing": "未保存 vmstat／pidstat 切換計數、前後比較及原始 top capture；75%～85% 不是 context-switch benchmark。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    },
+    {
+      "source": "docs/week1/day4-cpu-utilization.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史教材數值摘錄",
+      "checked_files": [],
+      "evidence_source": "docs/week1/day4-cpu-utilization.md",
+      "excerpt": "us = 8.3%\nsy = 17.9%\nid = 73.4%",
+      "interpretation": "原文空閒階段是 us=1.2%、sy=0.8%、id=97.8%；啟動一個 yes 後出現上列數值，表示该次 CPU 時間分布改變。它不是 process_monitor.py 的輸出。",
+      "corrections": "us／sy／id 不是 top 的所有欄位，三項不一定加總 100%。整機彙總百分比與單一程序百分比不能直接混用；yes 的 system time 比例取決於執行路徑，不可當成所有計算負載的固定比例。",
+      "missing": "缺完整 top 行、取樣時間、各 CPU 資料與精確日期；不能從一次數值推論目前 worker 的 CPU 壓力。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    },
+    {
+      "source": "docs/week1/day5-memory.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史教材數值摘錄",
+      "checked_files": [
+        "monitoring/process_monitor.py"
+      ],
+      "evidence_source": "docs/week1/day5-memory.md",
+      "excerpt": "Mem:          15Gi\nUsed:       582Mi\nAvailable:   14Gi",
+      "interpretation": "這是原文對 free -h 的摘錄，表示當次環境有約 14Gi available；另列 otelopscol、codex、MainThread 為 RSS 排序觀察，但未保存各自 RSS 數值。",
+      "corrections": "process_monitor.py 的 ps 欄位只有 pid,comm，不收 RSS，不能把以上記憶體輸出歸給它。RSS 包含駐留的共享頁，不是程序獨占的實體 RAM；多程序 RSS 直接加總可能重算共享部分。",
+      "missing": "沒有 RSS 數值表、長時間曲線、OOM events 或獨立 log；不能推為沒有 memory leak／memory bandwidth 瓶頸。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "monitoring/process_monitor.py": "4a90fc64e3199cc94d0e666fd89384de1a5249fda08623f3300c0bd88e49d3db"
+      }
+    },
+    {
+      "source": "docs/week1/day6-disk-io.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史教材數值摘錄",
+      "checked_files": [
+        "helm/redis/templates/pvc.yaml"
+      ],
+      "evidence_source": "docs/week1/day6-disk-io.md",
+      "excerpt": "%iowait = 0.04%",
+      "interpretation": "原文另保存 /dev/root 容量 29G、Used 6.5G、Avail 23G，以及 lsblk 摘錄。容量充足和一次低 iowait 是兩個觀察，不能合成磁碟已經過性能驗收。",
+      "corrections": "修正原文「目前不存在 Disk Bottleneck」的過度結論：低 iowait 不能排除個別工作 I/O 延遲問題。lsblk 沒顯示 mountpoint 不代表磁碟一定空白或可安全格式化。Redis PVC 是後續配置，沒有產生這份 Week1 iostat 結果。",
+      "missing": "缺 per-device await／queue／吞吐、量測 workload 與時間範圍；不新增不存在的 disk benchmark 結論。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "helm/redis/templates/pvc.yaml": "53f89c39cbfc9dff829b3a333d55ace3d2ca85d024156aed78320e3ec9dcf098"
+      }
+    },
+    {
+      "source": "docs/week1/day7-performance-analysis.md",
+      "status": "reviewed",
+      "evidence_kind": "概念示例與未落實規劃",
+      "checked_files": [
+        "monitoring/process_monitor.py"
+      ],
+      "evidence_source": "docs/week1/day7-performance-analysis.md",
+      "excerpt": "TPS = 20",
+      "interpretation": "原文明寫「假設」：TPS=20 是示例，沒有 workload、baseline 或目標，不能直接解讀成效能不好。cpu_monitor.py 等模組是規劃，不是已交付的監控框架。",
+      "corrections": "現有 monitoring/ 只保存 process_monitor.py，沒有 cpu_monitor.py、memory_monitor.py、disk_monitor.py、system_monitor.py。CPU 整體 idle 高仍可能單核心受限；available 高不排除記憶體頻寬瓶頸；也不必等所有硬體都排除才調查 application logic。",
+      "missing": "沒有完整 Benchmark→自動收所有 metrics→分析報告的本課執行結果；不再把規劃寫成現行功能。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "monitoring/process_monitor.py": "4a90fc64e3199cc94d0e666fd89384de1a5249fda08623f3300c0bd88e49d3db"
+      }
+    },
+    {
+      "source": "docs/week2/day1-python.md",
+      "status": "reviewed",
+      "evidence_kind": "程式可推導示例，非實機 log",
+      "checked_files": [
+        "examples/hello.py",
+        "monitoring/process_monitor.py"
+      ],
+      "evidence_source": "examples/hello.py",
+      "excerpt": "cpu_usage = 15\n\nprint(cpu_usage)",
+      "interpretation": "現存 hello.py 的 cpu_usage 是寫死的 15，所以程式語意上的輸出是 15；不是讀到 CPU 使用率 15%。本次未執行該程式。舊文的 Step 1／2／3 是另一段文內示例，不是此檔的輸出。",
+      "corrections": "檔案實際在 examples/hello.py，原文 repo 根目錄 python3 hello.py 的路徑不對。monitor 目錄樹中其他模組沒有實作。Python 名稱綁定物件；「由上到下逐行執行」只是入門直線流程，函式／分支／迴圈會改變控制流程。",
+      "missing": "沒有這份 hello.py 的獨立執行 log 或系統取樣結果；15 只能標為固定值示例。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "examples/hello.py": "811e8bfc9590b8df576cfc541741b729b1d43cd8fadb9221bee783ae967af80a",
+        "monitoring/process_monitor.py": "4a90fc64e3199cc94d0e666fd89384de1a5249fda08623f3300c0bd88e49d3db"
+      }
+    },
+    {
+      "source": "docs/week2/day2-function.md",
+      "status": "reviewed",
+      "evidence_kind": "文內函式示例",
+      "checked_files": [
+        "monitoring/process_monitor.py"
+      ],
+      "evidence_source": "docs/week2/day2-function.md",
+      "excerpt": "def collect_process():\n    print(\"Collect Process\")",
+      "interpretation": "定義這個函式不會印字；呼叫 collect_process() 才會印出 Collect Process。這是文內小例子的語意，不是已有 get_cpu_usage 等完整函式庫。",
+      "corrections": "現存 process_monitor.py 是頂層 subprocess 與 print，沒有 collect_process() 封裝；system_monitor.py 也不存在。API／renderer 的函式可作延伸，但不能把它們的結果冒充此 monitor 函式執行。",
+      "missing": "文內函式未保存獨立檔與 raw log；没有整合監控器驗收。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "monitoring/process_monitor.py": "4a90fc64e3199cc94d0e666fd89384de1a5249fda08623f3300c0bd88e49d3db"
+      }
+    },
+    {
+      "source": "docs/week2/day3-return.md",
+      "status": "reviewed",
+      "evidence_kind": "文內 return 示例",
+      "checked_files": [
+        "monitoring/process_monitor.py"
+      ],
+      "evidence_source": "docs/week2/day3-return.md",
+      "excerpt": "def get_cpu():\n    return 15",
+      "interpretation": "get_cpu() 回傳固定整數 15，print(cpu) 才顯示 15；沒有呼叫 CPU 採樣工具。collect_process() 回傳文字的示例同樣不是現有 monitor 的 API。",
+      "corrections": "現存 monitor 只印 stdout，沒有回傳 list／dict 給 Analysis Engine 的函式。原來圖中的 Monitor→return→Analysis Engine→Report 是設計方向，不能宣稱已整合。",
+      "missing": "缺函式版 monitor 實作與端到端報告輸出；示例不作實測證據。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "monitoring/process_monitor.py": "4a90fc64e3199cc94d0e666fd89384de1a5249fda08623f3300c0bd88e49d3db"
+      }
+    },
+    {
+      "source": "docs/week2/day4-list.md",
+      "status": "reviewed",
+      "evidence_kind": "文內資料結構示例",
+      "checked_files": [
+        "monitoring/process_monitor.py"
+      ],
+      "evidence_source": "docs/week2/day4-list.md",
+      "excerpt": "processes = [\n    \"systemd\",\n    \"bash\",\n    \"python3\"\n]",
+      "interpretation": "這個手寫 list 的 index 0 是 systemd，index 2 是 python3；它不是从 ps 動態解析得到的列表。資料結構示例可以直接讀，不需啟動服務。",
+      "corrections": "process_monitor.py 回收的是 stdout 字串，未把它解析為 list[dict]；get_processes() 並不存在。範例中的 PID 8432 不能當作保存的真實程序。",
+      "missing": "沒有 parser 程式、動態 list 的測試或原始取樣；只成立資料結構教學。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "monitoring/process_monitor.py": "4a90fc64e3199cc94d0e666fd89384de1a5249fda08623f3300c0bd88e49d3db"
+      }
+    },
+    {
+      "source": "docs/week2/day5-dictionary.md",
+      "status": "reviewed",
+      "evidence_kind": "文內 dict 示例",
+      "checked_files": [
+        "monitoring/process_monitor.py"
+      ],
+      "evidence_source": "docs/week2/day5-dictionary.md",
+      "excerpt": "process = {\n    \"pid\": 1,\n    \"name\": \"systemd\",\n    \"memory\": 15\n}",
+      "interpretation": "此 dict 是手寫範例；memory=15 沒指定單位，也不是從 RSS 12584 換算。List 裝多筆、dict 裝欄位的概念成立，但資料來源不能憑欄位名稱推定。",
+      "corrections": "現行 monitor 不產出 cpu／memory dict，沒有將程序資訊送入 Analysis Engine 的實作。原文「完整資訊」應理解為示例的選定欄位，不是程序所有屬性。",
+      "missing": "缺 memory 單位、動態擷取與分析結果，不能當作系統性能數據。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "monitoring/process_monitor.py": "4a90fc64e3199cc94d0e666fd89384de1a5249fda08623f3300c0bd88e49d3db"
+      }
+    },
+    {
+      "source": "docs/week2/day6-subprocess.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史教材輸出（跨頁接回）",
+      "checked_files": [
+        "monitoring/process_monitor.py"
+      ],
+      "evidence_source": "docs/week3/day6-containerize-monitoring.md",
+      "excerpt": "PID COMMAND\n1   python3\n7   ps",
+      "interpretation": "Week2 Day6 本頁只有「可以看到相同結果」的文字，沒有實際 PID 清單。已接回 Week3 Day6 保存的容器輸出；這是另一課的歷史案例，並非證明 Week2 當天跑過相同 PID。",
+      "corrections": "Week2 的舊程式讓 child stdout 直接繼承終端機；現行檔已使用 capture_output=True、text=True，再 print(result.stdout)。兩者輸出形狀可相近，但捕捉方式不同，不能稱程式完全相同。現行程式只呼叫 ps -eo pid,comm、擷取字串並印出；沒有 PPID、CPU、RSS、狀態、JSON 或長駐採樣。check=False 且未檢查 returncode，不能僅依 Python 結束就判定 ps 成功。",
+      "missing": "舊文未記錄此執行的精確日期、映像 digest 或独立原始 log；只能稱為舊教材保存的容器輸出，不能稱本次重跑或最新映像驗收。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "monitoring/process_monitor.py": "4a90fc64e3199cc94d0e666fd89384de1a5249fda08623f3300c0bd88e49d3db"
+      }
+    },
+    {
+      "source": "docs/week2/day7-stdout.md",
+      "status": "reviewed",
+      "evidence_kind": "示例與歷史輸出分開",
+      "checked_files": [
+        "monitoring/process_monitor.py"
+      ],
+      "evidence_source": "docs/week3/day6-containerize-monitoring.md",
+      "excerpt": "PID COMMAND\n1   python3\n7   ps",
+      "interpretation": "本頁原文的 PID COMMAND／1 systemd／2 kthreadd／... 是省略式說明，沒有環境與完整 log；不能當作 container 的實測。上列另引 Week3 的兩列容器記錄，兩者不混為同一次輸出。",
+      "corrections": "capture_output=True 捕捉 stdout 和 stderr；text=True 以文字處理輸出。print(result.stdout) 顯示已取得的字串，不負責解析成 list／dict，也沒有後續 Analysis Engine 整合。",
+      "missing": "舊文未記錄此執行的精確日期、映像 digest 或独立原始 log；只能稱為舊教材保存的容器輸出，不能稱本次重跑或最新映像驗收。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "monitoring/process_monitor.py": "4a90fc64e3199cc94d0e666fd89384de1a5249fda08623f3300c0bd88e49d3db"
+      }
+    },
+    {
+      "source": "docs/week3/day1-why-docker.md",
+      "status": "reviewed",
+      "evidence_kind": "架構概念，無本課執行結果",
+      "checked_files": [
+        "docker/Dockerfile",
+        "compose.yaml"
+      ],
+      "evidence_source": "docker/Dockerfile",
+      "excerpt": "FROM python:3.12-slim",
+      "interpretation": "目前 Dockerfile 的基底是 python:3.12-slim，預設 CMD 啟動 Uvicorn；這是原始碼設定核對，不是新 image build／run 成功記錄。",
+      "corrections": "容器共享 host kernel、硬體和外部依賴，不能保證一個服務更新永不影響其他服務。Kubernetes 可以使用 containerd 等 runtime，不以 Docker Engine 為必要條件；原文「Docker 是所有服務執行環境」只對當時入門設計成立。",
+      "missing": "本課沒有 build／run 原始 log、環境隔離對照實驗或同 image 跨機器一致性驗收。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "docker/Dockerfile": "5f96137e56bf3ced6fc447cf604bb678753f55341cbd0028675bddd441dc41a3",
+        "compose.yaml": "0ae9ba3566372808ee1a39d71261e2f02abc65ebac43a28c03bd6035d8060342"
+      }
+    },
+    {
+      "source": "docs/week3/day2-install-docker.md",
+      "status": "reviewed",
+      "evidence_kind": "版本佔位示例，非驗收",
+      "checked_files": [
+        "docker/Dockerfile"
+      ],
+      "evidence_source": "docs/week3/day2-install-docker.md",
+      "excerpt": "Docker version 29.x.x",
+      "interpretation": "29.x.x 和同頁 Compose v5.x.x 都是佔位版本，不是可追溯的完整版本輸出。不能據此認定該版 Docker Engine 與 daemon 均正常。",
+      "corrections": "docker --version 主要確認 CLI 版本，不證明能連 daemon；compose version 也不證明服務部署成功。現行 Dockerfile 是映像設定，不能補當時 host 的安裝證據。此課不再被列作精確版本驗收。",
+      "missing": "缺完整版本號、日期、host 資訊、daemon 連線／容器驗收 log；沒有證據就保持缺證，不要求使用者重裝。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "docker/Dockerfile": "5f96137e56bf3ced6fc447cf604bb678753f55341cbd0028675bddd441dc41a3"
+      }
+    },
+    {
+      "source": "docs/week3/day3-image-container.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史流程敘述，缺命令結果",
+      "checked_files": [
+        "docker/Dockerfile"
+      ],
+      "evidence_source": "docs/week3/day3-image-container.md",
+      "excerpt": "docker run -it ubuntu:24.04",
+      "interpretation": "原文描述用互動 shell 啟動 Ubuntu，再 exit 成為 Exited；但沒有保存 container ID、docker ps -a 或 exit code 的實際输出。此命令是當時做法，不是命令結果。",
+      "corrections": "Container 可以處於 created／running／exited，不應只把它定義成正在執行。Kubernetes 是否重啟還取決於 restartPolicy 和 controller，不是任意退出都必定無限重啟。主 API 的 CMD 已不是互動 bash。",
+      "missing": "缺 lifecycle 原始觀察与退出碼，無法核實某個具名 container 的狀態轉換。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "docker/Dockerfile": "5f96137e56bf3ced6fc447cf604bb678753f55341cbd0028675bddd441dc41a3"
+      }
+    },
+    {
+      "source": "docs/week3/day4-dockerfile.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史檔案／layer 敘述",
+      "checked_files": [
+        "docker/Dockerfile",
+        "monitoring/process_monitor.py"
+      ],
+      "evidence_source": "docs/week3/day4-dockerfile.md",
+      "excerpt": "/app/monitoring/process_monitor.py",
+      "interpretation": "原文以此路徑表示監控程式已打包；當時使用 Ubuntu 基底／hpc-monitor:v2，沒有保存完整 docker history 或容器列檔輸出。現行 Dockerfile 的 COPY monitoring 仍存在，但預設啟動 API。",
+      "corrections": "不能把目前 python:3.12-slim／Uvicorn Dockerfile 說成當時 hpc-monitor:v2 的建置內容。COPY 可讀範圍受 build context 與 .dockerignore 影響；檔案在 repo 不代表必定進入 image。",
+      "missing": "缺舊 image digest、完整 layer 表及列檔 log；原文路徑是文內記載，非独立 artifact。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "docker/Dockerfile": "5f96137e56bf3ced6fc447cf604bb678753f55341cbd0028675bddd441dc41a3",
+        "monitoring/process_monitor.py": "4a90fc64e3199cc94d0e666fd89384de1a5249fda08623f3300c0bd88e49d3db"
+      }
+    },
+    {
+      "source": "docs/week3/day5-docker-compose.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史配置與概念示例",
+      "checked_files": [
+        "compose.yaml",
+        "docker/Dockerfile"
+      ],
+      "evidence_source": "docs/week3/day5-docker-compose.md",
+      "excerpt": "services:\n  monitor:\n    image: hpc-monitor:v4",
+      "interpretation": "這段是舊 Compose 設定，現在 compose.yaml 的服務是 api／redis／postgres，沒有 monitor。ls 結束和 tail 長駐是主程序生命週期示例，不是現行三服務的驗收。",
+      "corrections": "docker compose config 解析／合併設定，本身不建立網路或 container；建立通常發生在 up。現行 Compose 未定義獨立 api-worker，也不能當完整主平台的一鍵重建入口。",
+      "missing": "沒有該次 compose config／up 的完整輸出或退出碼；不能把語法檢查當運行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "compose.yaml": "0ae9ba3566372808ee1a39d71261e2f02abc65ebac43a28c03bd6035d8060342",
+        "docker/Dockerfile": "5f96137e56bf3ced6fc447cf604bb678753f55341cbd0028675bddd441dc41a3"
+      }
+    },
+    {
+      "source": "docs/week3/day6-containerize-monitoring.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史教材保存的容器輸出",
+      "checked_files": [
+        "compose.yaml",
+        "docker/Dockerfile",
+        "monitoring/process_monitor.py"
+      ],
+      "evidence_source": "docs/week3/day6-containerize-monitoring.md",
+      "excerpt": "PID COMMAND\n1   python3\n7   ps",
+      "interpretation": "原文直接記載 hpc-monitor:v5／monitor service 的 docker compose up 輸出。它支持「教材記錄了容器內 Python 呼叫 ps 的結果」，不能升級成已核對映像內容和 raw log 的新驗收。",
+      "corrections": "現行 Dockerfile 用 Python slim 並啟動 Uvicorn；Compose 已沒有 monitor service。monitor 程式一次列舉後結束，並非長駐監控 daemon。現行 Dockerfile 沒有顯式安裝 ps 所需套件，不能未查 image 就保證預設容器可跑此程式。PID 1／7 是當時容器值，不是固定值。",
+      "missing": "舊文未記錄此執行的精確日期、映像 digest 或独立原始 log；只能稱為舊教材保存的容器輸出，不能稱本次重跑或最新映像驗收。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "compose.yaml": "0ae9ba3566372808ee1a39d71261e2f02abc65ebac43a28c03bd6035d8060342",
+        "docker/Dockerfile": "5f96137e56bf3ced6fc447cf604bb678753f55341cbd0028675bddd441dc41a3",
+        "monitoring/process_monitor.py": "4a90fc64e3199cc94d0e666fd89384de1a5249fda08623f3300c0bd88e49d3db"
+      }
+    },
+    {
+      "source": "docs/week3/day7-docker-integration.md",
+      "status": "reviewed",
+      "evidence_kind": "跨課歷史整合摘要",
+      "checked_files": [
+        "compose.yaml",
+        "docker/Dockerfile",
+        "monitoring/process_monitor.py"
+      ],
+      "evidence_source": "docs/week3/day6-containerize-monitoring.md",
+      "excerpt": "PID COMMAND\n1   python3\n7   ps",
+      "interpretation": "本課的 hpc-monitor:v5 整合成果回指 Week3 Day6 的這份文內输出；不是另一筆 Day7 獨立驗收。API／Redis／Postgres 的現行 Compose 與該次 monitor 設定要分開讀。",
+      "corrections": "「同 image 不同環境結果一致」是過度保證：host kernel、CPU/GPU、driver、資源限制、外部依賴和輸入仍影響結果。文內擴展 monitor／prometheus／grafana／benchmark-worker 的 Compose 區塊是未實作規劃，不是目前 service 清單。",
+      "missing": "舊文未記錄此執行的精確日期、映像 digest 或独立原始 log；只能稱為舊教材保存的容器輸出，不能稱本次重跑或最新映像驗收。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "compose.yaml": "0ae9ba3566372808ee1a39d71261e2f02abc65ebac43a28c03bd6035d8060342",
+        "docker/Dockerfile": "5f96137e56bf3ced6fc447cf604bb678753f55341cbd0028675bddd441dc41a3",
+        "monitoring/process_monitor.py": "4a90fc64e3199cc94d0e666fd89384de1a5249fda08623f3300c0bd88e49d3db"
+      }
+    },
+    {
+      "source": "docs/week4/day1-platform-api-design.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 API 回應摘錄",
+      "checked_files": [
+        "api/main.py",
+        "requirements.txt",
+        "docker/Dockerfile",
+        "compose.yaml"
+      ],
+      "evidence_source": "docs/week4/day1-platform-api-design.md",
+      "excerpt": "\"message\": \"HPC AI Performance Engineering Platform API\"",
+      "interpretation": "這是舊教材保存的根路由 message；現行 root() 回傳 HPC API DEV。它不是現在服務的 HTTP 回應，本次沒有啟動容器。",
+      "corrections": "APP_NAME 設定 OpenAPI title，但現行首頁 message 另行寫死，兩者不能混用。requirements.txt 只有部分依賴固定版本，不能稱完整可重現鎖檔。API→監控→分析整條鏈是當時規劃，不代表全部已串接。",
+      "missing": "舊文沒有獨立 HTTP capture、映像 digest 或完整 build log；Swagger 可用的敘述不等於目前全部外部依賴健康。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "api/main.py": "42f1824da2685e856c734beb2f44e5f376b96f95591e34d31f7a6c7f20101989",
+        "requirements.txt": "664a0b405db49709b20ac0b6631a03ec276e46e5f96f2c5339bdd839b99ba991",
+        "docker/Dockerfile": "5f96137e56bf3ced6fc447cf604bb678753f55341cbd0028675bddd441dc41a3",
+        "compose.yaml": "0ae9ba3566372808ee1a39d71261e2f02abc65ebac43a28c03bd6035d8060342"
+      }
+    },
+    {
+      "source": "docs/week4/day2-rest-api-design.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 REST 回應摘錄",
+      "checked_files": [
+        "api/main.py",
+        "api/worker.py"
+      ],
+      "evidence_source": "docs/week4/day2-rest-api-design.md",
+      "excerpt": "{\"benchmarks\":[\"cpu\",\"memory\",\"disk_io\"]}",
+      "interpretation": "這是舊 GET /benchmarks 清單；目前另有 mpi。名稱出現在清單不等於存在真實效能測試：worker 只有 mpi 提交真實 JobSet，其餘分支回 benchmark simulated。",
+      "corrections": "舊文沒有 body 的 POST 是舊版介面；現行 POST /benchmark 需要含 benchmark 字串的 JSON。BenchmarkRequest 沒有 enum／allowlist，列出四個名字也不表示程式會拒絕其他字串。",
+      "missing": "此課沒有實際 CPU／memory／disk benchmark 數值；不得把 accepted 或清單當成工作執行完成。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "api/main.py": "42f1824da2685e856c734beb2f44e5f376b96f95591e34d31f7a6c7f20101989",
+        "api/worker.py": "e51267a1a4d1793e0fd9b0a7ba08343e103695932366163e61c2840e49669f82"
+      }
+    },
+    {
+      "source": "docs/week4/day3-job-identity.md",
+      "status": "reviewed",
+      "evidence_kind": "UUID 佔位示例，非真實 job 證據",
+      "checked_files": [
+        "api/main.py"
+      ],
+      "evidence_source": "docs/week4/day3-job-identity.md",
+      "excerpt": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      "interpretation": "原文 job_id 是佔位符，不能当成已保存的一筆 UUID 執行紀錄。現行程式確實呼叫 uuid4()，但程式存在與當次請求成功是不同證據。",
+      "corrections": "UUID4 碰撞機率極低，不是數學上絕不碰撞。每次 POST 都新建 UUID，沒有以 client idempotency key 去重；請求重送仍可能建立多筆工作。Pydantic 在這裡驗證欄位型別，未驗證 benchmark 名稱屬於支援集合。",
+      "missing": "本課沒有真實 job_id 的原始 HTTP capture。缺 body 的 422 記載屬舊文，不冒充本次測試。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "api/main.py": "42f1824da2685e856c734beb2f44e5f376b96f95591e34d31f7a6c7f20101989"
+      }
+    },
+    {
+      "source": "docs/week4/day4-memory-queue.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史模擬 worker 結果",
+      "checked_files": [
+        "api/main.py",
+        "api/worker.py"
+      ],
+      "evidence_source": "docs/week4/day4-memory-queue.md",
+      "excerpt": "status = completed\nresult = benchmark simulated",
+      "interpretation": "這只證明舊教材記錄了模擬完成，不包含 CPU 耗時或吞吐。現在仍有非 MPI 模擬分支，不能把 completed 一律解讀成真實效能量測。",
+      "corrections": "jobs={} 和 job_queue=[] 是歷史程序內儲存，不是目前實作。現行 API 先 commit PostgreSQL，再以 Redis transaction 發布 record 和 queue；背景 worker 掃描 job records，因此不能套用舊 list FIFO 圖來保證目前工作的執行順序。AUTOMATIC_WORKER=true 時舊 process-next 入口回 409。",
+      "missing": "舊模擬沒有獨立 raw log；程序內 queue 也沒有跨程序共享或重啟持久性。DB 與 Redis 並非同一原子交易。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "api/main.py": "42f1824da2685e856c734beb2f44e5f376b96f95591e34d31f7a6c7f20101989",
+        "api/worker.py": "e51267a1a4d1793e0fd9b0a7ba08343e103695932366163e61c2840e49669f82"
+      }
+    },
+    {
+      "source": "docs/week4/day5-dockerize-api.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史環境變數摘錄，現行 Compose 有差異",
+      "checked_files": [
+        "api/main.py",
+        "compose.yaml",
+        "docker/Dockerfile",
+        "api/database/connection.py"
+      ],
+      "evidence_source": "docs/week4/day5-dockerize-api.md",
+      "excerpt": "APP_NAME=HPC API Dev",
+      "interpretation": "這是舊文保存的 env 顯示值；現有 Compose 也設定相同 APP_NAME，API 用它設定 title，不代表根路由的 message 跟著改。",
+      "corrections": "Bind mount 使檔案變更可見，不自動重載已載入的 Python；現行 Uvicorn CMD 沒有 --reload。更改容器環境變數需要重建容器，單純 restart 不套用新的 Compose 設定。現行 Compose 沒有獨立 worker；API 未設定 POSTGRES_HOST，而程式預設 postgres-service，與 Compose 服務 postgres 不符。不能把這份 Compose 稱為當前主平台完整可執行入口。localhost 是目前網路命名空間，不宜絕對說永遠只有一個容器。",
+      "missing": "沒有現行 Compose 整體成功驗收；舊文未保存 network inspect 原始 JSON、容器 ID 或 OpenAPI 全文。本次只揭露差異，沒有啟動或更改服務。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "api/main.py": "42f1824da2685e856c734beb2f44e5f376b96f95591e34d31f7a6c7f20101989",
+        "compose.yaml": "0ae9ba3566372808ee1a39d71261e2f02abc65ebac43a28c03bd6035d8060342",
+        "docker/Dockerfile": "5f96137e56bf3ced6fc447cf604bb678753f55341cbd0028675bddd441dc41a3",
+        "api/database/connection.py": "00d399913f3ba81ec3839cde02d0171eeb2c53ace8049b5cf35cfa83f3d64913"
+      }
+    },
+    {
+      "source": "docs/week4/day6-monitoring-integration.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 health／log／metrics 摘錄",
+      "checked_files": [
+        "api/main.py",
+        "monitoring/process_monitor.py"
+      ],
+      "evidence_source": "docs/week4/day6-monitoring-integration.md",
+      "excerpt": "INFO:api.main:Received benchmark request: cpu",
+      "interpretation": "這行是舊文保存的 application log，僅表示收到請求，不證明工作執行成功。舊文另記 total_jobs=2、queued_jobs=1、completed_jobs=1，是當時數值，不是即時狀態。",
+      "corrections": "現行 /metrics 由 Instrumentator 提供 Prometheus 格式；工作數量 JSON 位於 /job-metrics，不能照舊文向 /metrics 期待 JSON。/health 固定回 healthy，只表示路由可回應；Redis 檢查在 /health/redis，未等同 PostgreSQL、worker、Kubernetes 全鏈路健康。process_monitor.py 未接入這些端點，也不提供這裡的 jobs 指標。",
+      "missing": "缺這次教材對應的原始 HTTP headers、完整 application log 與即時依賴檢查；不以後來的實驗倒填成本課當時結果。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "api/main.py": "42f1824da2685e856c734beb2f44e5f376b96f95591e34d31f7a6c7f20101989",
+        "monitoring/process_monitor.py": "4a90fc64e3199cc94d0e666fd89384de1a5249fda08623f3300c0bd88e49d3db"
+      }
+    },
+    {
+      "source": "docs/week5/day1-redis-foundation.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 Redis ping 摘錄",
+      "checked_files": [
+        "api/main.py",
+        "api/worker.py",
+        "compose.yaml",
+        "requirements.txt"
+      ],
+      "evidence_source": "docs/week5/day1-redis-foundation.md",
+      "excerpt": "PONG",
+      "interpretation": "舊教材保存 PONG，表示當時 redis-cli ping 得到回覆，不足以證明 API 建立工作、worker 執行與結果保存都成功。舊文 KeyError 的 job_id 是佔位示例，沒有獨立 traceback。",
+      "corrections": "把狀態移出 API 記憶體，解決的是 API 重啟後共享狀態問題，不自動保證 Redis 本身重啟後資料仍在。現行提交先 commit DB，再用 Redis transaction 寫 job record 和 queue；背景 worker 掃描 job:*，不是舊 LPOP consumer。GET /jobs 仍使用 KEYS，不要因 worker 使用 SCAN 就說所有路徑都已改好。工作數量端點現在是 /job-metrics。",
+      "missing": "本課沒保存 LRANGE 的實際 job ID、完整 HTTP 回應或精確日期；PONG 不能當作持久化或完整平台驗收。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "api/main.py": "42f1824da2685e856c734beb2f44e5f376b96f95591e34d31f7a6c7f20101989",
+        "api/worker.py": "e51267a1a4d1793e0fd9b0a7ba08343e103695932366163e61c2840e49669f82",
+        "compose.yaml": "0ae9ba3566372808ee1a39d71261e2f02abc65ebac43a28c03bd6035d8060342",
+        "requirements.txt": "664a0b405db49709b20ac0b6631a03ec276e46e5f96f2c5339bdd839b99ba991"
+      }
+    },
+    {
+      "source": "docs/week5/day2-redis-persistence.md",
+      "status": "reviewed",
+      "evidence_kind": "有日期與環境的持久化驗收",
+      "checked_files": [
+        "api/main.py",
+        "compose.yaml",
+        "helm/redis/templates/deployment.yaml",
+        "helm/redis/templates/pvc.yaml"
+      ],
+      "evidence_source": "docs/evidence/redis-persistence-migration-20260921.json",
+      "excerpt": "\"step\": \"marker survived Pod replacement; test marker removed\"",
+      "interpretation": "2026-09-21，GKE hpc-gpu-sg／hpc-platform-dev：先停止寫入並確認所有 Redis databases 為空，再套用新 PVC；PVC 為 Bound，測試 key 在 Pod 替換後保留，最後移除測試 key 並恢復 API。這是後來的 Kubernetes 驗收，不是舊 Docker Compose 實驗。",
+      "corrections": "現有 Compose 設定 appendonly yes 與 /data named volume，Helm 則按 persistence.enabled 掛 PVC；兩者不是同一環境。持久化磁碟不等於備份、HA 或零資料遺失。原文 503 說明只可對應 /health/redis 捕捉 ConnectionError 的路徑，不能泛化成所有 API／所有 Redis 例外都回 503。原文「企業最常見」沒有證據，不作結論。",
+      "missing": "沒有非空資料遷移、突然斷電、磁碟損毀、Redis 全失或備份還原驗收。舊 Compose 成功清單缺獨立 log；本份新證據驗證的是空資料遷移與正常 Pod 替換。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "api/main.py": "42f1824da2685e856c734beb2f44e5f376b96f95591e34d31f7a6c7f20101989",
+        "compose.yaml": "0ae9ba3566372808ee1a39d71261e2f02abc65ebac43a28c03bd6035d8060342",
+        "helm/redis/templates/deployment.yaml": "07714f877a1fc677b96be5cfb6786f75487b3906721367028a11f358a41c7e3e",
+        "helm/redis/templates/pvc.yaml": "53f89c39cbfc9dff829b3a333d55ace3d2ca85d024156aed78320e3ec9dcf098"
+      }
+    },
+    {
+      "source": "docs/week5/day3-reliable-worker-state-machine.md",
+      "status": "reviewed",
+      "evidence_kind": "有日期的 queue 清理結果",
+      "checked_files": [
+        "api/main.py",
+        "api/worker.py"
+      ],
+      "evidence_source": "docs/evidence/automatic-worker-20260922.json",
+      "excerpt": "\"job_queue\": [],\n      \"processing_queue\": [],",
+      "interpretation": "這是 2026-09-22 GKE hpc-gpu-sg／hpc-platform-dev 的已保存自動 worker 驗收，不是 Week5 舊 Compose 的當日重跑。兩筆 MPI completed，一筆模擬 dispatch failed；結尾兩個 queue 均為空。這是工作終態後清理的證據，不是每一瞬間 queue 與狀態都原子一致的證明。",
+      "corrections": "舊 LMOVE 只原子搬移 list 元素；後續 SET processing 是另一操作，兩者之間仍有中斷空窗。原文把兩步合稱狀態一致過度推論。新版 worker 依 job records 與 lease 接續，不依 processing_queue 找正在執行的工作，也不寫舊 processing_started_at；submitted 的 MPI 工作即使還在跑，queue 也可已清空。",
+      "missing": "原文 LLEN 0 明標「預期」，不當作獨立實測。現行終態結果不證明 exactly-once、FIFO 執行或 Redis 資料全失後可恢復。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "api/main.py": "42f1824da2685e856c734beb2f44e5f376b96f95591e34d31f7a6c7f20101989",
+        "api/worker.py": "e51267a1a4d1793e0fd9b0a7ba08343e103695932366163e61c2840e49669f82"
+      }
+    },
+    {
+      "source": "docs/week5/day4-stuck-job-recovery.md",
+      "status": "reviewed",
+      "evidence_kind": "有日期的 worker 重啟接續結果",
+      "checked_files": [
+        "api/main.py",
+        "api/worker.py",
+        "api/workloads/dispatcher.py"
+      ],
+      "evidence_source": "docs/evidence/automatic-worker-20260922.json",
+      "excerpt": "\"accepted_without_worker\": true,\n      \"completed_in_kubernetes_while_worker_stopped\": true,",
+      "interpretation": "這是 2026-09-22 GKE hpc-gpu-sg／hpc-platform-dev 的已保存自動 worker 驗收，不是 Week5 舊 Compose 的當日重跑。工作 a697300a-b267-4554-bdd5-2c82bb9c9eda 最終 completed、ranks 為 0/1/2、jobset_count=1。worker 停止期間 Kubernetes 已完成工作，恢復後回收結果；不是本次重新執行。",
+      "corrections": "舊步驟只 LMOVE 沒寫 processing_started_at；現行手動 recover-stuck 直接讀此欄位，缺欄位會出錯，不能照舊步驟聲稱可恢復。主模式 AUTOMATIC_WORKER=true 時這個端點回 409。背景 worker 以 120 秒 lease、每 30 秒續期及掃描 job records 接續，並非每 30 秒回收工作；固定 JobSet 名稱與 owner label 用於重試接回。超時本身也不能證明原 worker 已停止。",
+      "missing": "保存結果涵蓋 queued／submitted 重啟案例；沒有驗證每個指令間崩潰、所有 lease 競態或跨儲存原子性。舊 LMOVE 手動步驟缺原始回應，不能稱已按目前程式驗證成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "api/main.py": "42f1824da2685e856c734beb2f44e5f376b96f95591e34d31f7a6c7f20101989",
+        "api/worker.py": "e51267a1a4d1793e0fd9b0a7ba08343e103695932366163e61c2840e49669f82",
+        "api/workloads/dispatcher.py": "6d8605c0358b06db53f7be9cdb096b8c295d9343b24a245696e80ad35b342759"
+      }
+    },
+    {
+      "source": "docs/week5/day5-retry-strategy-and-deadletter-que.md",
+      "status": "reviewed",
+      "evidence_kind": "有日期的模擬失敗與 DLQ 結果",
+      "checked_files": [
+        "api/main.py",
+        "api/worker.py"
+      ],
+      "evidence_source": "docs/evidence/automatic-worker-20260922.json",
+      "excerpt": "\"message\": \"Simulated dispatch failure\"\n      },\n      \"retry_count\": 3",
+      "interpretation": "這是 2026-09-22 GKE hpc-gpu-sg／hpc-platform-dev 的已保存自動 worker 驗收，不是 Week5 舊 Compose 的當日重跑。0852fb7b-8efd-4600-b8ac-d4205554f6f3 最終 failed，Redis retry_count=3，dead_letter_queue 保存同一 ID，job_queue 與 processing_queue 均為空。",
+      "corrections": "新版只有 simulate_failure 分支累計到三次後 failed；真實依賴例外由 tick 記錄並下輪重試，沒有同樣三次上限／退避，不能宣稱已完整避免無限重試。MPI 回報 failed 是另一種終態來源。模擬 dispatch 失敗不是真的殺死 worker 或 MPI process。DLQ 表示目前策略停止處理，不證明錯誤永遠不可修復；也沒有自動告警／重送功能。",
+      "missing": "本份不是 MPI process 故障注入或實際 Kubernetes API 連續失敗測試。retry_count=3 是此模擬的三次失敗計數，不應改述成初次失敗後再重試三次；DB 目前只同步 status，不能拿 Redis 計數當作 PostgreSQL 已核對。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "api/main.py": "42f1824da2685e856c734beb2f44e5f376b96f95591e34d31f7a6c7f20101989",
+        "api/worker.py": "e51267a1a4d1793e0fd9b0a7ba08343e103695932366163e61c2840e49669f82"
+      }
+    },
+    {
+      "source": "docs/week5/day6-postgresql-foundation.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 SQL 示例與資料庫文字摘錄",
+      "checked_files": [
+        "api/database/connection.py",
+        "api/database/models.py",
+        "api/database/init_db.py",
+        "api/database/session.py",
+        "api/main.py",
+        "compose.yaml",
+        "k8s/postgres-service.yaml",
+        "k8s/postgres-statefulset.yaml"
+      ],
+      "evidence_source": "docs/week5/day6-postgresql-foundation.md",
+      "excerpt": "'11111111-1111-1111-1111-111111111111'",
+      "interpretation": "這是教材 INSERT 命令的固定 UUID，不是保存的 SELECT 結果。原文寫「成功看到第一筆」，但沒有該列完整輸出；current_database 的文內記錄為 hpc_platform，精確執行日期未保存。",
+      "corrections": "現行 Job 模型只有 job_id、benchmark、status、retry_count、created_at，沒有 result／report 欄位；完整 MPI 結果仍在 Redis，不能說 DB 已保存全部成果。Redis 可持久化，與 PostgreSQL 的分工是本專案選擇，不是 Redis 絕對不能長期保存。舊 k8s 檔案 namespace 為 hpc-platform，不等於主環境 hpc-platform-dev。Compose 的 postgres 與程式預設 postgres-service 名稱不一致，不能當作目前 API 可直連的證明。",
+      "missing": "缺舊 INSERT／SELECT 完整 log 與資料庫重啟還原測試；有 volume／PVC 設定不等於已驗證備份還原。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "api/database/connection.py": "00d399913f3ba81ec3839cde02d0171eeb2c53ace8049b5cf35cfa83f3d64913",
+        "api/database/models.py": "5eb24d1d29fa35c4a66a123df810705b1ee72ecee271ce60e166344d074c6ed1",
+        "api/database/init_db.py": "b15d2f7f196ff10e193ce44c0440e076ba925dd6706e5f73f0e9a31bcdf4ac05",
+        "api/database/session.py": "7b12e2c44fc47cf63df52a401cd759429c4105bc650ecc3b2ccaf87bb9ad4a7c",
+        "api/main.py": "42f1824da2685e856c734beb2f44e5f376b96f95591e34d31f7a6c7f20101989",
+        "compose.yaml": "0ae9ba3566372808ee1a39d71261e2f02abc65ebac43a28c03bd6035d8060342",
+        "k8s/postgres-service.yaml": "03bca502425cd09003e9f5c1ceaf87162452968f52f905913954ffba7bdc3aa6",
+        "k8s/postgres-statefulset.yaml": "d9ad38211f6d82524f689a9c06b09c3bca6599b4d5bac34210406249e6ec46b6"
+      }
+    },
+    {
+      "source": "docs/week5/day7-sqlalchemy-foundation.md",
+      "status": "reviewed",
+      "evidence_kind": "有日期的 PostgreSQL 終態核對",
+      "checked_files": [
+        "api/database/connection.py",
+        "api/database/models.py",
+        "api/database/init_db.py",
+        "api/database/session.py",
+        "api/main.py",
+        "api/worker.py"
+      ],
+      "evidence_source": "docs/evidence/automatic-worker-20260922.json",
+      "excerpt": "\"database_status\": {\n      \"a697300a-b267-4554-bdd5-2c82bb9c9eda\": \"completed\",\n      \"f2d8df72-aef3-48bf-9d6b-6863523daa65\": \"completed\",\n      \"0852fb7b-8efd-4600-b8ac-d4205554f6f3\": \"failed\"\n    }",
+      "interpretation": "這是 2026-09-22 GKE hpc-gpu-sg／hpc-platform-dev 的已保存自動 worker 驗收，不是 Week5 舊 Compose 的當日重跑。三筆 DB status 與驗收中的工作終態一致；這只核對 status，不是整列資料、retry_count 或完整結果一致。舊 /test/db 僅有成功敘述，沒有獨立 SELECT log。",
+      "corrections": "原文「企業平台不會手寫 SQL」不正確；本專案選 ORM，不表示 SQL 不能用。SQLAlchemy 也不僅 ORM。create_all 只建立缺少的表，不是 schema migration。現行 POST 先 commit PostgreSQL 再發布 Redis，並非跨兩者同一交易，Redis 失敗可能留下 DB-only row。persist_job_status 只改 status，不同步 retry_count，模型也沒有 result 欄位。/test/db 會寫入新資料，不是唯讀健康檢查，失敗路徑沒有 finally 保證 session.close。",
+      "missing": "沒有跨 DB／Redis 原子性、DB-only row 自動補發或完整結果長期歸檔證據；不能把三筆 status 一致推成所有資料永久一致。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "api/database/connection.py": "00d399913f3ba81ec3839cde02d0171eeb2c53ace8049b5cf35cfa83f3d64913",
+        "api/database/models.py": "5eb24d1d29fa35c4a66a123df810705b1ee72ecee271ce60e166344d074c6ed1",
+        "api/database/init_db.py": "b15d2f7f196ff10e193ce44c0440e076ba925dd6706e5f73f0e9a31bcdf4ac05",
+        "api/database/session.py": "7b12e2c44fc47cf63df52a401cd759429c4105bc650ecc3b2ccaf87bb9ad4a7c",
+        "api/main.py": "42f1824da2685e856c734beb2f44e5f376b96f95591e34d31f7a6c7f20101989",
+        "api/worker.py": "e51267a1a4d1793e0fd9b0a7ba08343e103695932366163e61c2840e49669f82"
+      }
+    },
+    {
+      "source": "docs/week6/Day1_Kubernetes_Foundation.md",
+      "status": "reviewed",
+      "evidence_kind": "概念課與副本設定，非故障驗收",
+      "checked_files": [
+        "k8s/api-deployment.yaml",
+        "k8s/api-service.yaml",
+        "compose.yaml"
+      ],
+      "evidence_source": "k8s/api-deployment.yaml",
+      "excerpt": "replicas: 1",
+      "interpretation": "目前這份舊 API manifest 的期望副本為 1；教材三個 API 是說明 desired state 的假設，不是保存的三副本部署結果。原文也明說當天沒有安裝 Kubernetes。",
+      "corrections": "不能說 Docker 完全不會自動重啟：可配置 restart policy；這與跨節點排程、控制器維持副本是不同能力。[Docker 官方說明](https://docs.docker.com/engine/containers/start-containers-automatically/)。容器程序退出可能在原 Pod 內重啟，不一定重建 Pod；不要把 container crash 與 Pod 被刪除混為一談。Kubernetes 透過 kubelet 和 runtime 執行容器，並非完全不管理容器，也不必依賴 Docker Engine。",
+      "missing": "沒有本課三副本故障注入、修復時間或完整 docker ps log；設定與概念圖不當作執行證據。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/api-deployment.yaml": "8343d8248cdeb8ac3313558e7b8b1e157e54f92afe05780cabebfd873d524c37",
+        "k8s/api-service.yaml": "169ea7c10f1ffa1663edfcb36968227fb3ee384a7661faa72f554ba4bdbe4d4f",
+        "compose.yaml": "0ae9ba3566372808ee1a39d71261e2f02abc65ebac43a28c03bd6035d8060342"
+      }
+    },
+    {
+      "source": "docs/week6/Day2_Pod_Foundation.md",
+      "status": "reviewed",
+      "evidence_kind": "概念課，無 Pod lifecycle 實測",
+      "checked_files": [
+        "k8s/api-deployment.yaml"
+      ],
+      "evidence_source": "docs/week6/Day2_Pod_Foundation.md",
+      "excerpt": "Succeeded / Failed",
+      "interpretation": "這是原文生命週期示意，不是 kubectl 輸出。原文沒有保存本課建立的獨立 Pod YAML 或觀測各階段的 log，不能說已做過完整生命週期測試。",
+      "corrections": "Pod phase 有 Pending、Running、Succeeded、Failed、Unknown；Deleted 不是 phase。Running 不保證 Ready 或所有容器健康，原圖也不是必經單一路徑。[官方生命週期](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/)。同 Pod 共用網路，但 volume 必須宣告並分別掛載，不是自動共用各容器整個檔案系統；容器可各自重啟，不能把共同生命週期理解成永遠同時啟停。[官方 Pod 說明](https://kubernetes.io/docs/concepts/workloads/pods/)。「Container 永遠在 Pod 內」僅適用 Kubernetes 工作負載語境。",
+      "missing": "沒有三個 Pod 的完整資源快照；api＋log-agent＋otel 是構想，不是現有 API manifest 的容器清單。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/api-deployment.yaml": "8343d8248cdeb8ac3313558e7b8b1e157e54f92afe05780cabebfd873d524c37"
+      }
+    },
+    {
+      "source": "docs/week6/Day3_Deployment_Foundation.md",
+      "status": "reviewed",
+      "evidence_kind": "副本與更新策略設定，非擴縮實測",
+      "checked_files": [
+        "k8s/api-deployment.yaml",
+        "k8s/redis-deployment.yaml",
+        "helm/redis/templates/deployment.yaml"
+      ],
+      "evidence_source": "k8s/api-deployment.yaml",
+      "excerpt": "replicas: 1",
+      "interpretation": "舊 API 與 Redis manifest 都是單副本；replicas 3／5 與 v1→v2 是課文概念示例，不是本課保存的 rollout 或 scaling 結果。",
+      "corrections": "Deployment 管理 ReplicaSet，ReplicaSet 維持 Pod 數量；容器崩潰可能由 kubelet 在原 Pod 重啟，不必然讓 Pod 數量少一個。desired replicas 不保證任何時刻都有同數 Ready Pod，資源不足也可能 Pending。Deployment 支援 RollingUpdate 或 Recreate；目前 Redis Helm 在開啟持久化時明確用 Recreate，不能說所有 Deployment 都滾動更新或零中斷。[官方 Deployment 說明](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)。",
+      "missing": "沒有本課故障前後 UID、三到五副本快照或服務不中斷量測；後來 Redis 重啟驗收不能倒填成此課 scaling 測試。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/api-deployment.yaml": "8343d8248cdeb8ac3313558e7b8b1e157e54f92afe05780cabebfd873d524c37",
+        "k8s/redis-deployment.yaml": "52113d86a319ffd70a0e29edcc0fbb14e83d4e5d1346fd3b839826a664dd92ff",
+        "helm/redis/templates/deployment.yaml": "07714f877a1fc677b96be5cfb6786f75487b3906721367028a11f358a41c7e3e"
+      }
+    },
+    {
+      "source": "docs/week6/Day4_Service_Foundation.md",
+      "status": "reviewed",
+      "evidence_kind": "Service 設定對照，無負載分配實測",
+      "checked_files": [
+        "k8s/api-service.yaml",
+        "k8s/redis-service.yaml",
+        "k8s/api-deployment.yaml",
+        "kustomize/overlays/gpu-sg-platform/api-values.yaml",
+        "helm/api/templates/service.yaml"
+      ],
+      "evidence_source": "k8s/api-service.yaml",
+      "excerpt": "nodePort: 30080",
+      "interpretation": "現存舊 k8s/api-service.yaml 是 NodePort 30080／port 8000，selector app=api 與舊 Deployment 的 Pod labels 相符。主 overlay 則指定 ClusterIP；兩份設定要分開讀，沒有本次連線測試。",
+      "corrections": "Service 依 selector 對應 Pod endpoints，不是把請求送進 Deployment 物件。原文 A→B→C 是示意，不能保證 HTTP 請求逐筆輪流或平均分配。短 DNS 名稱有 namespace 語境；Service 名稱穩定也不保證後端 Ready 或網路可達。Pod IP 可以直接用於診斷，不能絕對說所有 client 永遠不能直連。[官方 Service 說明](https://kubernetes.io/docs/concepts/services-networking/service/)。",
+      "missing": "缺 EndpointSlice 原始快照、跨 namespace DNS 測試及每 Pod 請求統計；文內 10.42.* IP 不當作現行端點。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/api-service.yaml": "169ea7c10f1ffa1663edfcb36968227fb3ee384a7661faa72f554ba4bdbe4d4f",
+        "k8s/redis-service.yaml": "a61c83cb1f60b702546516fe451d8b14688fe045cd465e87f50c7c9d7b761b04",
+        "k8s/api-deployment.yaml": "8343d8248cdeb8ac3313558e7b8b1e157e54f92afe05780cabebfd873d524c37",
+        "kustomize/overlays/gpu-sg-platform/api-values.yaml": "ff721c483ad007d901576e11924b2a983ef88ecd948517ce9a65307db558ba02",
+        "helm/api/templates/service.yaml": "ddc6417c832f92df34dc7e2cc496ea95879c4141d6143e82404490c2c3bee2ce"
+      }
+    },
+    {
+      "source": "docs/week6/Day5_K3s_Foundation.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 K3s 節點輸出摘錄",
+      "checked_files": [],
+      "evidence_source": "docs/week6/Day5_K3s_Foundation.md",
+      "excerpt": "hpc-demo   Ready    control-plane   v1.36.2+k3s1",
+      "interpretation": "這是舊教材保存的 hpc-demo 節點文字，日期及完整原始 log 未保存。版本字串照原文保留，不等於今天安裝過該版本；目前主專案驗收使用 GKE，不是這台 K3s。",
+      "corrections": "which 沒輸出只能說 PATH 找不到，不能證明機器未安裝。原 curl | sh 安裝命令沒有固定版本，不是可重現版本證據，也不用重跑。Node Ready 與一次 kubectl 成功不能證明所有控制面、儲存、網路、應用功能正常；排程還受資源與限制影響。Compose 也有服務名稱解析，原文「缺少 Service Discovery」太絕對。列出的 kube-system 元件是舊案例，不可直接套到 GKE。",
+      "missing": "沒有 installer log、完整 nodes JSON、套件選項或系統 Pod 清單；不能用後來 GKE 驗收證明舊 K3s 各元件當時的狀態。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    },
+    {
+      "source": "docs/week6/Day6_Deploy_API_and_Redis.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 startup log 摘錄及設定差異",
+      "checked_files": [
+        "k8s/api-deployment.yaml",
+        "k8s/api-service.yaml",
+        "k8s/redis-deployment.yaml",
+        "k8s/redis-service.yaml",
+        "k8s/api-configmap.yaml",
+        "k8s/postgres-secret.example.yaml",
+        "kustomize/overlays/gpu-sg-platform/kustomization.yaml",
+        "kustomize/overlays/gpu-sg-platform/api-values.yaml",
+        "kustomize/overlays/gpu-sg-platform/redis-values.yaml"
+      ],
+      "evidence_source": "docs/week6/Day6_Deploy_API_and_Redis.md",
+      "excerpt": "Application startup complete",
+      "interpretation": "舊文保存此 startup 字串，表示曾記錄應用啟動訊息；/health/redis 部分只有成功流程描述，沒有完整 HTTP JSON。不能只靠 startup 字串推成 API→Redis→PostgreSQL 全部可用。",
+      "corrections": "目前舊 API YAML 已引用 api-config 與 postgres-secret，僅照本課套 API／Redis 檔案不足；Secret 範例 CHANGE_ME 也不是有效部署憑據。課文寫 ClusterIP，但連結的舊 Service 已是 NodePort；主 overlay 才明確用 ClusterIP。imagePullPolicy: Never 依賴目標節點已有映像，舊 K3s 匯入不能當作 GKE 部署步驟。舊 Redis manifest 沒有 volumeMount／PVC，不能套用 Compose 的持久化結論。主入口為 kustomize/overlays/gpu-sg-platform，不是逐份 apply 舊 k8s 檔。",
+      "missing": "缺當時 image digest、EndpointSlice、HTTP capture；Namespace 也不自動提供網路隔離。此次只核對檔案，不執行匯入、刪 Pod、apply 或 port-forward。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/api-deployment.yaml": "8343d8248cdeb8ac3313558e7b8b1e157e54f92afe05780cabebfd873d524c37",
+        "k8s/api-service.yaml": "169ea7c10f1ffa1663edfcb36968227fb3ee384a7661faa72f554ba4bdbe4d4f",
+        "k8s/redis-deployment.yaml": "52113d86a319ffd70a0e29edcc0fbb14e83d4e5d1346fd3b839826a664dd92ff",
+        "k8s/redis-service.yaml": "a61c83cb1f60b702546516fe451d8b14688fe045cd465e87f50c7c9d7b761b04",
+        "k8s/api-configmap.yaml": "821f9929b17ed418c6417b3311020d93a655096a9910f07de430e42c12d94067",
+        "k8s/postgres-secret.example.yaml": "2f6b5a96c1858a9b66becf288f5b196bc2774339e06c356b142852f2219b6a4b",
+        "kustomize/overlays/gpu-sg-platform/kustomization.yaml": "08ee078aa38853432bffe0839701da3d681fa751991cf4771629d4d21bc794e7",
+        "kustomize/overlays/gpu-sg-platform/api-values.yaml": "ff721c483ad007d901576e11924b2a983ef88ecd948517ce9a65307db558ba02",
+        "kustomize/overlays/gpu-sg-platform/redis-values.yaml": "1ff655445041f71efd17fb4fafd77b07545a82f98be313b053635a18d5106bae"
+      }
+    },
+    {
+      "source": "docs/week6/Day7_Complete_Platform_on_Kubernetes.md",
+      "status": "reviewed",
+      "evidence_kind": "後來 CPU-only GKE 驗收，與舊 K3s 分開",
+      "checked_files": [
+        "k8s/api-deployment.yaml",
+        "k8s/api-service.yaml",
+        "k8s/redis-deployment.yaml",
+        "k8s/api-configmap.yaml",
+        "k8s/postgres-pvc.yaml",
+        "k8s/postgres-statefulset.yaml",
+        "k8s/postgres-service.yaml",
+        "k8s/postgres-secret.example.yaml",
+        "kustomize/overlays/gpu-sg-platform/kustomization.yaml",
+        "api/database/init_db.py"
+      ],
+      "evidence_source": "docs/evidence/cpu-bootstrap-acceptance-20260921.json",
+      "excerpt": "\"api\": \"Running on system-pool; /health healthy\",\n    \"redis\": \"Running on system-pool; connected; PVC Bound\",\n    \"postgres\": \"Running on system-pool; jobs table query succeeded; PVC Bound\",",
+      "interpretation": "2026-09-21 新建 CPU-only GKE rehearsal 的保存結果：API health、Redis 連線、PostgreSQL jobs 查詢與兩個 PVC Bound 通過；Terraform 隨後銷毀 3 個資源，state 為 0、cluster lookup 為 404。這不是舊 K3s 本課結果，也不是現在服務仍在線的保證。舊文另保存 Did not find any relations. 與 successfully rolled out，但沒有完整 HTTP／SQL capture。",
+      "corrections": "舊 postgres-pvc 未固定 storageClassName，不能光看它就判定目前一定 local-path／WaitForFirstConsumer。Bound 只表示綁定成功，不證明資料庫備份還原。舊 StatefulSet 是單副本共用指定 PVC，沒有每副本 volumeClaimTemplates，不能直接增加副本當作 PostgreSQL HA。StatefulSet 不會自動建立資料庫複寫。新 DB 沒有 jobs 需初始化，現行 create_all 不是 schema migration。",
+      "missing": "CPU rehearsal 明確排除 GPU／MPI 執行，不能稱完整 benchmark 驗收；也沒有本課資料庫 failover、災難還原或零中斷量測。原始證據只写日期與 rehearsal 範圍，不能替它補造未記錄的 context。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/api-deployment.yaml": "8343d8248cdeb8ac3313558e7b8b1e157e54f92afe05780cabebfd873d524c37",
+        "k8s/api-service.yaml": "169ea7c10f1ffa1663edfcb36968227fb3ee384a7661faa72f554ba4bdbe4d4f",
+        "k8s/redis-deployment.yaml": "52113d86a319ffd70a0e29edcc0fbb14e83d4e5d1346fd3b839826a664dd92ff",
+        "k8s/api-configmap.yaml": "821f9929b17ed418c6417b3311020d93a655096a9910f07de430e42c12d94067",
+        "k8s/postgres-pvc.yaml": "87729f9d9347b61354c22391709d5794ea572df73c65fe15c6a40f45e3413211",
+        "k8s/postgres-statefulset.yaml": "d9ad38211f6d82524f689a9c06b09c3bca6599b4d5bac34210406249e6ec46b6",
+        "k8s/postgres-service.yaml": "03bca502425cd09003e9f5c1ceaf87162452968f52f905913954ffba7bdc3aa6",
+        "k8s/postgres-secret.example.yaml": "2f6b5a96c1858a9b66becf288f5b196bc2774339e06c356b142852f2219b6a4b",
+        "kustomize/overlays/gpu-sg-platform/kustomization.yaml": "08ee078aa38853432bffe0839701da3d681fa751991cf4771629d4d21bc794e7",
+        "api/database/init_db.py": "b15d2f7f196ff10e193ce44c0440e076ba925dd6706e5f73f0e9a31bcdf4ac05"
+      }
+    },
+    {
+      "source": "docs/week7/Day1_ConfigMap.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 describe 摘錄",
+      "checked_files": [
+        "k8s/api-deployment.yaml",
+        "k8s/api-configmap.yaml",
+        "helm/api/templates/configmap.yaml"
+      ],
+      "evidence_source": "docs/week7/Day1_ConfigMap.md",
+      "excerpt": "api-config  ConfigMap  Optional: false",
+      "interpretation": "此行是舊 describe 文字，只證明當時記載引用來源，未保存各欄位值與連線驗收。",
+      "corrections": "envFrom 的 ConfigMap 內容在建立容器時注入，改 ConfigMap 不表示既有程序的環境立即更新；現行模板沒有設定變更 checksum rollout。需區分設定引用與應用實際讀到值。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/api-deployment.yaml": "8343d8248cdeb8ac3313558e7b8b1e157e54f92afe05780cabebfd873d524c37",
+        "k8s/api-configmap.yaml": "821f9929b17ed418c6417b3311020d93a655096a9910f07de430e42c12d94067",
+        "helm/api/templates/configmap.yaml": "5adff4b3138dda63b93f52f84905c4cad44d1afb3ced5320f3cb3c6711887c5d"
+      }
+    },
+    {
+      "source": "docs/week7/Day2_Secret.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 Secret 中繼資料示例",
+      "checked_files": [
+        "api/database/connection.py",
+        "helm/postgres/templates/secret.yaml",
+        "k8s/postgres-secret.example.yaml"
+      ],
+      "evidence_source": "docs/week7/Day2_Secret.md",
+      "excerpt": "POSTGRES_PASSWORD  12 bytes",
+      "interpretation": "這是原文示例帳密的位元組數，不代表正式密碼安全、輪替或加密驗收；不重印或讀取環境真實密碼。",
+      "corrections": "原文「Application 不再保存密碼」過度：connection.py 仍有開發用預設值，不能當正式憑據。Secret 可以承載真正密碼，不能將舊頁首「Secret 不應保存真實密碼」理解成禁止使用 Secret；禁止的是把真實 Secret 值提交 Git。Base64 不是加密；實際叢集 at-rest 設定需另核對，不能由 YAML 判定。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "api/database/connection.py": "00d399913f3ba81ec3839cde02d0171eeb2c53ace8049b5cf35cfa83f3d64913",
+        "helm/postgres/templates/secret.yaml": "8844b2686ca8a050e82ccbf3390dbedb00be453696041a0fa5ab302face3e928",
+        "k8s/postgres-secret.example.yaml": "2f6b5a96c1858a9b66becf288f5b196bc2774339e06c356b142852f2219b6a4b"
+      }
+    },
+    {
+      "source": "docs/week7/Day3_Resource_Requests_Limits_QoS.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史資源與 QoS 摘錄",
+      "checked_files": [
+        "k8s/api-deployment.yaml",
+        "helm/api/values.yaml"
+      ],
+      "evidence_source": "docs/week7/Day3_Resource_Requests_Limits_QoS.md",
+      "excerpt": "QoS Class: Burstable",
+      "interpretation": "文內記載 Burstable，未保存 CPU throttling、OOM 或逐容器資源壓測；不能宣稱已完整驗證資源隔離。",
+      "corrections": "此 API 設定 request 100m/128Mi、limit 500m/512Mi。QoS 判定要看整個 Pod，不能一般化成單一欄位不相等即全部判準；Guaranteed 也不保證免 OOM。排程採 requests，不代表無條件取得專用核心；「企業最常見」沒有本課證據。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/api-deployment.yaml": "8343d8248cdeb8ac3313558e7b8b1e157e54f92afe05780cabebfd873d524c37",
+        "helm/api/values.yaml": "598ba238271f912bb74d1850630daa2a3d34e0d719bb80f1e43974d211b45ab3"
+      }
+    },
+    {
+      "source": "docs/week7/Day4_Liveness_and_Readiness_Probe.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史故障描述，無完整 events",
+      "checked_files": [
+        "k8s/api-deployment.yaml",
+        "api/main.py"
+      ],
+      "evidence_source": "docs/week7/Day4_Liveness_and_Readiness_Probe.md",
+      "excerpt": "Liveness probe failed",
+      "interpretation": "舊文記載故意錯設 /health-xxxx 後重啟與恢復，但缺 UID、RESTARTS 前後值與完整 events；此句不是完整故障實驗 log。",
+      "corrections": "重啟容器由 kubelet 按 restart policy 處理，不是 Deployment 直接重建容器；需達 failureThreshold，不是單次探測失敗必然重啟。/health 固定回 healthy、readiness 只查 Redis，不包含 PostgreSQL 或 worker。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/api-deployment.yaml": "8343d8248cdeb8ac3313558e7b8b1e157e54f92afe05780cabebfd873d524c37",
+        "api/main.py": "42f1824da2685e856c734beb2f44e5f376b96f95591e34d31f7a6c7f20101989"
+      }
+    },
+    {
+      "source": "docs/week7/Day5_Service_Types_NodePort.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 NodePort HTTP 摘錄",
+      "checked_files": [
+        "k8s/api-service.yaml",
+        "loadtest/benchmark.js"
+      ],
+      "evidence_source": "docs/week7/Day5_Service_Types_NodePort.md",
+      "excerpt": "\"redis\": \"connected\"",
+      "interpretation": "舊 JSON 表示當時 Redis health 回覆；缺 headers、來源位置與防火牆條件，不作現行服務保證。",
+      "corrections": "10.140.0.2 是歷史私有位址，NodePort 不代表 Internet 已可達；還需路由／防火牆。localhost:30080 的舊結果依測試位置與資料平面而定，不能作通用入口。主 overlay 是 ClusterIP。port-forward 是到所選 Pod 的除錯轉送，不是完整外部 Service 流量驗收。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/api-service.yaml": "169ea7c10f1ffa1663edfcb36968227fb3ee384a7661faa72f554ba4bdbe4d4f",
+        "loadtest/benchmark.js": "614c2710ecc539fdb22c738bcd8f40b3188548b449a5cab01003e7913b3c7952"
+      }
+    },
+    {
+      "source": "docs/week7/Day6_Ingress_Traefik.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 host-routing 回覆",
+      "checked_files": [
+        "k8s/api-ingress.yaml",
+        "kustomize/overlays/gpu-sg-platform/api-values.yaml"
+      ],
+      "evidence_source": "docs/week7/Day6_Ingress_Traefik.md",
+      "excerpt": "\"status\": \"healthy\"",
+      "interpretation": "保存的是 HTTP health 文內摘錄，不證明 HTTPS 憑證、公開 DNS 或現行 GKE Traefik 已啟用。",
+      "corrections": "舊規則指定 host api.hpc.local；直接 curl IP 不带該 Host 不足以驗證同一規則，原文「全部成功」缺當時規則狀態。Ingress 是規則、controller 才處理流量；不能把資源示意當作每個封包必經的實體串接。主 overlay ingress.enabled=false，不提供這個域名／TLS 入口。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/api-ingress.yaml": "1c5129b4c91a17acd3b1092a7775e5fccf66d1d18415190ffbd128a7266efbab",
+        "kustomize/overlays/gpu-sg-platform/api-values.yaml": "ff721c483ad007d901576e11924b2a983ef88ecd948517ce9a65307db558ba02"
+      }
+    },
+    {
+      "source": "docs/week7/Day7_Horizontal_Pod_Autoscaler.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 HPA 觀察",
+      "checked_files": [
+        "k8s/api-hpa.yaml",
+        "loadtest/benchmark.js",
+        "helm/api/templates/worker.yaml"
+      ],
+      "evidence_source": "docs/week7/Day7_Horizontal_Pod_Autoscaler.md",
+      "excerpt": "cpu: 499% / 80%",
+      "interpretation": "舊文記載1→4→5再縮回1，缺時序原始監控、延遲與失敗率，不能稱 GPU／worker autoscaling 實测。",
+      "corrections": "CPU 百分比相對 requests，499% 不是整機 499%。HPA 看指標與策略，並非超過80%立刻固定加一。此 HPA 只指 api Deployment，worker 模板固定1副本。k6 只提交 cpu 模擬分支，沒有驗證 benchmark 完成／結果或設定 checks thresholds。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/api-hpa.yaml": "c8f3d166e2957961da240f18cbc5886db5e2e6787e938acd072cfe6d4eb95b28",
+        "loadtest/benchmark.js": "614c2710ecc539fdb22c738bcd8f40b3188548b449a5cab01003e7913b3c7952",
+        "helm/api/templates/worker.yaml": "d4c30b7c4ceaf4c7600111b6471c3dabb24cc4934e8a12a740eaeb11570e58a6"
+      }
+    },
+    {
+      "source": "docs/week8/Day1_GitOps_Foundation.md",
+      "status": "reviewed",
+      "evidence_kind": "概念與 Argo 設定",
+      "checked_files": [
+        "argocd/application-dev.yaml",
+        "argocd/project.yaml"
+      ],
+      "evidence_source": "docs/week8/Day1_GitOps_Foundation.md",
+      "excerpt": "replicas: 2",
+      "interpretation": "2→5→2 是示意，建立目錄不等於已部署 GitOps；現有 Argo dev 指 overlays/dev，不是主 gpu-sg-platform。",
+      "corrections": "kubectl apply -f 是宣告式配置操作，不因手動執行就變成 imperative 設計。GitOps 的區別是版本來源與自動持續協調。Argo selfHeal/prune 作用於受管資源，不是刪整個 cluster 所有非 Git 資源；不要擅改路徑以免 ownership／prune 影響。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "argocd/application-dev.yaml": "885ad838b748143c45a6ebd0c8d98c801c521ca77b37fe76714f2870ba8576ae",
+        "argocd/project.yaml": "0207c97453c8dde9dc871eeeeffeb0a8fed63fed7cc2a3dabb0b905d12a7c779"
+      }
+    },
+    {
+      "source": "docs/week8/Day2_Helm_Foundation.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 scaffold 渲染示例",
+      "checked_files": [
+        "helm/api/Chart.yaml",
+        "helm/api/values.yaml",
+        "helm/api/templates/deployment.yaml"
+      ],
+      "evidence_source": "docs/week8/Day2_Helm_Foundation.md",
+      "excerpt": "image: nginx:1.16.0",
+      "interpretation": "沒有當時完整渲染檔或執行 log；不把 chart 語法示例當成現在部署成功。",
+      "corrections": "nginx 是舊 scaffold 示例，不是現行 API chart 映像。repo 根目錄 chart 路徑是 helm/api，不是 ./api。helm template 只產生 YAML，不能證明 admission、排程、資料庫或應用正常。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "helm/api/Chart.yaml": "610514a0a2a0559137147eefb7f51e0d402d44d904be600ee1eca0988a156e0e",
+        "helm/api/values.yaml": "598ba238271f912bb74d1850630daa2a3d34e0d719bb80f1e43974d211b45ab3",
+        "helm/api/templates/deployment.yaml": "3cd7c1a03b435627f9c63d5526a15f64bb40fef41f72bab24b896380846323e9"
+      }
+    },
+    {
+      "source": "docs/week8/Day3_Helmize_Platform.md",
+      "status": "reviewed",
+      "evidence_kind": "參數化示例與現存模板",
+      "checked_files": [
+        "helm/api/values.yaml",
+        "helm/api/templates/deployment.yaml",
+        "helm/postgres/templates/secret.yaml"
+      ],
+      "evidence_source": "docs/week8/Day3_Helmize_Platform.md",
+      "excerpt": "replicas: {{ .Values.replicaCount }}",
+      "interpretation": "原文稱渲染一致但無完整 diff；目前模板已加入獨立 worker、條件 replicas 等差異，不能說和舊 k8s YAML 完全相同。",
+      "corrections": "目前 Secret 模板在 postgres chart，不在 API；API 仍引用固定 postgres-secret，原文 secret.*／secretName 不都被現行模板使用。主環境用外部既有 Secret，不將帳密放 values。values 出現欄位不代表 template 已讀取；例如若未引用 securityContext 設定也不會生效。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "helm/api/values.yaml": "598ba238271f912bb74d1850630daa2a3d34e0d719bb80f1e43974d211b45ab3",
+        "helm/api/templates/deployment.yaml": "3cd7c1a03b435627f9c63d5526a15f64bb40fef41f72bab24b896380846323e9",
+        "helm/postgres/templates/secret.yaml": "8844b2686ca8a050e82ccbf3390dbedb00be453696041a0fa5ab302face3e928"
+      }
+    },
+    {
+      "source": "docs/week8/Day4_Helm_Advanced.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 revision 敘述",
+      "checked_files": [
+        "helm/api/templates/_helpers.tpl",
+        "helm/api/templates/deployment.yaml",
+        "helm/postgres/templates/secret.yaml"
+      ],
+      "evidence_source": "docs/week8/Day4_Helm_Advanced.md",
+      "excerpt": "Revision4",
+      "interpretation": "Revision1～4 是文內敘述，沒有 helm history 原始列；不能代表目前主叢集的 release 管理狀態。",
+      "corrections": "Helm history 不是永遠保留的保證，也不是資料庫 rollback。API helper 名稱可變，但 postgres-secret 等仍固定，多 release 同 namespace 未必互不影響。主部署使用 Kustomize 呼叫 Helm 渲染再 apply，不會因此建立可 helm rollback 的同名 Release。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "helm/api/templates/_helpers.tpl": "0e18a3db7650421e1e8d3a9f5fbbac535557aeac65f4b896f1a42ad43323a408",
+        "helm/api/templates/deployment.yaml": "3cd7c1a03b435627f9c63d5526a15f64bb40fef41f72bab24b896380846323e9",
+        "helm/postgres/templates/secret.yaml": "8844b2686ca8a050e82ccbf3390dbedb00be453696041a0fa5ab302face3e928"
+      }
+    },
+    {
+      "source": "docs/week8/Day5_Kustomize_Foundation.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史三環境 render 描述",
+      "checked_files": [
+        "kustomize/overlays/dev/kustomization.yaml",
+        "kustomize/overlays/stage/kustomization.yaml",
+        "kustomize/overlays/prod/kustomization.yaml"
+      ],
+      "evidence_source": "docs/week8/Day5_Kustomize_Foundation.md",
+      "excerpt": "CPU Request : 50m",
+      "interpretation": "資源數值為當時配置摘要；/tmp 渲染產物未保存，三環境成功敘述不升級成當前已部署。",
+      "corrections": "文內 base/ 與 ingress-patch 是舊結構；現在 overlays 直接組 Helm charts。文內未加 --enable-helm 的指令不是現行入口。client dry-run 不能证明 controller、依賴或 workload 可執行；namespace 變換也不等於建立 Namespace 物件。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "kustomize/overlays/dev/kustomization.yaml": "ea60f5902cc8f9d267688a807090b18f25d2024d1957bd8cd6bae8c7f7f6faad",
+        "kustomize/overlays/stage/kustomization.yaml": "ed3e5c8c4654a7d79f1fbf3e22565b200f571656a1509886de933098d3d79dbe",
+        "kustomize/overlays/prod/kustomization.yaml": "751afd3d6f84e3f76dcdf4d296d51b797e6404595f6bb86111d5f108fabaa566"
+      }
+    },
+    {
+      "source": "docs/week8/Day6-Helm-Kustomize-Integration.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史錯誤與整合設定",
+      "checked_files": [
+        "kustomize/overlays/dev/kustomization.yaml",
+        "helm/api/values.yaml",
+        "kustomize/overlays/gpu-sg-platform/kustomization.yaml"
+      ],
+      "evidence_source": "docs/week8/Day6-Helm-Kustomize-Integration.md",
+      "excerpt": "ErrImageNeverPull",
+      "interpretation": "原文保留 image／patch／NodePort 錯誤字串，但缺完整 log；本次未 build/apply，亦不表示目前三環境都可成功。",
+      "corrections": "此為舊 K3s local-image 錯誤，現在 API 預設 IfNotPresent 與 registry 不同。Overlay 可透過 resources/generators 引入或產生物件，不是絕對「不建立 Resource」。目前主 overlay 獨立且開 worker；舊 dev 還引入監控與 runtime，不能混用套用。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "kustomize/overlays/dev/kustomization.yaml": "ea60f5902cc8f9d267688a807090b18f25d2024d1957bd8cd6bae8c7f7f6faad",
+        "helm/api/values.yaml": "598ba238271f912bb74d1850630daa2a3d34e0d719bb80f1e43974d211b45ab3",
+        "kustomize/overlays/gpu-sg-platform/kustomization.yaml": "08ee078aa38853432bffe0839701da3d681fa751991cf4771629d4d21bc794e7"
+      }
+    },
+    {
+      "source": "docs/week8/Day7-GitOps_Multi_Environment_Integration.md",
+      "status": "reviewed",
+      "evidence_kind": "Expected 回覆，非現行部署證據",
+      "checked_files": [
+        "argocd/application-dev.yaml",
+        "argocd/project.yaml",
+        "kustomize/overlays/gpu-sg-platform/kustomization.yaml",
+        "api/main.py"
+      ],
+      "evidence_source": "docs/week8/Day7-GitOps_Multi_Environment_Integration.md",
+      "excerpt": "Synced\n\nHealthy",
+      "interpretation": "保留原文 host／回應作歷史示例；未保存三個 Application 的完整 status/revision，不拿圖示勾選當現行驗收。",
+      "corrections": "Expected 區塊不能當 raw evidence。三 namespace 不等於網路／故障域完全隔離；AppProject wildcard 資源規則也不是最小權限。現行 API 根路由固定 HPC API DEV，不能期待只靠環境 namespace 就回 STAGE/PROD。主 overlay 與 Argo dev 不同，未驗證自動 GitOps 主線。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "argocd/application-dev.yaml": "885ad838b748143c45a6ebd0c8d98c801c521ca77b37fe76714f2870ba8576ae",
+        "argocd/project.yaml": "0207c97453c8dde9dc871eeeeffeb0a8fed63fed7cc2a3dabb0b905d12a7c779",
+        "kustomize/overlays/gpu-sg-platform/kustomization.yaml": "08ee078aa38853432bffe0839701da3d681fa751991cf4771629d4d21bc794e7",
+        "api/main.py": "42f1824da2685e856c734beb2f44e5f376b96f95591e34d31f7a6c7f20101989"
+      }
+    },
+    {
+      "source": "docs/week9/Day1-Terraform.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史版本與掛載摘要",
+      "checked_files": [
+        "terraform/environments/dev/versions.tf",
+        "terraform/environments/dev/providers.tf"
+      ],
+      "evidence_source": "docs/week9/Day1-Terraform.md",
+      "excerpt": "Terraform v1.15.8",
+      "interpretation": "舊版本與 /data 掛載記載不代表今日環境；沒有 disk UUID／fstab／重開機證據，不應照舊 /dev/sdb 名稱格式化。",
+      "corrections": "destroy 不是每次工作必須執行的最後一步；只在確定要移除目標資源時使用。init 還初始化 backend/modules，lock 主要鎖 provider，不等於鎖 CLI、全部 module 與雲端實況。主 root 是 gpu-sg，不是 dev。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "terraform/environments/dev/versions.tf": "e8f4c474b49a7f323c50c7a6308e12096baa9c1a180ccee888c6072ea878a9f7",
+        "terraform/environments/dev/providers.tf": "d6acf6632fe619b868cfc62b6918d7f3f17b5ac70c698bd2a5ce21add8baf70b"
+      }
+    },
+    {
+      "source": "docs/week9/Day2-Terraform-Language-Foundation.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 validate／plan 摘錄",
+      "checked_files": [
+        "terraform/environments/dev/main.tf",
+        "terraform/modules/compute/main.tf",
+        "terraform/modules/compute/variables.tf"
+      ],
+      "evidence_source": "docs/week9/Day2-Terraform-Language-Foundation.md",
+      "excerpt": "1 to add",
+      "interpretation": "1 add 是當時預覽，不證明已建立 VM，也不能套用成目前 plan。",
+      "corrections": "目前 dev/main.tf 是 GKE/network/firewall，不是單台 VM。Plan 非 apply；state 可包含已匯入而非自己新建資源。讀同 root 的 .tf，不會遞迴自動載入所有目錄。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "terraform/environments/dev/main.tf": "557ffbafc225b7f9f5bd04c29e298d2b4d3a8f30a985e7143414fd8f9b672e13",
+        "terraform/modules/compute/main.tf": "178e5cbca79138aa199f2805ef633fb00ef694213be54c81c12de4ae8c6c9c1c",
+        "terraform/modules/compute/variables.tf": "9825cdf000598bbc6e5d6a3b66513dcccb47b007bac1ec366b2cb5bd530e07dd"
+      }
+    },
+    {
+      "source": "docs/week9/Day3-Terraform-Apply-State-Resource-Lifecycle.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 apply 與取消 destroy",
+      "checked_files": [
+        "terraform/environments/dev/main.tf",
+        "terraform/modules/compute/main.tf"
+      ],
+      "evidence_source": "docs/week9/Day3-Terraform-Apply-State-Resource-Lifecycle.md",
+      "excerpt": "ACCESS_TOKEN_SCOPE_INSUFFICIENT",
+      "interpretation": "原文另記 Resources: 1 added 與 resource address；缺獨立 apply log，不與後來 CPU rehearsal 銷毀混為一次。",
+      "corrections": "文內明寫 destroy 以 Ctrl+C 取消，當日不能算已清除 VM。IAM 與 scope 案例是歷史診斷，不能不查目前權限就再授予廣泛 role。state 是管理映射，不是即時監控所有 cloud 資源。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "terraform/environments/dev/main.tf": "557ffbafc225b7f9f5bd04c29e298d2b4d3a8f30a985e7143414fd8f9b672e13",
+        "terraform/modules/compute/main.tf": "178e5cbca79138aa199f2805ef633fb00ef694213be54c81c12de4ae8c6c9c1c"
+      }
+    },
+    {
+      "source": "docs/week9/Day4-Terraform-Output-Resource-Reference.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 output 摘錄",
+      "checked_files": [
+        "terraform/modules/compute/outputs.tf",
+        "terraform/environments/stage/outputs.tf"
+      ],
+      "evidence_source": "docs/week9/Day4-Terraform-Output-Resource-Reference.md",
+      "excerpt": "vm_internal_ip = \"10.140.0.3\"",
+      "interpretation": "保存的是當時 e2-medium VM 私有 IP，不是可連線現行服務；本次不讀可能含敏感資料的 state。",
+      "corrections": "terraform output 顯示保存的 state output，不保證 cloud 最新實況；resource 引用值在規劃／apply 時解析，不是每次讀取就即時刷新。資源依賴取決於真實引用，不能一概 firewall 必須晚於 VM。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "terraform/modules/compute/outputs.tf": "21754021108058016ce66f46c2490f2406b8e6b75d85c6feb17c289f4899d967",
+        "terraform/environments/stage/outputs.tf": "6a8fed5d1d3024d01204395f1f650553faede97f0c08acb3b979c1bf8d279a34"
+      }
+    },
+    {
+      "source": "docs/week9/Day5-Terraform-Module-Refactor.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 state 搬移／plan 摘錄",
+      "checked_files": [
+        "terraform/modules/compute/main.tf",
+        "terraform/modules/compute/outputs.tf",
+        "terraform/environments/dev/main.tf"
+      ],
+      "evidence_source": "docs/week9/Day5-Terraform-Module-Refactor.md",
+      "excerpt": "No changes.",
+      "interpretation": "No changes 是當時 refactor 後記載，不表示現在零 drift；不重跑 state mv。",
+      "corrections": "state mv 是變更 state，不能當普通唯讀檢查；需對齊實際 address／備份與鎖。現行 dev 已不含 module.api。module.worker 只有 plan，原文也明寫未 apply，不能列為已建立第二台 VM。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "terraform/modules/compute/main.tf": "178e5cbca79138aa199f2805ef633fb00ef694213be54c81c12de4ae8c6c9c1c",
+        "terraform/modules/compute/outputs.tf": "21754021108058016ce66f46c2490f2406b8e6b75d85c6feb17c289f4899d967",
+        "terraform/environments/dev/main.tf": "557ffbafc225b7f9f5bd04c29e298d2b4d3a8f30a985e7143414fd8f9b672e13"
+      }
+    },
+    {
+      "source": "docs/week9/Day6-Terraform-Network-Module.md",
+      "status": "reviewed",
+      "evidence_kind": "設定與 plan 敘述，無 apply 證據",
+      "checked_files": [
+        "terraform/modules/network/main.tf",
+        "terraform/modules/firewall/main.tf",
+        "terraform/environments/dev/main.tf"
+      ],
+      "evidence_source": "docs/week9/Day6-Terraform-Network-Module.md",
+      "excerpt": "Network",
+      "interpretation": "Network/Subnet/Firewall 只是文內摘要；沒有 apply 完成記錄就標未證實建立。",
+      "corrections": "原文在 plan 後寫「均建立成功」不成立：列出的驗證命令沒有 apply。現行舊 firewall 允許 0.0.0.0/0 的 TCP22/8000，不能稱最小權限；主 gpu-sg 使用既有 default network，未採這套自建 VPC。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "terraform/modules/network/main.tf": "f77959788a11f3d680f134e3d0c24669dab553b01e5e8053ec57ac65c5dce594",
+        "terraform/modules/firewall/main.tf": "6a20606ba0c1c717b18645736f52f8c6701694907e942a0c32f991ab108b35c5",
+        "terraform/environments/dev/main.tf": "557ffbafc225b7f9f5bd04c29e298d2b4d3a8f30a985e7143414fd8f9b672e13"
+      }
+    },
+    {
+      "source": "docs/week9/Day7-Terraform-Multi-Environment.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 sandbox 清理敘述",
+      "checked_files": [
+        "terraform/environments/dev/main.tf",
+        "terraform/environments/stage/main.tf",
+        "terraform/environments/prod/main.tf"
+      ],
+      "evidence_source": "docs/week9/Day7-Terraform-Multi-Environment.md",
+      "excerpt": "terraform destroy",
+      "interpretation": "舊文說 sandbox 清除，未附資源清單與 state=0；不能保證目前所有付費資源已刪。",
+      "corrections": "現在 dev 用 GKE，stage/prod 用 compute，不是「只有 tfvars 不同」。分開目錄不保證 state backend 不共用，也不證明安全隔離。後來規劃的 control-plane/worker 名稱非目前 GKE 架構。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "terraform/environments/dev/main.tf": "557ffbafc225b7f9f5bd04c29e298d2b4d3a8f30a985e7143414fd8f9b672e13",
+        "terraform/environments/stage/main.tf": "ca0887a1fccfbf172ee86027205c6e46992ebd20c9f44489d9941db60bec893b",
+        "terraform/environments/prod/main.tf": "bc2f6bb1b3e71b262316ac26a93002bd0f1a0edcff63b9711e2940bb5398c043"
+      }
+    },
+    {
+      "source": "docs/week9/Day8-GKE-Cluster-withTerraform.md",
+      "status": "reviewed",
+      "evidence_kind": "CPU-only 後續驗收",
+      "checked_files": [
+        "terraform/environments/dev/main.tf",
+        "terraform/modules/gke/main.tf",
+        "terraform/environments/gpu-sg/main.tf",
+        "terraform/environments/gpu-sg/variables.tf"
+      ],
+      "evidence_source": "docs/evidence/cpu-bootstrap-acceptance-20260921.json",
+      "excerpt": "\"state_resources_after_destroy\": 0",
+      "interpretation": "2026-09-21 CPU-only rehearsal：3 added、No changes、3 destroyed、state0；不含 GPU／MPI，與 hpc-dev 舊實驗分開。",
+      "corrections": "舊 gke module 現在還有 observability pool，不能只依 node_count=1 就說總共一台。regional 的節點數取決於 locations／pool 設定，非無條件三台。主 root gpu-sg 分 CPU/GPU pool；四個 sharing clients 不代表四張 GPU。",
+      "missing": "此證據確認該 rehearsal 清理，不是所有專案資源零費用或全新 GPU 叢集驗收。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "terraform/environments/dev/main.tf": "557ffbafc225b7f9f5bd04c29e298d2b4d3a8f30a985e7143414fd8f9b672e13",
+        "terraform/modules/gke/main.tf": "0ae55273427c4b104316c9de2210a2fc0081490519b07e1712f8dbac4c0a5b46",
+        "terraform/environments/gpu-sg/main.tf": "81f014fde2eca66cb51c8119615e29564586f5ff31050073a0663673e2635a04",
+        "terraform/environments/gpu-sg/variables.tf": "1a08593f074d270903149d6b3d4e5785de934efe898c39e255b964dedfb8e362"
+      }
+    },
+    {
+      "source": "docs/week10/Day1-CICD-Foundation.md",
+      "status": "reviewed",
+      "evidence_kind": "規劃與 workflow 靜態核對",
+      "checked_files": [
+        ".github/workflows/ci.yml"
+      ],
+      "evidence_source": "docs/week10/Day1-CICD-Foundation.md",
+      "excerpt": "Image Scan",
+      "interpretation": "建立 workflows 目錄不是整條 pipeline 成功證據；未保存本課 run ID。",
+      "corrections": "完整圖是規劃；現行 workflow 沒有 image scan、部署後 health check 或 Terraform 步驟。Delivery 與無人工核准自動 Deployment 不應混成同義。觸發只涵蓋配置的 master push/PR。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        ".github/workflows/ci.yml": "545b84887e128740b41e0228613e87b8dba6da4163a9c35432e4030db64d35ee"
+      }
+    },
+    {
+      "source": "docs/week10/Day2-First-GitHub-ActionsCI-Pipeline.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 CI Success 敘述",
+      "checked_files": [
+        ".github/workflows/ci.yml",
+        "requirements.txt"
+      ],
+      "evidence_source": "docs/week10/Day2-First-GitHub-ActionsCI-Pipeline.md",
+      "excerpt": "Node.js 20 is deprecated",
+      "interpretation": "Success 是文內敘述，沒有 job URL／log；依賴未完全釘版，乾淨 runner 不等於永久可重現。",
+      "corrections": "Node runtime 警告只保留為當時訊息，不推定目前 GitHub runner 狀況。現行 workflow 先進行 GCP auth，已不是單純離線 syntax CI；compileall 範圍 api monitoring，不覆蓋所有專案。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        ".github/workflows/ci.yml": "545b84887e128740b41e0228613e87b8dba6da4163a9c35432e4030db64d35ee",
+        "requirements.txt": "664a0b405db49709b20ac0b6631a03ec276e46e5f96f2c5339bdd839b99ba991"
+      }
+    },
+    {
+      "source": "docs/week10/Day3-CodeQuality-withRuff.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 lint 結果敘述",
+      "checked_files": [
+        ".github/workflows/ci.yml",
+        "requirements-dev.txt"
+      ],
+      "evidence_source": "docs/week10/Day3-CodeQuality-withRuff.md",
+      "excerpt": "CI Pass",
+      "interpretation": "原文列 import／check 問題但缺完整 run log，不作當前全repo lint通過聲明。",
+      "corrections": "CI fail 不等於自動禁止主分支合併，還要 repository branch protection／required checks，repo檔案無法證明已設定。Ruff 只檢查啟用規則，不保證安全／邏輯正確。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        ".github/workflows/ci.yml": "545b84887e128740b41e0228613e87b8dba6da4163a9c35432e4030db64d35ee",
+        "requirements-dev.txt": "7c30d603022f996ed247ac64d526588315571300f41adeed363f38b20164c7f4"
+      }
+    },
+    {
+      "source": "docs/week10/Day4-Pytest-API-Testing-Foundation.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史依賴失敗與現行測試",
+      "checked_files": [
+        "tests/test_api.py",
+        "tests/conftest.py"
+      ],
+      "evidence_source": "docs/week10/Day4-Pytest-API-Testing-Foundation.md",
+      "excerpt": "ConnectionError: redis:6379",
+      "interpretation": "保留當時 missing dependency 與 Redis錯誤；新增 fixtures 隔離依賴，不把替身成功當真實連線成功。",
+      "corrections": "目前 test_api 直接呼叫 endpoint 函式，已不是文內 TestClient HTTP 測試；不驗證路由、中介層或 HTTP status。POST 現在先 DB後Redis，舊依賴錯誤順序不能當現行保證。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "tests/test_api.py": "5f3b69ebfbdb858ee6bfab290049d0d1928228818b40640c103cb79ae056bf48",
+        "tests/conftest.py": "93ca989229655e36a3077e0587b96d1c341ee332d4d08af9298439b5ab2928e9"
+      }
+    },
+    {
+      "source": "docs/week10/Day5-Pytest-MockCI-Integration.md",
+      "status": "reviewed",
+      "evidence_kind": "Mock 設計與成功敘述",
+      "checked_files": [
+        "tests/conftest.py",
+        "tests/test_api.py",
+        ".github/workflows/ci.yml"
+      ],
+      "evidence_source": "docs/week10/Day5-Pytest-MockCI-Integration.md",
+      "excerpt": "FakeRedis",
+      "interpretation": "原文 Pytest全過缺獨立本課summary；目前函式測試範圍已說明，不宣稱 HTTP整合測試。",
+      "corrections": "FakeRedis 的 set/rpush 僅回固定值，不保存資料；FakeSession commit 不碰DB。這些測試不證明 Redis transaction、DB constraint 或實際連線。API contract 變更應先確認意圖，不是為通過測試任意改 assertion。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "tests/conftest.py": "93ca989229655e36a3077e0587b96d1c341ee332d4d08af9298439b5ab2928e9",
+        "tests/test_api.py": "5f3b69ebfbdb858ee6bfab290049d0d1928228818b40640c103cb79ae056bf48",
+        ".github/workflows/ci.yml": "545b84887e128740b41e0228613e87b8dba6da4163a9c35432e4030db64d35ee"
+      }
+    },
+    {
+      "source": "docs/week10/Day6-Docker-Build-inCI.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 Docker build 敘述",
+      "checked_files": [
+        "docker/Dockerfile",
+        ".dockerignore",
+        ".github/workflows/ci.yml"
+      ],
+      "evidence_source": "docs/week10/Day6-Docker-Build-inCI.md",
+      "excerpt": "Docker Image Build 成功",
+      "interpretation": "保存原文build成功敘述，沒有本課image digest／完整build log；不重新build。",
+      "corrections": "非root是安全措施之一，不等於 production 等級認證。base tag 與部分套件未鎖digest/version；build成功不驗證啟動、憑據、服務依賴或漏洞。dockerignore 排除 build context 不必然影響最終未COPY檔案的映像體積。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "docker/Dockerfile": "5f96137e56bf3ced6fc447cf604bb678753f55341cbd0028675bddd441dc41a3",
+        ".dockerignore": "242e67190567711c178bcfc9523e52499beeb07b0aef483fd72f33aefd6fc9c8",
+        ".github/workflows/ci.yml": "545b84887e128740b41e0228613e87b8dba6da4163a9c35432e4030db64d35ee"
+      }
+    },
+    {
+      "source": "docs/week10/Day7-GitHub-Actions-GitOps-自動部署-ArgoCD.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 GitOps 敘述与現行限制",
+      "checked_files": [
+        ".github/workflows/ci.yml",
+        "argocd/application-dev.yaml",
+        "helm/postgres/templates/statefulset.yaml"
+      ],
+      "evidence_source": "docs/week10/Day7-GitHub-Actions-GitOps-自動部署-ArgoCD.md",
+      "excerpt": "directory exists but is not empty",
+      "interpretation": "舊PGDATA錯誤保留；沒有本課workflow URL、digest、Argo revision鏈，不能宣布現在主線完整自動部署。",
+      "corrections": "CI只改 helm/api/values-dev.yaml，主overlay獨立image tag不會跟著更新。auth/push/commit步驟沒有依push/PR分支隔離，不能保證fork PR都成功或權限最小。PGDATA子目錄修正是初始化位置，不是既有資料自動遷移。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        ".github/workflows/ci.yml": "545b84887e128740b41e0228613e87b8dba6da4163a9c35432e4030db64d35ee",
+        "argocd/application-dev.yaml": "885ad838b748143c45a6ebd0c8d98c801c521ca77b37fe76714f2870ba8576ae",
+        "helm/postgres/templates/statefulset.yaml": "668f130a9496c5758d10e29ae1137522ffbe551fa4dac2fb5c082de3158b876e"
+      }
+    },
+    {
+      "source": "docs/week11/Day1-建立Prometheus監控平台與Observability-Node-Pool.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史監控失敗與設定",
+      "checked_files": [
+        "helm/prometheus/templates/deployment.yaml",
+        "terraform/modules/gke/main.tf"
+      ],
+      "evidence_source": "docs/week11/Day1-建立Prometheus監控平台與Observability-Node-Pool.md",
+      "excerpt": "open /prometheus/queries.active",
+      "interpretation": "舊permission denied訊息保留，預期Running/node xxxx不是完整成功log。",
+      "corrections": "目前 Prometheus模板 Recreate、fsGroup65534與checksum/config存在，但主gpu-sg overlay沒有這個chart或observability pool。PVC不等於永久不丟資料；掛載／權限／備份分開。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "helm/prometheus/templates/deployment.yaml": "394dd319785d3867793aa21ad463368762ca9db8a71b9ea63f13252a2ddb715d",
+        "terraform/modules/gke/main.tf": "0ae55273427c4b104316c9de2210a2fc0081490519b07e1712f8dbac4c0a5b46"
+      }
+    },
+    {
+      "source": "docs/week11/Day2-Prometheus-ScrapeJob-Target與PullModel.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 scrape 格式失敗",
+      "checked_files": [
+        "helm/prometheus/templates/configmap.yaml",
+        "helm/prometheus/templates/deployment.yaml"
+      ],
+      "evidence_source": "docs/week11/Day2-Prometheus-ScrapeJob-Target與PullModel.md",
+      "excerpt": "application/json",
+      "interpretation": "TSDB lock與RESTARTS9屬當時敘述，現行Recreate不可當已驗證無中斷；static api-service抓取不是每副本獨立target。",
+      "corrections": "當時 /metrics 曾回JSON，不能說完全沒有此路由。格式不符僅證明取得某回覆，不證明所有網路與依賴正常。現在 /metrics 是Prometheus格式；ConfigMap更新觸發rollout來自checksum，不是所有ConfigMap都會自動重建Pod。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "helm/prometheus/templates/configmap.yaml": "3c107629c4c4a9ba9e8dd4d7d4b1e72df57ada7a9f642e22556335705d05789e",
+        "helm/prometheus/templates/deployment.yaml": "394dd319785d3867793aa21ad463368762ca9db8a71b9ea63f13252a2ddb715d"
+      }
+    },
+    {
+      "source": "docs/week11/Day3-FastAPI-Application-Metrics.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史 metrics 摘錄",
+      "checked_files": [
+        "api/main.py",
+        "helm/prometheus/templates/configmap.yaml",
+        "requirements.txt"
+      ],
+      "evidence_source": "docs/week11/Day3-FastAPI-Application-Metrics.md",
+      "excerpt": "process_cpu_seconds_total 0.18",
+      "interpretation": "0.18是原文示例，非目前程序CPU數據；歷史UP沒有完整target JSON。",
+      "corrections": "/job-metrics是業務JSON，/metrics是instrumentation；沒有把工作數量自動轉Prometheus gauge。in-progress 是否啟用不能僅由默认 Instrumentator()推定全部指標存在；UP只表示scrape成功，不是MPI／DB功能驗收。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "api/main.py": "42f1824da2685e856c734beb2f44e5f376b96f95591e34d31f7a6c7f20101989",
+        "helm/prometheus/templates/configmap.yaml": "3c107629c4c4a9ba9e8dd4d7d4b1e72df57ada7a9f642e22556335705d05789e",
+        "requirements.txt": "664a0b405db49709b20ac0b6631a03ec276e46e5f96f2c5339bdd839b99ba991"
+      }
+    },
+    {
+      "source": "docs/week11/Day4-NodeExporter-GrafanaDashboard-KubernetesServiceDiscovery.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史兩target文字記錄",
+      "checked_files": [
+        "helm/prometheus/templates/configmap.yaml",
+        "helm/prometheus/templates/clusterrole.yaml",
+        "helm/prometheus/templates/clusterrolebinding.yaml"
+      ],
+      "evidence_source": "docs/week11/Day4-NodeExporter-GrafanaDashboard-KubernetesServiceDiscovery.md",
+      "excerpt": "2 / 2 UP",
+      "interpretation": "2/2是舊target摘要，不證明現在GKE監控在線；Grafana dashboard檔案不是實際時序資料。",
+      "corrections": "static Service DNS不因Pod IP變動就必須改設定，但只抓Service不能穩定區分所有Node。現行role為endpoints，授予EndpointSlices不表示改用該角色。DaemonSet覆蓋受selectors/taints影響；RBAC包含nodes/proxy，不能叫已最小化。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "helm/prometheus/templates/configmap.yaml": "3c107629c4c4a9ba9e8dd4d7d4b1e72df57ada7a9f642e22556335705d05789e",
+        "helm/prometheus/templates/clusterrole.yaml": "c98c2583adf183ae07fce15f14b35d20ce85b335a6611af98789e8dd4bd50899",
+        "helm/prometheus/templates/clusterrolebinding.yaml": "8e28a830c50a854104c5a6fb54a90fdf806080652da2cd60edbfbb8c177cf7bd"
+      }
+    },
+    {
+      "source": "docs/week12/Day1-Linux-CPU-Performance-Analysis.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史CPU觀察",
+      "checked_files": [],
+      "evidence_source": "docs/week12/Day1-Linux-CPU-Performance-Analysis.md",
+      "excerpt": "CPU0 idle 91.55%",
+      "interpretation": "Ubuntu24.04/EPYC7B12舊觀察；4顆idle約91～94%，只限取樣區間，非現行MPI。",
+      "corrections": "Load包含runnable及不可中斷等待，不是只等CPU的程序；load=4不能直接推4vCPU滿載。VM topology不是實體宿主完整拓樸，MainThread名字也不證明是哪個應用。[Linux文件](https://www.kernel.org/pub/linux/docs/man-pages/book/man-pages-6.17.pdf)。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    },
+    {
+      "source": "docs/week12/Day2-Linux-Memory-Performance-Analysis.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史記憶體快照",
+      "checked_files": [],
+      "evidence_source": "docs/week12/Day2-Linux-Memory-Performance-Analysis.md",
+      "excerpt": "Mem:            15Gi       2.5Gi       8.0Gi        74Mi       5.1Gi        12Gi",
+      "interpretation": "當時available12Gi不能排除單容器限額、記憶體頻寬或短時壓力；沒有OOM log。",
+      "corrections": "available是估計可用量，不等於立即保證；used不是單純所有程式獨占RSS。一次r=3、wa=0不足排除CPU/I/O瓶頸；無swap本來就會si/so=0。cgroup限額也可觸發kernel OOM，Killed本身不是OOM證明。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    },
+    {
+      "source": "docs/week12/Day3-Linux-Disk-Performance-Analysis.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史fio數值",
+      "checked_files": [],
+      "evidence_source": "docs/week12/Day3-Linux-Disk-Performance-Analysis.md",
+      "excerpt": "177 MiB/s",
+      "interpretation": "30秒1MiB寫入約177MiB/s，只限當時條件；random read只列命令未保存結果，不補造。",
+      "corrections": "本課 /data 獨立磁碟與後來Pod /tmp不是同一測試。容量百分比與延遲門檻是粗略示意，不可普遍作合格標準；random4k不代表所有資料庫尤其Redis工作負載。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    },
+    {
+      "source": "docs/week12/Day4-Linux-Historical-Performance-Analysis.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史timer設定，無事故時序",
+      "checked_files": [],
+      "evidence_source": "docs/week12/Day4-Linux-Historical-Performance-Analysis.md",
+      "excerpt": "OnCalendar=*:00/10",
+      "interpretation": "文內timer說明不是保存sa檔；沒有昨天事故曲線可讀，不宣稱已診斷該事故。",
+      "corrections": "sar也能帶interval即時採樣／輸出檔案，不是只能讀歷史；本例timer十分鐘不等於工具只支援十分鐘。其他工具也能把輸出保存，22:30 timeout是設想非真事故。[sysstat手冊](https://github.com/sysstat/sysstat/blob/master/man/sar.in)。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    },
+    {
+      "source": "docs/week12/Day5-Linux-CPU-Benchmark-with-sysbench.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史sysbench表格",
+      "checked_files": [],
+      "evidence_source": "docs/week12/Day5-Linux-CPU-Benchmark-with-sysbench.md",
+      "excerpt": "8024.75",
+      "interpretation": "3615.85→8024.75 events/s是本 workload 基線，缺重複量測／變異；不是通用CPU分數。",
+      "corrections": "1與4threads吞吐約2.22倍，不能僅凭此歸因context switch；SMT、主機干擾等需證據。sysbench也可作壓力負載，工具不是互斥分類；4threads不保證固定4CPU。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    },
+    {
+      "source": "docs/week12/Day6-Linux-CPU-Profiling-with-perf.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史PMU不可用與概念示例",
+      "checked_files": [],
+      "evidence_source": "docs/week12/Day6-Linux-CPU-Profiling-with-perf.md",
+      "excerpt": "<not supported>",
+      "interpretation": "Function A35%是示例，沒有perf.data或真實hotspot報告；不宣稱完成函式層調校。",
+      "corrections": "task-clock可跨threads累積大於wall；低比值也可能sleep/lock/節流，不足斷言I/O-bound。Major fault也可能檔案頁讀入，不僅RAM不足swap。PMU不可用只限此VM，不泛化所有雲端。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    },
+    {
+      "source": "docs/week12/Day7-Linux-System-Call-Analysis-with-strace.md",
+      "status": "reviewed",
+      "evidence_kind": "syscall概念示例，無完整trace",
+      "checked_files": [],
+      "evidence_source": "docs/week12/Day7-Linux-System-Call-Analysis-with-strace.md",
+      "excerpt": "execve(\"/usr/bin/ls\", ...)",
+      "interpretation": "省略號是示例不是trace；未保存真實API timeout排查結果，不要求重跑。",
+      "corrections": "strace attach有開銷及權限要求，不保證不影響線上服務；容器未必有工具/ptrace權限。sendto/recvfrom不限TCP；要看fd、時間、返回值才能判斷。可搭配-T/-tt/-f，不能只看函式名稱推根因。[strace手冊](https://github.com/strace/strace/blob/master/doc/strace.1.in)。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    },
+    {
+      "source": "docs/week13/Day1-FastAPI-API-Benchmark.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史ApacheBench摘要",
+      "checked_files": [
+        "api/main.py"
+      ],
+      "evidence_source": "docs/week13/Day1-FastAPI-API-Benchmark.md",
+      "excerpt": "126.43 req/sec",
+      "interpretation": "1000request、c10、7.910s約126.42RPS與摘要相符；非現行服務容量保證。",
+      "corrections": "GET /只回固定JSON，不經DB／Redis，更不量benchmark完成。Failed requests=0不等於已確認沒有非2xx，需完整status統計。ab time/request的併發換算與processing包含排隊／網路，不等於純CPU處理時間。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "api/main.py": "42f1824da2685e856c734beb2f44e5f376b96f95591e34d31f7a6c7f20101989"
+      }
+    },
+    {
+      "source": "docs/week13/Day2-Redis-Benchmark.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史redis-benchmark表格",
+      "checked_files": [
+        "k8s/redis-deployment.yaml"
+      ],
+      "evidence_source": "docs/week13/Day2-Redis-Benchmark.md",
+      "excerpt": "33670",
+      "interpretation": "PING33670、SET26385、GET30030 req/s為當時摘要；缺raw與持久化設定。",
+      "corrections": "這是指定client/資料大小條件下觀測吞吐，不是最大能力。GET比SET快的原因不能只歸AOF，舊Redis YAML未顯式啟用AOF；需當時CONFIG和負載證據。-n對每項測試而非整個清單共用总數。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/redis-deployment.yaml": "52113d86a319ffd70a0e29edcc0fbb14e83d4e5d1346fd3b839826a664dd92ff"
+      }
+    },
+    {
+      "source": "docs/week13/Day3-PostgreSQL-Benchmark.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史pgbench結果",
+      "checked_files": [
+        "benchmark/postgres/run_pgbench.sh"
+      ],
+      "evidence_source": "docs/week13/Day3-PostgreSQL-Benchmark.md",
+      "excerpt": "48.868 ms",
+      "interpretation": "10client×100=1000、204.63TPS與48.868ms摘要；沒有完整原始輸出及環境日期。",
+      "corrections": "TPS限pgbench script/scale/client條件，不能當平台API TPS；初始化專用資料庫是寫入操作，不是read-only。現行腳本以交易數結束，不固定60秒。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "benchmark/postgres/run_pgbench.sh": "732472c4a356f9793d09a5e89244eb7ddb37b717b12748c0b620e938523a5e9d"
+      }
+    },
+    {
+      "source": "docs/week13/Day4-PostgreSQL-Concurrency-Benchmark.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史併發比較",
+      "checked_files": [
+        "benchmark/postgres/run_pgbench.sh"
+      ],
+      "evidence_source": "docs/week13/Day4-PostgreSQL-Concurrency-Benchmark.md",
+      "excerpt": "150.34",
+      "interpretation": "10→100client：204.63→150.34TPS、48.87→665.17ms，僅支持此條件下增併發未改善，瓶頸仍是候選。",
+      "corrections": "同時改client、threads與總交易數，不能當純單變因比較。表中50client的303.47ms與164.76TPS關係大致相符；最佳點只限已測點，缺低於10client和重複量測。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "benchmark/postgres/run_pgbench.sh": "732472c4a356f9793d09a5e89244eb7ddb37b717b12748c0b620e938523a5e9d"
+      }
+    },
+    {
+      "source": "docs/week13/day5-resource-monitoring.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史資源取樣",
+      "checked_files": [
+        "benchmark/postgres/run_pgbench.sh",
+        "benchmark/k8s/benchmark-runner.yaml"
+      ],
+      "evidence_source": "docs/week13/day5-resource-monitoring.md",
+      "excerpt": "603m",
+      "interpretation": "100000交易、150.340909TPS、665.155ms；CPU1m→603m是文內觀察，不是完整同步時間序列。",
+      "corrections": "node67%不排除單核心、cgroup節流或排程瓶頸；memory容量有餘也不排除頻寬/快取問題。lock/WAL是待驗假設，沒有pg_stat/等待事件證據不能定案。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "benchmark/postgres/run_pgbench.sh": "732472c4a356f9793d09a5e89244eb7ddb37b717b12748c0b620e938523a5e9d",
+        "benchmark/k8s/benchmark-runner.yaml": "1659837ba447efe4c99d4e9912f49e441b3652d853b56f94b006cf43913b2200"
+      }
+    },
+    {
+      "source": "docs/week13/day6-benchmark-automation.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史runner摘要與程式缺陷",
+      "checked_files": [
+        "benchmark/postgres/run_pgbench.sh"
+      ],
+      "evidence_source": "docs/week13/day6-benchmark-automation.md",
+      "excerpt": "192.200688",
+      "interpretation": "10client1000交易、52.029ms、192.200688TPS為文內摘要；提及log檔名不代表repo保存該log。",
+      "corrections": "run_pgbench.sh只有set -e，pgbench|tee無pipefail，可能吞掉pgbench非零退出；標為已知限制，本次不修改benchmark實作。結果目錄相對cwd，不必然在script旁；Pod檔案非永久儲存。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "benchmark/postgres/run_pgbench.sh": "732472c4a356f9793d09a5e89244eb7ddb37b717b12748c0b620e938523a5e9d"
+      }
+    },
+    {
+      "source": "docs/week13/day7-1-cpu-benchmark.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史CPU結果檔",
+      "checked_files": [
+        "benchmark/cpu/run_stress_ng.sh",
+        "benchmark/k8s/benchmark-runner.yaml"
+      ],
+      "evidence_source": "benchmark/cpu/results/cpu_benchmark_20260810.md",
+      "excerpt": "2000m (103%)",
+      "interpretation": "20260810檔名、舊hpc-dev primary node；結果檔保存422m→2000m。92486在課文標Example，不能當raw。",
+      "corrections": "103%不能直接斷言sampling variation，也需核對allocatable/capacity分母。bogo ops是工具特定計數，不是跨工具分數；2CPU node限制不是建立更多硬體。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "benchmark/cpu/run_stress_ng.sh": "f4e35eda6fc2a28e99c736d59136b998afb0a138448a2060dd7553383b5fa5d1",
+        "benchmark/k8s/benchmark-runner.yaml": "1659837ba447efe4c99d4e9912f49e441b3652d853b56f94b006cf43913b2200"
+      }
+    },
+    {
+      "source": "docs/week13/day7-2-storage-benchmark.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史fio結果檔",
+      "checked_files": [
+        "benchmark/storage/run_fio.sh"
+      ],
+      "evidence_source": "benchmark/storage/results/fio_20260810.md",
+      "excerpt": "4512 KiB/s",
+      "interpretation": "20260810摘要：read1128/write1122 IOPS、平均437.99/444.73us；原完整fio JSON未保存。",
+      "corrections": "readwrite是混合順序I/O，不是randrw，4k也不使它自動變random。測/tmp container storage，不是Postgres PVC；direct1降低pagecache影響，不排除所有儲存快取。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "benchmark/storage/run_fio.sh": "2ccc0aafec1bbd0241ca799c4924fad781d9f8ebe1316bf9fbc759528c9d2130"
+      }
+    },
+    {
+      "source": "docs/week13/day7-3-network-benchmark.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史同節點iperf摘要",
+      "checked_files": [
+        "benchmark/network/run_iperf3.sh"
+      ],
+      "evidence_source": "benchmark/network/results/iperf3_20260810.md",
+      "excerpt": "18.8 Gbits/sec",
+      "interpretation": "20260810文內結果18.8Gbps、65.7GBytes、Retr10367；未保存tcpdump與完整iperf JSON。",
+      "corrections": "同節點不能代表NIC跨node/RDMA頻寬。10367 retransmissions值得調查，throughput高不等於「網路正常」；sender≈receiver不證明無loss或latency合格。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "benchmark/network/run_iperf3.sh": "f355b5d0de5ff342ea332680cc74c2de8c8dc704b3a24c90744c4a3abb390a26"
+      }
+    },
+    {
+      "source": "docs/week13/day7-4-benchmark-framework.md",
+      "status": "reviewed",
+      "evidence_kind": "runner實作，無全套原始log",
+      "checked_files": [
+        "benchmark/run_all.sh",
+        "benchmark/postgres/run_pgbench.sh",
+        "benchmark/cpu/run_stress_ng.sh",
+        "benchmark/storage/run_fio.sh",
+        "benchmark/network/run_iperf3.sh"
+      ],
+      "evidence_source": "docs/week13/day7-4-benchmark-framework.md",
+      "excerpt": "run_all.sh",
+      "interpretation": "四模組存在，但框架結構圖不是全部有效執行的證明；原debian Pod還需要工具。",
+      "corrections": "這個入口只串CPU/Storage/Postgres/Network，沒串Redis/HTTP，更未接FastAPI MPI API。依賴cwd benchmark/與外部pgbench DB/iperf server；單Pod不保證無前一測試干擾。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "benchmark/run_all.sh": "3284ccff4c4d4f47c6491587d27708adecb8c23ccd080dbd5a5f2acf57b76715",
+        "benchmark/postgres/run_pgbench.sh": "732472c4a356f9793d09a5e89244eb7ddb37b717b12748c0b620e938523a5e9d",
+        "benchmark/cpu/run_stress_ng.sh": "f4e35eda6fc2a28e99c736d59136b998afb0a138448a2060dd7553383b5fa5d1",
+        "benchmark/storage/run_fio.sh": "2ccc0aafec1bbd0241ca799c4924fad781d9f8ebe1316bf9fbc759528c9d2130",
+        "benchmark/network/run_iperf3.sh": "f355b5d0de5ff342ea332680cc74c2de8c8dc704b3a24c90744c4a3abb390a26"
+      }
+    },
+    {
+      "source": "docs/week13/day7-5-benchmark-framework-v2.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史PASS文字，現存失敗傳遞缺口",
+      "checked_files": [
+        "benchmark/run_all.sh",
+        "benchmark/postgres/run_pgbench.sh"
+      ],
+      "evidence_source": "docs/week13/day7-5-benchmark-framework-v2.md",
+      "excerpt": "[PASS] PostgreSQL Benchmark",
+      "interpretation": "保存PASS摘要，但有效性受子腳本缺口限制；不把歷史PASS改寫成失敗，也不保證數據一定有效。",
+      "corrections": "外層pipefail無法修正子腳本已被tee掩蓋的錯誤；PG腳本未設pipefail，所以不能說所有FAIL都攔下。exit0也不驗證throughput達標或無部分交易失敗。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "benchmark/run_all.sh": "3284ccff4c4d4f47c6491587d27708adecb8c23ccd080dbd5a5f2acf57b76715",
+        "benchmark/postgres/run_pgbench.sh": "732472c4a356f9793d09a5e89244eb7ddb37b717b12748c0b620e938523a5e9d"
+      }
+    },
+    {
+      "source": "docs/week13/day7-6-result-integration.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史結果目錄敘述",
+      "checked_files": [
+        "benchmark/run_all.sh",
+        "benchmark/postgres/run_pgbench.sh"
+      ],
+      "evidence_source": "docs/week13/day7-6-result-integration.md",
+      "excerpt": "results/20260810_071421/",
+      "interpretation": "課文聲稱四log存在，repo未找到此完整session；已有三份Markdown摘要不能冒充四份raw logs。",
+      "corrections": "timestamp精度只有秒，mkdir -p與tee可使同秒結果覆蓋；Pod本地log不叫永久保存。外層合併stderr，但內層pgbench log只tee stdout。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "benchmark/run_all.sh": "3284ccff4c4d4f47c6491587d27708adecb8c23ccd080dbd5a5f2acf57b76715",
+        "benchmark/postgres/run_pgbench.sh": "732472c4a356f9793d09a5e89244eb7ddb37b717b12748c0b620e938523a5e9d"
+      }
+    },
+    {
+      "source": "docs/week13/day7-7-week13-final-report.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史綜合報告",
+      "checked_files": [
+        "benchmark/run_all.sh",
+        "benchmark/storage/run_fio.sh",
+        "benchmark/postgres/run_pgbench.sh"
+      ],
+      "evidence_source": "docs/week13/day7-7-week13-final-report.md",
+      "excerpt": "Random Read/Write",
+      "interpretation": "框架目前是獨立shell工具集，不等於API真實CPU/memory/disk分支；HTML/Grafana歷史比較是計畫。",
+      "corrections": "本課Random標示與run_fio.sh readwrite不符，修正為混合順序。保存summary不等於完整歷史artifact；PG退出碼缺口也適用此報告。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "benchmark/run_all.sh": "3284ccff4c4d4f47c6491587d27708adecb8c23ccd080dbd5a5f2acf57b76715",
+        "benchmark/storage/run_fio.sh": "2ccc0aafec1bbd0241ca799c4924fad781d9f8ebe1316bf9fbc759528c9d2130",
+        "benchmark/postgres/run_pgbench.sh": "732472c4a356f9793d09a5e89244eb7ddb37b717b12748c0b620e938523a5e9d"
+      }
+    },
+    {
+      "source": "docs/week13/day7-benchmark-report.md",
+      "status": "reviewed",
+      "evidence_kind": "原頁僅索引，補既有結果",
+      "checked_files": [
+        "benchmark/run_all.sh",
+        "benchmark/storage/run_fio.sh",
+        "benchmark/network/run_iperf3.sh"
+      ],
+      "evidence_source": "benchmark/storage/results/fio_20260810.md",
+      "excerpt": "4512 KiB/s",
+      "interpretation": "20260810舊Pod/tmp fio：read4512、write4490KiB/s；同節點網路18.8Gbps是另一份摘要，不混成現在服務驗收。",
+      "corrections": "原頁只有四個連結，沒有獨立報告正文或新量測；不要算成另一輪實驗。本頁直接接回儲存結果，其餘見7-1～7-7。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "benchmark/run_all.sh": "3284ccff4c4d4f47c6491587d27708adecb8c23ccd080dbd5a5f2acf57b76715",
+        "benchmark/storage/run_fio.sh": "2ccc0aafec1bbd0241ca799c4924fad781d9f8ebe1316bf9fbc759528c9d2130",
+        "benchmark/network/run_iperf3.sh": "f355b5d0de5ff342ea332680cc74c2de8c8dc704b3a24c90744c4a3abb390a26"
+      }
+    },
+    {
+      "source": "docs/week14/day2-kubernetes-gpu-scheduling.md",
+      "status": "reviewed",
+      "evidence_kind": "GPU 排程概念，無當日GPU測試",
+      "checked_files": [],
+      "evidence_source": "docs/week14/day2-kubernetes-gpu-scheduling.md",
+      "excerpt": "<none>",
+      "interpretation": "<none>反映當日尚無GPU pool，不能算GPU workload成功。",
+      "corrections": "device plugin不只登記資源，也參與裝置分配；排程還受CPU、memory、taint與selector限制。Scheduled不等於容器能執行。現行只有一張L4，time-sharing份額不是多張GPU。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    },
+    {
+      "source": "docs/week14/day3-gpu-monitoring-architecture.md",
+      "status": "reviewed",
+      "evidence_kind": "監控架構說明，非執行結果",
+      "checked_files": [
+        "helm/prometheus/templates/configmap.yaml"
+      ],
+      "evidence_source": "docs/week14/day3-gpu-monitoring-architecture.md",
+      "excerpt": "DCGM Exporter",
+      "interpretation": "本課未保存當日GPU metrics；後續P100與L4結果各有自己的環境，不能回填成此日實測。",
+      "corrections": "DCGM不是GPU觀測唯一方法，nvidia-smi也是有效來源；Prometheus可透過discovery抓Pod，不一定只能透過Service。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "helm/prometheus/templates/configmap.yaml": "3c107629c4c4a9ba9e8dd4d7d4b1e72df57ada7a9f642e22556335705d05789e"
+      }
+    },
+    {
+      "source": "docs/week14/Day4-GKE-GPU-Node-Pool-GPU-Scheduling.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史P100 nvidia-smi 摘錄",
+      "checked_files": [],
+      "evidence_source": "docs/week14/Day4-GKE-GPU-Node-Pool-GPU-Scheduling.md",
+      "excerpt": "580.159.04",
+      "interpretation": "P100/driver580.159.04是歷史環境，不是現行單L4配置。",
+      "corrections": "nvidia-smi驗證driver能查裝置，不等於CUDA kernel或訓練成功。舊gpu-test-pod.yaml未保存，不能指向不存在檔案；quota與stock不同，不能保證有quota就可建立。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    },
+    {
+      "source": "docs/week14/Day5-GPU-Metrics-Monitoring-integration.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史DCGM故障與metrics",
+      "checked_files": [
+        "benchmark/k8s/dcgm-exporter-remote.yaml",
+        "benchmark/k8s/nvidia-dcgm.yaml"
+      ],
+      "evidence_source": "docs/week14/Day5-GPU-Metrics-Monitoring-integration.md",
+      "excerpt": "29.328",
+      "interpretation": "舊P100 power29.328W與temperature51是文內結果；沒有保存完整Prometheus時序。",
+      "corrections": "TCP5555可連不等於DCGM協定／版本相容。hostengine使用privileged與hostPort、exporter加SYS_ADMIN，不可描述成最小權限設定。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "benchmark/k8s/dcgm-exporter-remote.yaml": "b4ff4430bdea6ed8d2be95c6afc97823a9a9636028a504219d8adf1622c4b1fa",
+        "benchmark/k8s/nvidia-dcgm.yaml": "36d652ee5e9969531631614718bf0151dd1d46f322d0e1b8505d94b062965b3f"
+      }
+    },
+    {
+      "source": "docs/week14/Day6-gpu-dashboard-establish-and-gpuworkload-verification.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史P100 dashboard觀察",
+      "checked_files": [],
+      "evidence_source": "docs/week14/Day6-gpu-dashboard-establish-and-gpuworkload-verification.md",
+      "excerpt": "| GPU Temperature | 約 60°C |",
+      "interpretation": "文內util0→100%、temp51→60°C是舊觀察，缺原始時間序列與dashboard匯出，不能用現在L4結果冒充。",
+      "corrections": "repo沒有gpu_stress.cu，不能說已保存可重現的stress程式；custom-dashboard.json未提供本課完整GPU面板。util100%不等於峰值FLOPS或所有硬體單元飽和。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    },
+    {
+      "source": "docs/week15/Day1—PyTorch-GPU-Runtime.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史GPU功能驗證",
+      "checked_files": [
+        "runtime/pytorch/runtime.py",
+        "kustomize/overlays/gpu-sg/kustomization.yaml"
+      ],
+      "evidence_source": "docs/week15/Day1—PyTorch-GPU-Runtime.md",
+      "excerpt": "Result Device: cuda:0",
+      "interpretation": "此舊log對應當時P100實作；現行最後sleep不是持續GPU負載。",
+      "corrections": "現行runtime.py已改成class並import runtime.base；舊overlay只掛runtime.py等平面檔，未掛base.py/套件結構，不能保證舊直接python /runtime/runtime.py入口仍可用。初始化及一次matmul不是training benchmark。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "runtime/pytorch/runtime.py": "19ecea7e3b770e2ba07db206affb91f6af11f45c655b649144b7ead02a512707",
+        "kustomize/overlays/gpu-sg/kustomization.yaml": "aed1822155b6c272a2c3a57bd2f1f33ee5285ce8b3d9b736bf6a03a30fef49aa"
+      }
+    },
+    {
+      "source": "docs/week15/Day2-PyTorch-Training-Runtime.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史合成資料訓練與故障",
+      "checked_files": [
+        "runtime/pytorch/train.py",
+        "helm/pytorch-runtime/templates/training-job.yaml",
+        "kustomize/overlays/gpu-sg/kustomization.yaml"
+      ],
+      "evidence_source": "docs/week15/Day2-PyTorch-Training-Runtime.md",
+      "excerpt": "Epoch [5/5] Average Loss: 0.619023",
+      "interpretation": "保存舊loss7.249890→.619023與UnboundLocalError歷程；是合成回歸，不是13M causal LM或LLM品質評估。",
+      "corrections": "現在train.py是9step profiler，非文中的5epoch或100epoch版本。平均batch loss未按batch size加權，最後短batch時不等於全sample平均；loss下降不等於泛化驗收。Job固定名稱與ConfigMap更新不會自動重跑。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "runtime/pytorch/train.py": "a0d3b4e85367b9dca87fdb4dbefff37190f04a4103cc2dd92a7039298e86fbde",
+        "helm/pytorch-runtime/templates/training-job.yaml": "6ec90a18415ef382f9848394fbcfd1865bd65915f173086637a89b604988c083",
+        "kustomize/overlays/gpu-sg/kustomization.yaml": "aed1822155b6c272a2c3a57bd2f1f33ee5285ce8b3d9b736bf6a03a30fef49aa"
+      }
+    },
+    {
+      "source": "docs/week15/Day3-vLLM-Inference-Runtime.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史vLLM服務與跨區監控",
+      "checked_files": [
+        "runtime/vllm/runtime.py",
+        "helm/vllm/values.yaml",
+        "helm/vllm/templates/deployment.yaml"
+      ],
+      "evidence_source": "docs/week15/Day3-vLLM-Inference-Runtime.md",
+      "excerpt": "8.98",
+      "interpretation": "Taiwan監控→Singapore單L4歷史架構，IP曾由.9更換；scale0舊操作不證明目前雲端已關閉。",
+      "corrections": "latest映像不固定版本；running降至0不證明所有curl成功。5分鐘rate不是峰值benchmark吞吐；KVusage歸零不能直接證明prefix cache全部清空。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "runtime/vllm/runtime.py": "ea7cecbf2189bf1e3cfe5c2d72a8301d050b6bb660fbbb09a70348d6191d28d3",
+        "helm/vllm/values.yaml": "702ba3a56a8781187b55d0318a358ddfb2f00f872289bcc931ba378ab66dca71",
+        "helm/vllm/templates/deployment.yaml": "aa4420eef78755af136833647d32c06ac4523fae330ac1330cfe3d29e1936e6d"
+      }
+    },
+    {
+      "source": "docs/week15/Day4-Runtime-Abstraction.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史adapter推論回覆",
+      "checked_files": [
+        "runtime/base.py",
+        "runtime/manager.py",
+        "runtime/pytorch/runtime.py",
+        "runtime/vllm/runtime.py"
+      ],
+      "evidence_source": "docs/week15/Day4-Runtime-Abstraction.md",
+      "excerpt": "pytorch -> PyTorchRuntime",
+      "interpretation": "類型輸出只是物件建立；文內另有vLLM回覆，沒有目前endpoint在線保證。",
+      "corrections": "相同方法名不表示相同request/result契約：PyTorch忽略request只做matmul，vLLM是HTTPclient。train.py沒有接入manager，manager也未接主MPI API；ONNX/TensorRT只是擴充計畫。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "runtime/base.py": "94b0b4117ae88768474d0f47d301633113656eb69dce11312e63c7ea7b2affa2",
+        "runtime/manager.py": "0012447c72af7dca19e46f36bfe1ef4ce96c624f2dfea6adfdc478e94df9e0ab",
+        "runtime/pytorch/runtime.py": "19ecea7e3b770e2ba07db206affb91f6af11f45c655b649144b7ead02a512707",
+        "runtime/vllm/runtime.py": "ea7cecbf2189bf1e3cfe5c2d72a8301d050b6bb660fbbb09a70348d6191d28d3"
+      }
+    },
+    {
+      "source": "docs/week15/Day5-Benchmark-Engine.md",
+      "status": "reviewed",
+      "evidence_kind": "20260816 vLLM JSON",
+      "checked_files": [
+        "helm/vllm/values.yaml"
+      ],
+      "evidence_source": "benchmark/results/vllm-c1.json",
+      "excerpt": "\"request_throughput\": 1.4787132496608322",
+      "interpretation": "原始JSON保留：c1完成20failed0約1.479req/s；固定128prompts比較見Day6。",
+      "corrections": "c1～16用20prompts、c32用64、c64用128，不能當嚴格單變因比較。max_concurrent_requests欄位與設定max_concurrency不同，缺固定工具版本不能直接解釋成違反併發限制。利用率100%也不足定案compute或bandwidth瓶頸。",
+      "missing": "原始 benchmark JSON 及其 date 欄位已保存；缺固定映像 digest、完整環境快照與重複量測，不能作目前服務可用性或通用容量保證。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "helm/vllm/values.yaml": "702ba3a56a8781187b55d0318a358ddfb2f00f872289bcc931ba378ab66dca71"
+      }
+    },
+    {
+      "source": "docs/week15/Day6-Performance-Analyzer.md",
+      "status": "reviewed",
+      "evidence_kind": "固定prompts JSON與歷史profiler摘要",
+      "checked_files": [
+        "analysis/performance_analyzer.py",
+        "runtime/pytorch/train.py"
+      ],
+      "evidence_source": "docs/week15/Day6-Performance-Analyzer.md",
+      "excerpt": "44.849 ms",
+      "interpretation": "舊DataLoader44.849→12.244ms支持CPU準備成本下降，但缺完整trace與重複驗證，不能寫成已排除所有其他瓶頸。",
+      "corrections": "analyzer只讀3份vLLM JSON並比較TTFT/吞吐百分比，沒有讀profiler、硬體遙測或輸出Prometheus。固定128prompts仍缺重複量測/固定image；ProfilerStep總時間不是單一步時間，不能將43%直接當端到端訓練加速。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "analysis/performance_analyzer.py": "53089fcf99d6806391103f9dee2080259ad86c7c60b8874f02bcd4a9db10d0b0",
+        "runtime/pytorch/train.py": "a0d3b4e85367b9dca87fdb4dbefff37190f04a4103cc2dd92a7039298e86fbde"
+      }
+    },
+    {
+      "source": "docs/week15/Day7-AI-Runtime-Platform-v1-Integration.md",
+      "status": "reviewed",
+      "evidence_kind": "20260817單L4推論JSON",
+      "checked_files": [
+        "analysis/performance_analyzer.py",
+        "kustomize/overlays/gpu-sg/kustomization.yaml",
+        "runtime/vllm/runtime.py"
+      ],
+      "evidence_source": "benchmark/results/day7-vllm.json",
+      "excerpt": "\"completed\": 16",
+      "interpretation": "JSON保存16成功0失敗、5.325req/s、TTFT68.677ms，是當日推論驗證，不是今日GPU服務或主API整合驗收。",
+      "corrections": "架構圖analyzer→Prometheus沒有實作；training分析是人工解讀，並非同一自動流程。現行gpu-sg overlay vLLM副本0，主MPI overlay另一路；不可照舊文直接移除GPU taint。",
+      "missing": "原始 benchmark JSON 及其 date 欄位已保存；缺固定映像 digest、完整環境快照與重複量測，不能作目前服務可用性或通用容量保證。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "analysis/performance_analyzer.py": "53089fcf99d6806391103f9dee2080259ad86c7c60b8874f02bcd4a9db10d0b0",
+        "kustomize/overlays/gpu-sg/kustomization.yaml": "aed1822155b6c272a2c3a57bd2f1f33ee5285ce8b3d9b736bf6a03a30fef49aa",
+        "runtime/vllm/runtime.py": "ea7cecbf2189bf1e3cfe5c2d72a8301d050b6bb660fbbb09a70348d6191d28d3"
+      }
+    },
+    {
+      "source": "docs/week16/day1-multi-gpu-fundamentals.md",
+      "status": "reviewed",
+      "evidence_kind": "分散式概念，非多GPU成果",
+      "checked_files": [
+        "runtime/pytorch/ddp_test.py"
+      ],
+      "evidence_source": "docs/week16/day1-multi-gpu-fundamentals.md",
+      "excerpt": "Real Multi-GPU Validation",
+      "interpretation": "本課明列多GPU Pending；CPU多程序是有效流程替代，不是GPU網路效能替代。",
+      "corrections": "global batch公式假設每rank等量且未加gradient accumulation；DDP不自動切資料，需sampler等。compute/communication可能重疊，不可一般化成時間直接相加。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "runtime/pytorch/ddp_test.py": "864f0efc00a5eeaca0126bee391d56f97c7de7aaedc65a93f74d5b302944269b"
+      }
+    },
+    {
+      "source": "docs/week16/day2-pytorch-ddp.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史CPU Gloo DDP輸出",
+      "checked_files": [
+        "runtime/pytorch/ddp_test.py"
+      ],
+      "evidence_source": "docs/week16/day2-pytorch-ddp.md",
+      "excerpt": "PARAM_CHECKSUM=-0.000516",
+      "interpretation": "兩rank不同loss相同加總支持同步流程，非完整數值正確性／多GPU效能驗收。",
+      "corrections": "加總且只印六位小數相同，不足證明所有參數逐元素一致；現行程式沒有跨rank assert。兩程序在同Pod，不是跨node；改成NCCL還需要裝置分配與GPU硬體，不只換backend字串。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "runtime/pytorch/ddp_test.py": "864f0efc00a5eeaca0126bee391d56f97c7de7aaedc65a93f74d5b302944269b"
+      }
+    },
+    {
+      "source": "docs/week16/day3-nccl-fundamentals.md",
+      "status": "reviewed",
+      "evidence_kind": "NCCL概念與單rank版本log",
+      "checked_files": [
+        "helm/pytorch-runtime/templates/nccl-benchmark-job.yaml"
+      ],
+      "evidence_source": "benchmark/results/week16-day4-nccl-single-gpu.txt",
+      "excerpt": "NCCL version 2.30.7+cuda13.3",
+      "interpretation": "既有raw標明2.30.7、單L4，與文字的舊框架版本分開。",
+      "corrections": "busBw是按collective模型換算的指標，不是NIC實測counter；本課PyTorch環境2.29.3與後日NGC2.30.7不是同版本。不可把NET/Socket初始化當成跨節點傳輸驗證。",
+      "missing": "單 rank raw log 已保存；缺精確執行日期與完整部署快照，也沒有多 GPU／跨節點通訊結果。本輪未重跑。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "helm/pytorch-runtime/templates/nccl-benchmark-job.yaml": "f0eba894e068e8205cc1420821a0501e0a3702dd497bd128810b7ee6b50b82f9"
+      }
+    },
+    {
+      "source": "docs/week16/day4-nccl-communication-benchmark.md",
+      "status": "reviewed",
+      "evidence_kind": "單L4 NCCL原始log",
+      "checked_files": [
+        "helm/pytorch-runtime/templates/nccl-benchmark-job.yaml"
+      ],
+      "evidence_source": "benchmark/results/week16-day4-nccl-single-gpu.txt",
+      "excerpt": "# Out of bounds values : 0 OK",
+      "interpretation": "raw保存編譯、NCCL初始化、size sweep與wrong0；只證明當次單rank工具流程。",
+      "corrections": "單rank busBw為0；in-place極大algBw不可當VRAM峰值或跨GPU頻寬。模板git clone預設分支未固定commit，不能保證重建同版本；raw未記完整日期和Job狀態JSON。",
+      "missing": "單 rank raw log 已保存；缺精確執行日期與完整部署快照，也沒有多 GPU／跨節點通訊結果。本輪未重跑。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "helm/pytorch-runtime/templates/nccl-benchmark-job.yaml": "f0eba894e068e8205cc1420821a0501e0a3702dd497bd128810b7ee6b50b82f9"
+      }
+    },
+    {
+      "source": "docs/week16/day5-distributed-training-scaling.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史CPU scaling摘要",
+      "checked_files": [
+        "runtime/pytorch/distributed_scaling.py"
+      ],
+      "evidence_source": "docs/week16/day5-distributed-training-scaling.md",
+      "excerpt": "throughput=5549.91 samples/s",
+      "interpretation": "5813.76→5549.91為舊觀測約0.955x／47.7%，不是已隔離變因的硬體scaling結論；缺完整raw重複量測。",
+      "corrections": "程式無共同起始barrier、未取最慢rank時間、profiler也計入；各rank自行randn未固定seed，非同一資料集嚴格切分。1/2worker的CPUlimit與全域batch亦不同，不能只歸因通訊。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "runtime/pytorch/distributed_scaling.py": "318915fac9e2d2c63d9a4313b87a5d59eac70d8ed78048aeb7396fab5dfe2f43"
+      }
+    },
+    {
+      "source": "docs/week17/day1-mpi-fundamentals.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史MPI collective輸出",
+      "checked_files": [
+        "mpi_hello.c",
+        "mpi_allreduce.c",
+        "mpi_reduce.c",
+        "mpi_broadcast.c",
+        "mpi_send_recv.c"
+      ],
+      "evidence_source": "docs/week17/day1-mpi-fundamentals.md",
+      "excerpt": "Total sum = 100",
+      "interpretation": "4rank求和100是本課舊示例成果，並非主API的3rank hello工作負載。",
+      "corrections": "MPI是標準，OpenMPI是實作；MPI→NCCL→DDP只是概念關聯，不是必經呼叫鏈。send_recv至少需2rank，現在code未防呆；MPI output順序不保證固定。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "mpi_hello.c": "9ce7e3a122e597873abf08d6acf296348589e527fbde9e5445875ca456a999f6",
+        "mpi_allreduce.c": "405ac392a496003b7f54861bdece85edc939f3832780defd7a6374220606b809",
+        "mpi_reduce.c": "cf21afb8ef85fd520a55989bb71a62e64530e0b0fed8c82131df101796fd612d",
+        "mpi_broadcast.c": "9624779c3008c792d889eaf0e1916050b623c3a84a465d16cbd4f3416ff949b5",
+        "mpi_send_recv.c": "2601c8acb8fe5d9c7e0dc15519a652776dc92325362374485e884809edbc868a"
+      }
+    },
+    {
+      "source": "docs/week17/day2-mpi-performance-benchmark.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史單機OSU摘要",
+      "checked_files": [],
+      "evidence_source": "docs/week17/day2-mpi-performance-benchmark.md",
+      "excerpt": "8567.71",
+      "interpretation": "hpc-demo OMB7.5.2：1B latency.43us、256KB bandwidth8567.71MB/s，只有文內摘要非完整raw。",
+      "corrections": "8567.71 MB/s按十進位約8.568 GB/s，原8.36混用1024與GB標記。所有rank同host且oversubscribe，不代表Ethernet／RDMA；OMB未保存在repo。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    },
+    {
+      "source": "docs/week17/day3-hpc-communication-stack.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史RDMA不可見檢查",
+      "checked_files": [],
+      "evidence_source": "docs/week17/day3-hpc-communication-stack.md",
+      "excerpt": "ib_core 507904 0",
+      "interpretation": "hpc-demo看見Virtio與ib_core，沒有RDMA裝置紀錄，不宣稱RoCE性能或GPUDirect實測。",
+      "corrections": "工具無device只能說此環境未呈現RDMA裝置，可能受driver/虛擬化/權限影響，不能普遍斷言宿主無硬體。MPI是interface標準；TCP/RDMA與fabric的圖是簡化非唯一堆疊。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    },
+    {
+      "source": "docs/week17/day4-slurm-multinode-hpc-cluster.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史Slurm雙VM啟動與失敗",
+      "checked_files": [
+        "mpi-multinode.slurm",
+        "mpi_hello.c"
+      ],
+      "evidence_source": "docs/week17/day4-slurm-multinode-hpc-cluster.md",
+      "excerpt": "JOB_ID=14",
+      "interpretation": "保存4rank與兩compute node文內記錄；OSU編譯失敗、無共享檔案系統、PMI問題仍如實保留。",
+      "corrections": "mpi_hello只印rank不印hostname也未做應用資料交換；搭配allocation/hostname舊紀錄支持跨機啟動，不是跨機AllReduce／頻寬驗收。host清單寫死非通用allocation動態解析；linuxproc不等於cgroup資源隔離。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "mpi-multinode.slurm": "82b2f48b7cf9fb20afdf864e2d393519b88176374c5cb865d1e606953fa38365",
+        "mpi_hello.c": "9ce7e3a122e597873abf08d6acf296348589e527fbde9e5445875ca456a999f6"
+      }
+    },
+    {
+      "source": "docs/week17/day5-ray-kuberay-distributed-computing.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史RayJob狀態",
+      "checked_files": [
+        "ray-cluster.yaml",
+        "ray-job.yaml"
+      ],
+      "evidence_source": "docs/week17/day5-ray-kuberay-distributed-computing.md",
+      "excerpt": "JOB STATUS: SUCCEEDED",
+      "interpretation": "舊hpc-dev兩K8s nodes／3Ray nodes，不能當主MPI API整合或GPU Ray成果。",
+      "corrections": "Ray CPU是邏輯排程資源，num_cpus不是OS核心綁定。現存RayJob只有6個短task，Actor在課文示例不在該YAML；無anti-affinity不能保证重建仍跨兩node。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "ray-cluster.yaml": "d3005b69682614c9e5104d145facda91c8efaa7dfeea0aa1b0f80f9ab3bc8942",
+        "ray-job.yaml": "b6bf881989e8757186932600f33438253d48dfd6e6642fcd6e7bd31d616d7d9a"
+      }
+    },
+    {
+      "source": "docs/week17/day6-cluster-scheduling-integration.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史排程資源爭用",
+      "checked_files": [
+        "ray-cluster.yaml",
+        "ray-job.yaml"
+      ],
+      "evidence_source": "docs/week17/day6-cluster-scheduling-integration.md",
+      "excerpt": "3.0/3.0 CPU",
+      "interpretation": "3CPU滿載加1pending是Ray邏輯資源狀態，不是實體CPU100%的監控數據。",
+      "corrections": "Pending也可能是image/volume等，需看PodScheduled與events；本次才是資源不足。三種scheduler是觀念對照，未實作Slurm與Ray統一提交。後來Kueue新增不抹掉當時未啟用的紀錄。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "ray-cluster.yaml": "d3005b69682614c9e5104d145facda91c8efaa7dfeea0aa1b0f80f9ab3bc8942",
+        "ray-job.yaml": "b6bf881989e8757186932600f33438253d48dfd6e6642fcd6e7bd31d616d7d9a"
+      }
+    },
+    {
+      "source": "docs/week18/day1-linux-network-troubleshooting-baseline.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史兩VM網路摘要",
+      "checked_files": [],
+      "evidence_source": "docs/week18/day1-linux-network-troubleshooting-baseline.md",
+      "excerpt": "971 Mbits/sec",
+      "interpretation": "hpc-demo10.140.0.2與net-test-01.9，30秒約971Mbps、Retr0；未保存pcap，不能回看完整封包。",
+      "corrections": "NIC零counter只限觀測位置與期間；TCP累積counter需delta，不等於應用完全無loss。MTU/MSS算式是假設IPv4無options，1433拒絕是本機MTU限制，不是遠端drop證據。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    },
+    {
+      "source": "docs/week18/day2-network-quality-bandwidth-latency-mtu.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史TCP/UDP/ICMP比較",
+      "checked_files": [
+        "benchmark/network/run_iperf3.sh"
+      ],
+      "evidence_source": "docs/week18/day2-network-quality-bandwidth-latency-mtu.md",
+      "excerpt": "0.007 ms",
+      "interpretation": "0/88771 UDP datagrams loss、.007ms jitter僅限100Mbps10秒，不推論所有負載零丟包。",
+      "corrections": "單流30秒與4流10秒不是完整等條件比較；971/973Mbps相近只是候選上限，未排除client/server CPU或限速。現存runner只做TCP，不能冒充本課UDP/PMTU自動化。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "benchmark/network/run_iperf3.sh": "f355b5d0de5ff342ea332680cc74c2de8c8dc704b3a24c90744c4a3abb390a26"
+      }
+    },
+    {
+      "source": "docs/week18/day3-packet-level-network-failure-troubleshooting.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史refused/timeout故障注入",
+      "checked_files": [],
+      "evidence_source": "docs/week18/day3-packet-level-network-failure-troubleshooting.md",
+      "excerpt": "timeout changed to refused",
+      "interpretation": "只有文內SYN/RST摘要，沒有pcap；移除DROP後仍refused，是防火牆恢復不是應用服務恢復。",
+      "corrections": "RST可能由拒絕規則或中間設備產生；本例搭配server抓包、無listener与移除DROP的對照才支持原因。零NICcounter不能普遍排除全部driver問題。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    },
+    {
+      "source": "docs/week18/day4-kubernetes-network-troubleshooting.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史空backend／失效IP／未enforce",
+      "checked_files": [
+        "k8s/api-service.yaml",
+        "k8s/security/network-policy/default-deny.yaml"
+      ],
+      "evidence_source": "docs/week18/day4-kubernetes-network-troubleshooting.md",
+      "excerpt": "Endpoints: <none>",
+      "interpretation": "舊hpc-dev policy不生效，與新隔離Calico驗收是兩個環境；本次不連線重查。",
+      "corrections": "EndpointSlice是控制面資料，不是封包逐個經過的proxy；未Ready endpoint未必消失，需看conditions。deny與其他allow規則是聯集，不能只見一條deny就斷言應全擋。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/api-service.yaml": "169ea7c10f1ffa1663edfcb36968227fb3ee384a7661faa72f554ba4bdbe4d4f",
+        "k8s/security/network-policy/default-deny.yaml": "80c4f12c5f30edce8c23fbd37239e6a9ee39a46d4d2f75921de9255d7cdd4407"
+      }
+    },
+    {
+      "source": "docs/week18/day5-nccl-transport-debugging.md",
+      "status": "reviewed",
+      "evidence_kind": "單rank NCCL transport raw",
+      "checked_files": [
+        "helm/pytorch-runtime/templates/nccl-benchmark-job.yaml"
+      ],
+      "evidence_source": "benchmark/results/week16-day4-nccl-single-gpu.txt",
+      "excerpt": "Using network Socket",
+      "interpretation": "支持Socket plugin被選用與單rank初始化，不證明跨nodeTCP流量／RDMA頻寬。",
+      "corrections": "引用raw來自Week16 nccl-benchmark-csgjr，不能當另一次nccl-transport-debug完整log。cudaDriverVersion13030是CUDA driver API版本，不是NVIDIA驅動套件版本；不直接照舊文移除node taint。",
+      "missing": "單 rank raw log 已保存；缺精確執行日期與完整部署快照，也沒有多 GPU／跨節點通訊結果。本輪未重跑。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "helm/pytorch-runtime/templates/nccl-benchmark-job.yaml": "f0eba894e068e8205cc1420821a0501e0a3702dd497bd128810b7ee6b50b82f9"
+      }
+    },
+    {
+      "source": "docs/week18/day6-gpu-nic-numa-topology.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史VM拓樸摘要",
+      "checked_files": [],
+      "evidence_source": "docs/week18/day6-gpu-nic-numa-topology.md",
+      "excerpt": "CPU Affinity: 0-3",
+      "interpretation": "L4 00:03.0、Virtio00:04.0是文內硬體資訊，不是相鄰PCIe switch或locality調校改善證據。",
+      "corrections": "VM看到1NUMA只代表guest可見拓樸，不能排除宿主cross-NUMA成本；GPU affinity不是已設定thread綁核。NIC sysfs缺檔不能單獨推論實體拓樸。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    },
+    {
+      "source": "docs/week18/day7-distributed-communication-troubleshooting-playbook.md",
+      "status": "reviewed",
+      "evidence_kind": "既有案例整理，非新端到端驗收",
+      "checked_files": [
+        "runtime/pytorch/ddp_test.py",
+        "benchmark/network/run_iperf3.sh"
+      ],
+      "evidence_source": "docs/week18/day7-distributed-communication-troubleshooting-playbook.md",
+      "excerpt": "NET/IB : No device found",
+      "interpretation": "綜合Day1～6，沒有新增獨立量測；各案例不同VM／叢集不能拼成同一時刻完整健康證明。",
+      "corrections": "這是排查指南，不是已執行雙node訓練故障實驗。低bandwidth/retrans也可能受端點CPU影響，不能直接定案fabric；單NUMA guest不排除宿主問題。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "runtime/pytorch/ddp_test.py": "864f0efc00a5eeaca0126bee391d56f97c7de7aaedc65a93f74d5b302944269b",
+        "benchmark/network/run_iperf3.sh": "f355b5d0de5ff342ea332680cc74c2de8c8dc704b3a24c90744c4a3abb390a26"
+      }
+    },
+    {
+      "source": "docs/week19/day1-gpu-sharing-models.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史單L4 sharing配置",
+      "checked_files": [],
+      "evidence_source": "docs/week19/day1-gpu-sharing-models.md",
+      "excerpt": "Limit: 1",
+      "interpretation": "舊更新失敗QUOTA_EXCEEDED與maxSurge0處理保留；不把4share寫成4GPU。",
+      "corrections": "兩Pod Running與allocatable4支持排程分享，不證明公平分時、VRAM隔離或兩份kernel同時成功。MPS是延伸未實測，quota1不需要變2即可學CPU分散式。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    },
+    {
+      "source": "docs/week19/day2-kueue-gpu-admission.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史Kueue准入摘要",
+      "checked_files": [
+        "k8s/gpu-scheduling/clusterqueue.yaml",
+        "k8s/gpu-scheduling/resourceflavor.yaml"
+      ],
+      "evidence_source": "docs/week19/day2-kueue-gpu-admission.md",
+      "excerpt": "All pods reached readiness and the workload is running",
+      "interpretation": "原文Running證明當時准入／啟動，不是benchmark结果；controller現行有system pool，不沿用移除taint方式。",
+      "corrections": "現行flavor是l4-timesharing-tas，queue同時管理CPU3與GPUshares4，不是原文僅GPU。admission與PodsReady不等於GPU計算完成；Kueue名義quota不是雲端GPUquota或物理容量自動偵測。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/gpu-scheduling/clusterqueue.yaml": "d3d23b2156ff048e07db6ee3ef79fa213ed10e30c0e6c16f0612248b2a6f5e3a",
+        "k8s/gpu-scheduling/resourceflavor.yaml": "9867c226570c2c81f183e7f7c28783abfb4038645e8e90c0347589f998d1c269"
+      }
+    },
+    {
+      "source": "docs/week19/day3-gpu-quota-admission-queue-behavior.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史quota等待與放行",
+      "checked_files": [
+        "k8s/gpu-scheduling/clusterqueue.yaml",
+        "k8s/gpu-scheduling/resourceflavor.yaml"
+      ],
+      "evidence_source": "docs/week19/day3-gpu-quota-admission-queue-behavior.md",
+      "excerpt": "sleep 300",
+      "interpretation": "A3shares+B2shares超過4而等待，A完成後B放行是文內事件；缺完整events時序與測試YAML。",
+      "corrections": "sleep工作只測配額／生命週期，不測GPU吞吐。Kueue只控制受管workload，不能保證所有繞過queue的Pod不競爭資源；queue也不限制提交數量。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/gpu-scheduling/clusterqueue.yaml": "d3d23b2156ff048e07db6ee3ef79fa213ed10e30c0e6c16f0612248b2a6f5e3a",
+        "k8s/gpu-scheduling/resourceflavor.yaml": "9867c226570c2c81f183e7f7c28783abfb4038645e8e90c0347589f998d1c269"
+      }
+    },
+    {
+      "source": "docs/week19/day4-priority-preemption-multi-tenancy.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史Kueue preemption事件",
+      "checked_files": [
+        "k8s/gpu-scheduling/clusterqueue.yaml",
+        "k8s/gpu-scheduling/priorityclasses.yaml"
+      ],
+      "evidence_source": "docs/week19/day4-priority-preemption-multi-tenancy.md",
+      "excerpt": "EvictedDueToPreempted",
+      "interpretation": "low4Pod被移除、high2Pod Running為歷史摘要；沒有checkpoint或low重新成功完成證據。",
+      "corrections": "PriorityClass還設定PreemptLowerPriority，Kubernetes Pod preemption與Kueue整組quota eviction是兩層；此事件只支持後者案例。單namespace兩priority測試不是完整多租戶隔離／fair-share驗收。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/gpu-scheduling/clusterqueue.yaml": "d3d23b2156ff048e07db6ee3ef79fa213ed10e30c0e6c16f0612248b2a6f5e3a",
+        "k8s/gpu-scheduling/priorityclasses.yaml": "f072502b142d4ab2a82be31209907f22d85f01fe5f2fc8ee4e3d28d7fa757799"
+      }
+    },
+    {
+      "source": "docs/week19/day5-gang-jobset-mpi.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史MPI啟動與gang准入",
+      "checked_files": [
+        "k8s/gpu-scheduling/examples/jobset-mpi.yaml",
+        "k8s/gpu-scheduling/clusterqueue.yaml"
+      ],
+      "evidence_source": "docs/week19/day5-gang-jobset-mpi.md",
+      "excerpt": "RANK=0 HOST=mpi-real-worker-0-0",
+      "interpretation": "3rank/3Pod不是3node；固定demo無worker完成退出協定，不能把JobsReady當Completed。",
+      "corrections": "整組quota准入不保證Pod原子同時Running，仍可能image/placement失敗。現存jobset-mpi.yaml是CPU echo+sleep900無GPUrequests，也無資料collective；與先前GPUblocker是不同實驗。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/gpu-scheduling/examples/jobset-mpi.yaml": "8fc2e9d36f1cbbc80efa4b612e40326d00129be134bf2fe50fcee2f633d2d0a2",
+        "k8s/gpu-scheduling/clusterqueue.yaml": "d3d23b2156ff048e07db6ee3ef79fa213ed10e30c0e6c16f0612248b2a6f5e3a"
+      }
+    },
+    {
+      "source": "docs/week19/day6-topology-aware-gpu-scheduling.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史TAS placement，執行未完成",
+      "checked_files": [
+        "k8s/gpu-scheduling/clusterqueue.yaml",
+        "k8s/gpu-scheduling/resourceflavor.yaml",
+        "k8s/gpu-scheduling/topology.yaml"
+      ],
+      "evidence_source": "docs/week19/day6-topology-aware-gpu-scheduling.md",
+      "excerpt": "ContainerCreating",
+      "interpretation": "兩Pod已指派同hostname但最後ContainerCreating；保留未排查container runtime問題，不標成功執行。",
+      "corrections": "只有一個符合的GPU node，不能證明TAS在多候選node間選擇較優，也未量到通訊成本降低。topologyAssignment只是分配與placement證據。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/gpu-scheduling/clusterqueue.yaml": "d3d23b2156ff048e07db6ee3ef79fa213ed10e30c0e6c16f0612248b2a6f5e3a",
+        "k8s/gpu-scheduling/resourceflavor.yaml": "9867c226570c2c81f183e7f7c28783abfb4038645e8e90c0347589f998d1c269",
+        "k8s/gpu-scheduling/topology.yaml": "12d240390249340cd585e8e8812da6c254ca7f05506e74c5ff60de557ac76505"
+      }
+    },
+    {
+      "source": "docs/week19/day7-gpu-scheduling-platform-integration.md",
+      "status": "reviewed",
+      "evidence_kind": "週內多實驗概念整合",
+      "checked_files": [
+        "k8s/gpu-scheduling/examples/jobset-mpi.yaml",
+        "k8s/gpu-scheduling/clusterqueue.yaml",
+        "k8s/gpu-scheduling/resourceflavor.yaml"
+      ],
+      "evidence_source": "docs/week19/day7-gpu-scheduling-platform-integration.md",
+      "excerpt": "RANK=2 HOST=mpi-real-worker-2-0",
+      "interpretation": "保留rank smoke、quota事件與TAS限制各自證明力；現行自動worker證據另見主入口。",
+      "corrections": "不是單一工作同時驗證GPUsharing、preemption、TAS、MPI與NCCL。CPU MPI demo和主API動態JobSet不同；server dry-run不執行容器，也不驗證網路或效能。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/gpu-scheduling/examples/jobset-mpi.yaml": "8fc2e9d36f1cbbc80efa4b612e40326d00129be134bf2fe50fcee2f633d2d0a2",
+        "k8s/gpu-scheduling/clusterqueue.yaml": "d3d23b2156ff048e07db6ee3ef79fa213ed10e30c0e6c16f0612248b2a6f5e3a",
+        "k8s/gpu-scheduling/resourceflavor.yaml": "9867c226570c2c81f183e7f7c28783abfb4038645e8e90c0347589f998d1c269"
+      }
+    },
+    {
+      "source": "docs/week20/day1-rbac-serviceaccount-least-privilege.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史RBAC HTTP狀態",
+      "checked_files": [
+        "k8s/security/rbac-api-test.yaml",
+        "k8s/security/role.yaml",
+        "k8s/security/rolebinding.yaml",
+        "k8s/security/api-jobset-rbac.yaml"
+      ],
+      "evidence_source": "docs/week20/day1-rbac-serviceaccount-least-privilege.md",
+      "excerpt": "HTTP 403",
+      "interpretation": "文內200/403支持當時allow/deny；未保存獨立完整log。本次不讀真實token／Secret。",
+      "corrections": "benchmark-runner是教學讀取身分，主worker用api-jobset-runner可create JobSets及讀pods/log。測試curl只列HTTP碼沒有assert，Pod Completed不等於權限驗收通過；RBAC是加總權限，還需其他bindings背景。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/security/rbac-api-test.yaml": "a296767a4ab225049cf3792e037c8d1087c67bd15b3feefdb719b76c85ba9391",
+        "k8s/security/role.yaml": "1b9f3e3edb05cc645d9c1a4ea4a1307c10403262fa824441b859472481acf38a",
+        "k8s/security/rolebinding.yaml": "7e94d8ebd281134b46ce3932ac9baf414b6106a55f19d3b8e3ee16013e3fdc74",
+        "k8s/security/api-jobset-rbac.yaml": "b64622412fc5cadbd1a6e5a6a09e04ac71ff9165584e0730b27fd24cf9b70be6"
+      }
+    },
+    {
+      "source": "docs/week20/day2-pod-image-secret-security.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史安全Pod與現存設定",
+      "checked_files": [
+        "k8s/security/rbac-api-test.yaml",
+        "docker/Dockerfile"
+      ],
+      "evidence_source": "docs/week20/day2-pod-image-secret-security.md",
+      "excerpt": "94e9e444bcba979c2ea12e27ae39bee4cd10bc7041a472c4727a558e213744e6",
+      "interpretation": "保留歷史HTTP結果，無新漏洞掃描／credential rotation證據；不把從Git移除現檔說成歷史秘密已清除。",
+      "corrections": "完整securityContext與digest只在此測試Pod，不是全專案已套用；API Docker非root也不自動等於readonly/seccomp/dropALL。digest固定內容不保證無漏洞或可信來源。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/security/rbac-api-test.yaml": "a296767a4ab225049cf3792e037c8d1087c67bd15b3feefdb719b76c85ba9391",
+        "docker/Dockerfile": "5f96137e56bf3ced6fc447cf604bb678753f55341cbd0028675bddd441dc41a3"
+      }
+    },
+    {
+      "source": "docs/week20/day3-networkpolicy-tenant-isolation.md",
+      "status": "reviewed",
+      "evidence_kind": "20260921隔離Calico驗收",
+      "checked_files": [
+        "k8s/security/network-policy/allow-client-to-server.yaml",
+        "k8s/security/network-policy/allow-dns.yaml",
+        "k8s/security/network-policy/allow-same-namespace.yaml"
+      ],
+      "evidence_source": "docs/evidence/network-policy-validation-20260921.json",
+      "excerpt": "\"denied_client_output\": \"wget: download timed out\"",
+      "interpretation": "原JSON：policy前皆通、policy後denied timeout、刪除後恢復；CPU叢集已destroy，主環境enforcement仍關。",
+      "corrections": "驗收只測隔離namespace的ingress標籤allow/deny與恢復，沒有測主平台default-deny+DNS+same-namespace組合。DNS規則選整個kube-system的53，不等於只准DNS Pod；APIserver/外部依賴需另設allow。",
+      "missing": "結構化驗收 JSON、日期與隔離環境已保存；未驗證主叢集 enforcement、egress、DNS 或完整跨租戶規則。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/security/network-policy/allow-client-to-server.yaml": "b1d3efd4b50a50e1c573332284af825aa02f64fad7423bd5d38545b35bab8b73",
+        "k8s/security/network-policy/allow-dns.yaml": "4a6c6ffc3f032ef5fc743624e1808aff6f9c75b7050d3a08c8edf88fb7c5a9d7",
+        "k8s/security/network-policy/allow-same-namespace.yaml": "8902a216ebccd84b8f2d65b1b71967d4fe6d11484a01cc395f87f8a39e980ce9"
+      }
+    },
+    {
+      "source": "docs/week20/day4-ha-node-failure-recovery.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史整組重建，非最終工作恢復",
+      "checked_files": [
+        "k8s/gpu-scheduling/examples/jobset-mpi.yaml",
+        "k8s/recovery/gpu-node-failure-test.yaml"
+      ],
+      "evidence_source": "docs/week20/day4-ha-node-failure-recovery.md",
+      "excerpt": "Restarts Count Towards Max: 1",
+      "interpretation": "歷史RestartJobSet1次；20260922另有獨立worker停啟接續驗收，不是nodefailover或Redis全失恢复。",
+      "corrections": "JobsReady只能證明重建到ready，不能證明原MPI工作成功／checkpoint續跑。cordon非node crash；nvidia-smi後sleep腳本無set-e可掩蓋前命令失敗。新工作成功與舊TAS webhook阻擋必須分開。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "k8s/gpu-scheduling/examples/jobset-mpi.yaml": "8fc2e9d36f1cbbc80efa4b612e40326d00129be134bf2fe50fcee2f633d2d0a2",
+        "k8s/recovery/gpu-node-failure-test.yaml": "5e8def3da4fb3759796153b6877d377ead51efcadd60c2fcaf49955c6c8d4864"
+      }
+    },
+    {
+      "source": "docs/week20/day5-ai-hpc-production-troubleshooting.md",
+      "status": "reviewed",
+      "evidence_kind": "歷史Ray retry與Slurm VM已刪除",
+      "checked_files": [
+        "ray-resource-mismatch-job.yaml",
+        "ray-worker-recovery-job.yaml",
+        "slurm/pending-cpu-test.sbatch"
+      ],
+      "evidence_source": "docs/week20/day5-ai-hpc-production-troubleshooting.md",
+      "excerpt": "error_type = NODE_DIED",
+      "interpretation": "保留NODE_DIED與Slurm DOWN因VM不存在的診斷；不重建已刪VM，沒有Slurm accounting資料可補。",
+      "corrections": "看到attempt1啟動不等於最終RESULT成功；課文未保存該task完成輸出。重試重新sleep900不從checkpoint接續；max_retries也不等於所有應用例外均重試。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {
+        "ray-resource-mismatch-job.yaml": "7ba93039353d47a9ac7a7188ee22bbcdee2bb85e25047dd798745ba788a44875",
+        "ray-worker-recovery-job.yaml": "3e5fe93465c0529960a51feee8e73821e1d9c33a357a1c8626ed40a60f84ccf1",
+        "slurm/pending-cpu-test.sbatch": "5308c97c1ce4f65e708d9b5827d09611d442e9a4150e1658e5e46d9bd6c1cc69"
+      }
+    },
+    {
+      "source": "docs/week20/day6-ai-hpc-platform-technology-selection.md",
+      "status": "reviewed",
+      "evidence_kind": "選型概念，未部署技術",
+      "checked_files": [],
+      "evidence_source": "docs/week20/day6-ai-hpc-platform-technology-selection.md",
+      "excerpt": "condor_submit job.sub",
+      "interpretation": "命令是示意，不是執行結果；此課沒有獨立實測輸出，不拿已做K8s／MPI成果代替其他產品經驗。",
+      "corrections": "OpenStack/HTCondor/LSF/DLRover未在repo部署；架構圖不是必經串接，選型表不是唯一選擇。reservation不是無條件開始時間保證；elastic6/8workers是概念，不是已驗證或任意配置可自動恢復。",
+      "missing": "缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。",
+      "reviewed_at": "2026-09-22",
+      "scope": "完整閱讀原課文並核對列出的實作與引用；未重跑、無雲端操作",
+      "reviewed_files_sha256": {}
+    }
+  ]
+}

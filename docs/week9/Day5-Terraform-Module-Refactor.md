@@ -3,100 +3,33 @@
 
 [上一課](<Day4-Terraform-Output-Resource-Reference.md>) · [本週目錄](README.md) · [下一課](<Day6-Terraform-Network-Module.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：歷史 state 搬移／plan 摘錄。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+state mv 是變更 state，不能當普通唯讀檢查；需對齊實際 address／備份與鎖。現行 dev 已不含 module.api。module.worker 只有 plan，原文也明寫未 apply，不能列為已建立第二台 VM。
 
-module 抽象可重用設定，root 組合環境配置與 provider。本 repo 舊 dev 用共用 modules，現行 gpu-sg 直接描述已匯入資源，兩者不可當作同一 state 的不同名字。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-本週只讀設定與既有證據；雲端 apply／destroy 須依 runbook 明確確認目標，GPU quota 固定一張。
-
-本課對照：[terraform/modules/gke/main.tf](<../../terraform/modules/gke/main.tf>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```hcl
-resource "google_container_cluster" "this" {
-
-  name     = var.cluster_name
-  location = var.zone
-
-  project = var.project_id
-
-  network    = var.network
-  subnetwork = var.subnetwork
-
-  deletion_protection = false
-
-  initial_node_count = 1
-
-  remove_default_node_pool = true
-}
-
-# 宣告受 Terraform 管理的資源；第一個標籤是類型，第二個是本地名稱。
-resource "google_container_node_pool" "primary" {
-
-  name     = "primary-pool"
-  project  = var.project_id
-  location = var.zone
-
-```
+本次核對：[terraform/modules/compute/main.tf](<../../terraform/modules/compute/main.tf>)、[terraform/modules/compute/outputs.tf](<../../terraform/modules/compute/outputs.tf>)、[terraform/environments/dev/main.tf](<../../terraform/environments/dev/main.tf>)
 
 ## 已有結果與解讀
 
-### CPU 叢集重建：已保存的驗收結果
+來源：[記錄／示例原文](<Day5-Terraform-Module-Refactor.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-日期：2026-09-21。環境：隔離 CPU-only GKE 重建驗收；不是主環境的多 GPU 實驗。該次叢集已清理，讀這份結果不需要重新建立。
-
-```json
-{
-  "recorded_at": "2026-09-21",
-  "scope": "fresh CPU-only GKE bootstrap and platform acceptance; excludes GPU and MPI execution",
-  "result": "pass",
-  "terraform": {
-    "apply": "3 added",
-    "post_apply_plan": "No changes",
-    "destroy": "3 destroyed",
-    "state_resources_after_destroy": 0,
-    "cluster_lookup_after_destroy": "404 Not Found"
-  },
-  "controllers": {
-    "jobset": "v0.12.0 Ready on system-pool with 100m CPU request",
-    "kueue": "v0.19.2 Ready on system-pool with Recreate deployment strategy"
-  },
-  "platform": {
-    "api": "Running on system-pool; /health healthy",
-    "redis": "Running on system-pool; connected; PVC Bound",
-    "postgres": "Running on system-pool; jobs table query succeeded; PVC Bound",
-    "overlay_diff_after_apply": "empty"
-  },
-  "security": {
-    "postgres_secret": "created from external env file; value not captured",
-    "mpi_ssh_key": "generated in temporary directory; value not captured",
-    "api_service_account_create_jobsets": "yes",
-    "api_service_account_delete_pods": "no"
-  },
-  "limitations": [
-    "gpu-pool had zero nodes because project-wide GPU quota was exhausted",
-    "no MPI workload was submitted in this CPU-only rehearsal",
-    "database initialization used create_all rather than schema migration"
-  ]
-}
+```text
+No changes.
 ```
 
-解讀：Terraform 建立 3 個資源、無 drift，JobSet／Kueue controllers 和 API／Redis／DB 驗收成功；create JobSet 權限允許，delete Pod 權限拒絕。最後 destroy 3、state 空、cluster 查詢 404，證明當次隔離叢集已刪除。**不包含 GPU 或 MPI 執行驗收**，也不是所有雲端資源的停費證明。
+No changes 是當時 refactor 後記載，不表示現在零 drift；不重跑 state mv。
 
-來源：[原始 CPU bootstrap JSON](<../evidence/cpu-bootstrap-acceptance-20260921.json>)。
+**仍缺的證據／不能證明的事：** 缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week9/Day5-Terraform-Module-Refactor.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

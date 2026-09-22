@@ -3,97 +3,33 @@
 
 [上一課](<day3-packet-level-network-failure-troubleshooting.md>) · [本週目錄](README.md) · [下一課](<day5-nccl-transport-debugging.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：歷史空backend／失效IP／未enforce。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+EndpointSlice是控制面資料，不是封包逐個經過的proxy；未Ready endpoint未必消失，需看conditions。deny與其他allow規則是聯集，不能只見一條deny就斷言應全擋。
 
-Service selector、ready endpoints、DNS 和 NetworkPolicy 都可能阻擋連線。RBAC 控制 API 操作權，NetworkPolicy 控制封包；兩者不能互相替代。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-本週可用 CPU 學主機網路；不把 CPU 測試或 Socket fallback 當 RDMA 硬體實測。
-
-本課對照：[k8s/security/network-policy/allow-client-to-server.yaml](<../../k8s/security/network-policy/allow-client-to-server.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```yaml
-spec:
-  podSelector:
-    matchLabels:
-      app: server
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              access: allowed
-      ports:
-        - protocol: TCP
-          port: 8080
-```
+本次核對：[k8s/api-service.yaml](<../../k8s/api-service.yaml>)、[k8s/security/network-policy/default-deny.yaml](<../../k8s/security/network-policy/default-deny.yaml>)
 
 ## 已有結果與解讀
 
-### NetworkPolicy：已保存封包驗證結果
+來源：[記錄／示例原文](<day4-kubernetes-network-troubleshooting.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-日期：2026-09-21。環境：隔離 `hpc-gpu-sg-rehearsal`，Calico、CPU-only；此叢集已在該次驗收後刪除。
-
-```json
-{
-  "environment": {
-    "cluster": "hpc-gpu-sg-rehearsal",
-    "zone": "asia-southeast1-a",
-    "lifecycle": "terraform apply then destroy",
-    "network_policy": {
-      "enabled": true,
-      "provider": "CALICO"
-    },
-    "system_node": {
-      "count": 1,
-      "machine_type": "e2-standard-2",
-      "ready": true
-    },
-    "gpu_node_count": 0
-  },
-  "test": {
-    "namespace": "network-policy-validation",
-    "server": "server:80",
-    "policy": "allow-labeled-client-to-server",
-    "baseline": {
-      "allowed_client_exit_code": 0,
-      "denied_client_exit_code": 0
-    },
-    "with_policy": {
-      "allowed_client_exit_code": 0,
-      "denied_client_exit_code": 1,
-      "denied_client_output": "wget: download timed out"
-    },
-    "after_policy_delete": {
-      "denied_client_exit_code": 0
-    }
-  },
-  "cleanup": {
-    "terraform": "0 added, 0 changed, 3 destroyed",
-    "state_resources_after_destroy": 0,
-    "gke_describe_after_destroy": "404 Not Found"
-  },
-  "result": "pass"
-}
+```text
+Endpoints: <none>
 ```
 
-解讀：policy 前兩個 client 都成功；套用後 allowed 成功、denied timeout；移除 policy 後 denied 恢復。這支持該次隔離叢集的 ingress 規則有效，**主 hpc-gpu-sg enforcement 仍關閉**。不需要你再開 VM 重測。
+舊hpc-dev policy不生效，與新隔離Calico驗收是兩個環境；本次不連線重查。
 
-來源：[原始 NetworkPolicy JSON](<../evidence/network-policy-validation-20260921.json>)。
+**仍缺的證據／不能證明的事：** 缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week18/day4-kubernetes-network-troubleshooting.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

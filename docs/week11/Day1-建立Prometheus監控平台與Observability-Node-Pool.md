@@ -3,62 +3,33 @@
 
 [本週基礎](README.md) · [本週目錄](README.md) · [下一課](<Day2-Prometheus-ScrapeJob-Target與PullModel.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：歷史監控失敗與設定。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+目前 Prometheus模板 Recreate、fsGroup65534與checksum/config存在，但主gpu-sg overlay沒有這個chart或observability pool。PVC不等於永久不丟資料；掛載／權限／備份分開。
 
-監控本身消耗 CPU、RAM、儲存，與被測工作共用節點時可能互相影響。舊 observability-pool 屬不同環境設計；現行 system-pool 的存在不能證明舊監控都已搬過來。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-監控 manifests 和歷史 dashboard 保留為獨立路徑；不宣稱即時 target 健康。
-
-本課對照：[helm/prometheus/templates/deployment.yaml](<../../helm/prometheus/templates/deployment.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```yaml
-spec:
-  # 期望副本數；設定為 0 表示不維持執行中的副本。
-  replicas: {{ .Values.replicaCount }}
-  strategy:
-    type: Recreate
-  # 選取要關聯的物件；不同資源種類支援的 selector 格式不同。
-  selector:
-    # 以完全相等的標籤鍵值選取物件。
-    matchLabels:
-      {{- include "prometheus.selectorLabels" . | nindent 6 }}
-  # 子物件模板；控制器以此內容建立 Pod 或相關工作資源。
-  template:
-    metadata:
-      #只要configmap.yaml內容有變 sha256sum就會變，所以就會偵測到prometheus的deployment有變，就會建新的prometheus pod
-      # 附加設定或提示，由對應控制器解讀，不等同 selector 標籤。
-      annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
-      labels:
-        {{- include "prometheus.selectorLabels" . | nindent 8 }}
-    spec:
-      # Pod 使用的 ServiceAccount；RBAC 依此身分授予 API 權限。
-      serviceAccountName: prometheus
-      #這個 Pod 掛載的 Volume（PVC）都套用這個權限設定
-      # 程序身分、權限與作業系統安全設定。
-```
+本次核對：[helm/prometheus/templates/deployment.yaml](<../../helm/prometheus/templates/deployment.yaml>)、[terraform/modules/gke/main.tf](<../../terraform/modules/gke/main.tf>)
 
 ## 已有結果與解讀
 
-### 這一課的結果直接看哪裡
+來源：[記錄／示例原文](<Day1-建立Prometheus監控平台與Observability-Node-Pool.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-本課原本的完整教學、程式示例、結果與解讀已放回本頁下方，不再用縮短版取代它。命令是當時操作或語法示例，**不是要求你現在再執行**。
+```text
+open /prometheus/queries.active
+```
 
-概念例子的輸出只說明程式／工具行為，不冒充 VM 實測；原文沒留下的實測數值就維持未知，不用預期值補造。舊環境名稱、日期、成功與失敗照原文保留。
+舊permission denied訊息保留，預期Running/node xxxx不是完整成功log。
+
+**仍缺的證據／不能證明的事：** 缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week11/Day1-建立Prometheus監控平台與Observability-Node-Pool.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

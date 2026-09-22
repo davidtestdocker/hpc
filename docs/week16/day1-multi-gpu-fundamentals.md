@@ -3,62 +3,33 @@
 
 [本週基礎](README.md) · [本週目錄](README.md) · [下一課](<day2-pytorch-ddp.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：分散式概念，非多GPU成果。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+global batch公式假設每rank等量且未加gradient accumulation；DDP不自動切資料，需sampler等。compute/communication可能重疊，不可一般化成時間直接相加。
 
-資料平行每个 rank 通常有自己的模型副本，模型平行把模型拆分；兩者通訊模式不同。time-sharing 不是新裝置，不能把四 shares 當成四個 CUDA device。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-現有 CPU／Gloo、單 rank NCCL 與單 GPU 訓練分開保存；未驗證多 GPU scaling。
-
-本課對照：[runtime/pytorch/distributed_scaling.py](<../../runtime/pytorch/distributed_scaling.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```python
-    world_size = int(os.environ.get("WORLD_SIZE", "1"))
-    local_rank = int(os.environ.get("LOCAL_RANK", "0"))
-
-    distributed = world_size > 1
-
-    use_cuda = torch.cuda.is_available()
-
-    if distributed:
-        # 條件運算式 A if 條件 else B：GPU 選 NCCL，CPU 選 Gloo。
-        backend = "nccl" if use_cuda else "gloo"
-        # 初始化分散式通訊群組；torchrun 提供 rank、world size 與 rendezvous 環境。
-        dist.init_process_group(backend=backend)
-
-    rank = dist.get_rank() if distributed else 0
-
-    if use_cuda:
-        # 把本程序綁到 local_rank 對應的 GPU，避免同節點所有程序使用同一張卡。
-        torch.cuda.set_device(local_rank)
-        device = torch.device(f"cuda:{local_rank}")
-    else:
-        device = torch.device("cpu")
-
-    backend = "nccl" if use_cuda else "gloo"
-
-```
+本次核對：[runtime/pytorch/ddp_test.py](<../../runtime/pytorch/ddp_test.py>)
 
 ## 已有結果與解讀
 
-### 這一課的結果直接看哪裡
+來源：[記錄／示例原文](<day1-multi-gpu-fundamentals.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-本課原本的完整教學、程式示例、結果與解讀已放回本頁下方，不再用縮短版取代它。命令是當時操作或語法示例，**不是要求你現在再執行**。
+```text
+Real Multi-GPU Validation
+```
 
-概念例子的輸出只說明程式／工具行為，不冒充 VM 實測；原文沒留下的實測數值就維持未知，不用預期值補造。舊環境名稱、日期、成功與失敗照原文保留。
+本課明列多GPU Pending；CPU多程序是有效流程替代，不是GPU網路效能替代。
+
+**仍缺的證據／不能證明的事：** 缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week16/day1-multi-gpu-fundamentals.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

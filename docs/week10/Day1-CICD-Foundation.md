@@ -3,62 +3,33 @@
 
 [本週基礎](README.md) · [本週目錄](README.md) · [下一課](<Day2-First-GitHub-ActionsCI-Pipeline.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：規劃與 workflow 靜態核對。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+完整圖是規劃；現行 workflow 沒有 image scan、部署後 health check 或 Terraform 步驟。Delivery 與無人工核准自動 Deployment 不應混成同義。觸發只涵蓋配置的 master push/PR。
 
-測試、build、push image、改 GitOps tag 是不同階段，後兩者有外部副作用。workflow 可在 pull_request 觸發，不代表每個 PR 都應具備發佈權限；需要分開看事件和 permissions。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-只跑本機測試／離線讀 CI；不觸發 push、映像發佈或 Argo 同步。
-
-本課對照：[.github/workflows/ci.yml](<../../.github/workflows/ci.yml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```yaml
-permissions:
-  contents: write
-  id-token: write
-
-# GitHub Actions 的工作清單，每個 job 可有自己的 runner。
-jobs:
-
-  test:
-
-    runs-on: ubuntu-latest
-
-    # 依序執行的步驟清單。
-    steps:
-
-      - name: Checkout Repository
-        # 引用現成 GitHub Action，@ 後方是版本或提交。
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: true
-
-      - name: Authenticate to Google Cloud
-        id: auth
-        uses: google-github-actions/auth@v3
-        with:
-```
+本次核對：[.github/workflows/ci.yml](<../../.github/workflows/ci.yml>)
 
 ## 已有結果與解讀
 
-### 已保存的本機驗證結果
+來源：[記錄／示例原文](<Day1-CICD-Foundation.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-2026-09-22 教材改寫時，在此 repo 開發環境執行並記錄：`53 passed`；三個 Helm charts lint 通過，完整主 overlay 離線渲染出 14 個物件。這是本機測試與渲染結果，**不是遠端 GitHub Actions 整條 CI 成功，也不是新雲端驗收**。
+```text
+Image Scan
+```
 
-目前 CI 改的是 values-dev.yaml，主 overlay 使用獨立 api-values.yaml，因此不能說 push 一定更新主展示。下方完整保留原本課程與當時輸出；不要求你再跑一次 pytest。
+建立 workflows 目錄不是整條 pipeline 成功證據；未保存本課 run ID。
+
+**仍缺的證據／不能證明的事：** 缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week10/Day1-CICD-Foundation.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->

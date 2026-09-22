@@ -2,6 +2,8 @@
 
 現行教材版本：2026-09-22。先讀本頁，再按 Day 順序閱讀；不必先讀懂整個專案。
 
+本週每日教材已完成逐篇文件核對。先讀各課頁首的修正與結果邊界，再讀完整原文；沒有 raw log 的課程不冒充實測。全套見[稽核清單](../audits/curriculum-content-audit.md)與[問題總表](../audits/curriculum-findings.md)。
+
 ## 先備與學習方式
 
 先完成 [Week1](../week1/README.md)。遇到陌生名詞先回前週，不必邊猜邊背架構。 每一課先解釋概念，再直接讀現行補充、已保存結果與原本完整教學。原本完整教材與輸出已放回每一課下半部；前面是現行補充與已有結果，無須重新操作。
@@ -38,7 +40,7 @@ print(result)  # ['example-b']
 
 若 example-a 的狀態也是 completed，依這段程式推演，結果會是 `['example-a', 'example-b']`；這是概念示例，不是外部服務實測。直接對照輸出即可，不需要你再執行。理解後再看 API 的真實 job dict，不必一開始就背 ORM 或 Redis 語法。
 
-本週先閱讀與執行純 Python 小例子；不要直接啟動依賴雲端的 worker。
+本週閱讀純 Python 小例子與示例輸出即可；不用執行，也不要啟動依賴雲端的 worker。
 
 [本週實作／證據入口](<../../tests/test_platform_preflight.py>)。本週的原始碼、manifest 與保存的成功／失敗各有不同證明力，不能全部當成今天又測過一次。
 

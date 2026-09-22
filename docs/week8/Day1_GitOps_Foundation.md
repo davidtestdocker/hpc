@@ -3,62 +3,33 @@
 
 [本週基礎](README.md) · [本週目錄](README.md) · [下一課](<Day2_Helm_Foundation.md>) · [全程導讀](../learning-guide.md)
 
-版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
+## 本頁內容核對（2026-09-22）
 
-## 閱讀方式：不用再開 VM 或做本機測試
+**已核對本課程式／設定、文內操作與引用結果；證據層級：概念與 Argo 設定。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。
 
-先看現行補充與已有結果，再往下讀完整原教材。原本的詳細說明、程式、命令與輸出都保留在本頁，不需要跳去文字快照，也不要求你重新驗證。
+## 概念解說與現行差異
 
-## 概念解說
+kubectl apply -f 是宣告式配置操作，不因手動執行就變成 imperative 設計。GitOps 的區別是版本來源與自動持續協調。Argo selfHeal/prune 作用於受管資源，不是刪整個 cluster 所有非 Git 資源；不要擅改路徑以免 ownership／prune 影響。
 
-GitOps 不只是把 YAML 放進 Git，還需要控制器讀取指定 revision 並協調叢集。主環境目前不是既有 dev Application 的完整受管目標；配置存在也不是同步成功證據。
+## 程式／設定與來源
 
-## 在現在的專案中
-
-主線是 Helm／Kustomize 渲染與 deploy 工具；Argo CD 為獨立 GitOps 設定教材。
-
-本課對照：[argocd/application-dev.yaml](<../../argocd/application-dev.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
-
-```yaml
-  source:
-    repoURL: https://github.com/davidtestdocker/hpc.git
-    targetRevision: master
-    # 歷史 dev 路徑，不是現行 gpu-sg-platform。切換前須檢查 diff／資源所有權；
-    # 下方 prune=true 可能刪除舊受管資源，不可把改路徑當成單純文件同步。
-    path: kustomize/overlays/dev
-
-  # Argo CD 同步目標叢集與 namespace。
-  destination:
-    #Kubernetes API Server 的DNS，意思部屬到目前這個Cluster
-    server: https://kubernetes.default.svc
-    namespace: hpc-platform-dev
-
-  # Argo CD 自動同步與資源管理政策。
-  syncPolicy:
-  #automated 是不用手動按sync只要有差異(push完)就會同步
-  #prune true 如果git沒有這檔案但cluster 有的話檔案也會刪除變成跟git一樣
-  #selfHeal 假設有人編輯了replicas數量 但是git沒變的話 argocd會發現差異自動改回git上的數量 (不用等push)
-    automated:
-      # 同步時是否刪除 Git 中已移除的受管資源。
-      prune: true
-      # 是否自動修正叢集狀態與 Git 宣告之間的偏差。
-      selfHeal: true
-    syncOptions:
-```
+本次核對：[argocd/application-dev.yaml](<../../argocd/application-dev.yaml>)、[argocd/project.yaml](<../../argocd/project.yaml>)
 
 ## 已有結果與解讀
 
-### 這一課的結果直接看哪裡
+來源：[記錄／示例原文](<Day1_GitOps_Foundation.md>)。下面逐字摘錄來源中的內容；它是輸出、程式或命令示例，依本頁證據層級區分，不一律視為實測。
 
-本課原本的完整教學、程式示例、結果與解讀已放回本頁下方，不再用縮短版取代它。命令是當時操作或語法示例，**不是要求你現在再執行**。
+```text
+replicas: 2
+```
 
-概念例子的輸出只說明程式／工具行為，不冒充 VM 實測；原文沒留下的實測數值就維持未知，不用預期值補造。舊環境名稱、日期、成功與失敗照原文保留。
+2→5→2 是示意，建立目錄不等於已部署 GitOps；現有 Argo dev 指 overlays/dev，不是主 gpu-sg-platform。
+
+**仍缺的證據／不能證明的事：** 缺當時完整 raw log、精確日期或環境快照；本次只核對文件與程式，不重跑，也不把設定存在當成執行成功。
 
 ## 原始完整教材與當時輸出
 
-以下全文恢復自改寫前版本。舊操作、IP、映像與「目前」指當時環境；其中要求執行／練習的文字保留作歷史教學，**不代表現在還要你操作**。較新的平台行為以頁首補充為準，舊結果不改名成新結果。
-
-另有[可渲染的原版 Markdown](<../history/20260922-before-current/week8/Day1_GitOps_Foundation.md>)；僅校正該副本搬移後的相對連結。下面正文原樣保留，沒有縮寫或刪掉输出。
+以下原文完整保留，包含原本的命令、範例、成功與失敗；其中過度推論或現行差異已在頁首逐項修正。舊文的「目前」指當時，精確日期未保存時不補猜；命令不用重新執行。
 
 <!-- original-week-body -->
 <!-- current-learning-map -->
