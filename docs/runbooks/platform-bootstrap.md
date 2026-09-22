@@ -1,15 +1,20 @@
 # 主展示環境：部署與驗收入口
 
+2026-09-22 現行補充：主 overlay 使用 `automatic-worker-20260922-v1`，
+新增 `api-worker` Deployment，自動 dispatch／collect；手動 `/worker/*`
+端點停用。現行操作與重啟驗收見 [自動 worker](automatic-worker.md)。
+以下 9/21 collector 手動指令只適用當時版本。
+
 更新：2026-09-21。本文件是現行操作入口；Week 文件保留歷史紀錄。
 已完成 JobSet controller 容量修復、空 Redis 移至 PVC、Redis Pod 替換後資料保留、MPI collector image rollout 與 API lifecycle 驗收。
-已在既有主叢集套用完整 overlay，三個服務 rollout 與 DB 初始化通過；Terraform 已完成主環境 import／零 drift，另完成隔離 cluster apply／destroy。完整平台尚未在新 cluster 從零部署。
+已在既有主叢集套用完整 overlay，三個服務 rollout 與 DB 初始化通過；Terraform 已完成主環境 import／零 drift。後續全新 CPU-only cluster 的 controllers／平台 bootstrap、驗收與銷毀也已通過；該次不涵蓋 GPU／MPI 執行，證據見下方 CPU bootstrap acceptance。
 
 ## 固定範圍
 
 - GKE：`hpc-gpu-sg`，zone `asia-southeast1-a`。
 - Namespace：`hpc-platform-dev`。
 - `system-pool`：API、Redis、PostgreSQL；新 overlay 明確限制 placement。
-- `gpu-pool`：既有 MPI／GPU 實驗；一張實體 GPU 的 shares 不代表多 GPU。
+- `gpu-pool`：既有 MPI／GPU 實驗；此專案 quota 固定為一張實體 GPU，shares 不代表多 GPU。
 - 主 overlay：`kustomize/overlays/gpu-sg-platform`，不再共用舊 dev image values。
 - Terraform `environments/dev` 仍是歷史 `hpc-dev`；主環境改用 [gpu-sg root module](../../terraform/environments/gpu-sg/README.md)。既有資源 import 後為零 drift；隔離 CPU-only 新環境已完成 apply、RUNNING、zero drift 與 destroy。
 
@@ -41,6 +46,14 @@ PYTHONPATH=. .venv/bin/python -m scripts.check_gcp_quota \
 本輪實測區域 Spot L4 尚有 1，但 `GPUS_ALL_REGIONS` 為 1／1，因此第二個 GPU
 pool 建立失敗。Terraform 已銷毀該 rehearsal 的三個資源；證據見
 [GPU bootstrap rehearsal](../evidence/gpu-bootstrap-rehearsal-20260921.json)。
+
+唯一的一張 GPU 已由主 cluster 使用時，不應為此建立第二個 GPU cluster；改在既有
+cluster 做下列單 GPU 驗收：
+
+1. 保留既有 `gpu-pool` 的一張 L4。
+2. 以不請求 GPU 的 MPI JobSet 驗證 API → Kueue → JobSet → rank collection；rank 可共置於同一 GPU node，這不等同 multi-node GPU 運算。
+3. 另提交單 GPU runtime workload（request `nvidia.com/gpu: 1`），驗證 CUDA runtime 與 device visibility。
+4. 如要展示分享排程，僅在 time-sharing 設定下並行提交最多四個單-share 工作，並明確標示為一張 L4 的 time-sharing，不是多 GPU scaling。
 
 ```bash
 PYTHONPATH=. .venv/bin/python -m scripts.bootstrap_cluster \
@@ -178,7 +191,7 @@ API 設為零副本後，minReplicas 大於零的 HPA 暫停調整，見 [HPA ma
 
 ### MPI completion collector
 
-`POST /worker/process-next` 目前仍需手動從 Redis queue 取出一筆工作並提交
+9/21 版本的 `POST /worker/process-next` 需手動從 Redis queue 取出一筆工作並提交
 JobSet。JobSet 終止後呼叫：
 
 ```bash
@@ -193,5 +206,6 @@ delete Pods。
 
 2026-09-21 已實測一筆 job 由 accepted → submitted → completed，回收 ranks
 0／1／2，Redis/API 與 PostgreSQL 都是 completed。詳見
-[lifecycle evidence](../evidence/mpi-api-lifecycle-20260921.json)。目前沒有背景
-daemon、持續 watch、跨 Redis／PostgreSQL 交易或外部 artifact storage。
+[lifecycle evidence](../evidence/mpi-api-lifecycle-20260921.json)。當時尚無背景 daemon。
+9/22 已由 [自動 worker](automatic-worker.md) 補上 polling 與重啟接續；watch、
+跨 Redis／PostgreSQL 原子交易與外部 artifact storage 仍未完成。

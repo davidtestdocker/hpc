@@ -42,4 +42,8 @@ DATABASE_URL = (
 )
 
 # 建立 SQLAlchemy Engine；實際連線通常在第一次資料庫操作時取得。
-engine = create_engine(DATABASE_URL)
+# pool_pre_ping 檢查池中舊連線；限制連線／SQL 等待時間，讓背景 worker 能返回重試。
+engine = create_engine(
+    DATABASE_URL, pool_pre_ping=True, pool_timeout=10,
+    connect_args={'connect_timeout': 5, 'options': '-c statement_timeout=15000'},
+)

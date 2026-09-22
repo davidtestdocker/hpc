@@ -2,6 +2,9 @@
 
 ## 對應檔案
 
+2026-09-22：單 GPU 的新訓練／CUDA profiling 見 [causal LM 報告](../performance/causal-lm-l4-20260922.md)。
+本文保留原 CPU／Gloo DDP 紀錄；新單 GPU 實驗不取代多節點或多 GPU 的驗證。
+
 以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
 
 - [helm/pytorch-runtime/templates/ddp-test-job.yaml](../../helm/pytorch-runtime/templates/ddp-test-job.yaml)

@@ -1,5 +1,8 @@
 # Week15 Day1 — PyTorch GPU Runtime
 
+現行訓練入口（2026-09-22）：[單 L4 causal LM 操作](../runbooks/causal-lm-benchmark.md)
+與 [CUDA profiling 報告](../performance/causal-lm-l4-20260922.md)。以下保留當時環境的學習與實測紀錄。
+
 ## 對應檔案
 
 以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。

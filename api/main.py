@@ -35,7 +35,9 @@ logger = logging.getLogger(__name__)
 redis_client = redis.Redis(
     host=REDIS_HOST,
     port=REDIS_PORT,
-    decode_responses=True
+    decode_responses=True,
+    socket_connect_timeout=5,
+    socket_timeout=5,
 )
 
 app = FastAPI(
@@ -119,11 +121,6 @@ def create_benchmark(request: BenchmarkRequest):
     "retry_count": 0
     }
 
-    # dumps 把 Python 資料轉成 JSON 字串，供 Redis 保存。
-    redis_client.set(
-        f"job:{job_id}",
-        json.dumps(job)
-    )
     session = SessionLocal()
 
     db_job = Job(
@@ -135,17 +132,18 @@ def create_benchmark(request: BenchmarkRequest):
     )
 
     # add 將 ORM 物件加入本次 Session，等待 flush／commit 寫入。
-    session.add(db_job)
-    # commit 提交資料庫交易，讓新增內容正式保存。
-    session.commit()
-    # close 釋放 Session 持有的連線資源。
-    session.close()
+    try:
+        session.add(db_job)
+        session.commit()
+    finally:
+        session.close()
 
-    # RPUSH 從清單右側加入工作 ID；搭配從左側取出形成先進先出。
-    redis_client.rpush(
-        "job_queue",
-        job_id
-    )
+    # DB 建立成功後，再以同一 Redis 交易發布 record 與 queue entry，避免部分入列。
+    # DB 與 Redis 仍非同一交易；Redis 發布失敗可能留下 DB-only row，API 不回報成功。
+    with redis_client.pipeline() as pipe:
+        pipe.set(f"job:{job_id}", json.dumps(job))
+        pipe.rpush('job_queue', job_id)
+        pipe.execute()
     return {
         "message": "benchmark request received",
         "job_id": job_id,
@@ -214,9 +212,11 @@ def get_job(job_id: str):
 
 
 
-# 一次處理一筆佇列工作；需由 HTTP 手動觸發，尚非背景 worker daemon。
+# 舊版手動入口保留相容用途；啟用背景 worker 時拒絕呼叫，避免兩種流程同時寫狀態。
 @app.post("/worker/process-next")
 def process_next_job():
+    if os.getenv('AUTOMATIC_WORKER', 'false').lower() == 'true':
+        raise HTTPException(409, 'Automatic worker owns job processing')
     # LMOVE 原子地把 ID 從待處理佇列移到處理中佇列，避免先取出再放入的空窗。
     job_id = redis_client.lmove(
         "job_queue",
@@ -299,6 +299,8 @@ def persist_job_status(job_id: str, status: str) -> None:
 # 掃描已提交 MPI 工作，將 Kubernetes 終態與 launcher rank evidence 回寫平台狀態。
 @app.post("/worker/collect-mpi")
 def collect_submitted_mpi_jobs():
+    if os.getenv('AUTOMATIC_WORKER', 'false').lower() == 'true':
+        raise HTTPException(409, 'Automatic worker owns job collection')
     updated_jobs = []
     pending_jobs = []
     errors = []
@@ -365,6 +367,8 @@ def job_metrics():
 # 依處理時間判斷逾時，移回待處理佇列或送入死信佇列。
 @app.post("/worker/recover-stuck")
 def recover_stuck_jobs():
+    if os.getenv('AUTOMATIC_WORKER', 'false').lower() == 'true':
+        raise HTTPException(409, 'Automatic worker owns job recovery')
     recovered_jobs = []
     #lrange 就是 read list
     job_ids = redis_client.lrange(

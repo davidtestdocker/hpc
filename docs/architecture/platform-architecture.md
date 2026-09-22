@@ -1,6 +1,6 @@
 # HPC AI Performance Engineering Platform — Final Architecture
 
-> 2026-09-21：本文描述既有主線；[衝刺進度](../career/one-week-sprint.md) 與 [現行部署入口](../runbooks/platform-bootstrap.md) 記錄新變更。Redis PVC、controllers、完整 platform overlay 與 MPI lifecycle 已在主叢集驗收；全新 CPU-only cluster bootstrap 也已完成。GitOps 與新 GPU cluster MPI 驗收仍待完成。
+> 更新至 2026-09-22：獨立自動 worker、重啟接續與結果回收已驗收。先前 Redis PVC、controllers、平台部署與 CPU-only fresh bootstrap 證據保留。進度見 [一週計畫](../career/one-week-sprint.md)，操作見 [自動 worker](../runbooks/automatic-worker.md)。
 
 ## Platform Positioning
 
@@ -19,7 +19,7 @@ flowchart TD
         API["FastAPI"]
         DB["PostgreSQL — initial job metadata"]
         QUEUE["Redis — job state / job_queue"]
-        WORKER["Worker / Dispatcher — FastAPI handler"]
+        WORKER["api-worker — background polling / collector"]
     end
     subgraph ORCHESTRATION["Kubernetes resource orchestration"]
         KAPI["Kubernetes API"]
@@ -35,8 +35,10 @@ flowchart TD
     CLIENT -->|"POST /benchmark"| API
     API -->|"insert initial metadata"| DB
     API -->|"enqueue after DB commit"| QUEUE
-    CLIENT -->|"POST /worker/process-next"| WORKER
-    QUEUE -->|"LMOVE to processing_queue"| WORKER
+    QUEUE -->|"SCAN job records / per-job lease"| WORKER
+    KAPI -->|"terminal state / launcher log"| WORKER
+    WORKER -->|"terminal status DB-first"| DB
+    WORKER -->|"result / queue cleanup"| QUEUE
     WORKER -->|"create dynamic JobSet"| KAPI
     KAPI --> JS
     JS -->|"suspended workload enters queue"| KUEUE
@@ -48,9 +50,9 @@ flowchart TD
     WORKERS --> RANKS
 ```
 
-圖中的 PostgreSQL 與 Redis 都由 FastAPI 存取，沒有 DB 主動轉送到 Redis 的機制。實際 `POST /benchmark` 先保存 Redis job record，再 commit PostgreSQL metadata，最後將 job ID 加入 Redis queue；這些操作不是跨系統 transaction。
+2026-09-22：API 先 commit PostgreSQL metadata，再用 Redis transaction 發布 job record 與 queue entry；背景 worker 共用兩個資料來源。沒有跨系統 transaction，DB-only submission 的失敗邊界見 [runbook](../runbooks/automatic-worker.md)。
 
-Worker 是 API 內的 `POST /worker/process-next` handler，需要明確呼叫，尚無獨立 worker daemon。它用 `LMOVE` 取得工作，只有 `benchmark == "mpi"` 會呼叫真實 Kubernetes dispatcher；其他 benchmark 目前走 simulated 分支。
+Worker 是獨立 `api-worker` Deployment，每五秒 SCAN job records，取得可續期 per-job lease 後提交或收集。JobSet 固定名稱加 owner label 支援 create 重試；主 overlay 啟用時手動 worker endpoints 回傳 409。僅 MPI 呼叫真實 Kubernetes dispatcher，其他 benchmark 仍是 simulated。重啟與終態驗收見 [證據](../evidence/automatic-worker-20260922.json)。
 
 Kueue 負責 queue、quota、ResourceFlavor 與 topology-aware resource scheduling／admission；Kubernetes Scheduler 負責 Pod 到 node 的 placement。JobSet 將 launcher／worker child Jobs 組成 distributed job lifecycle 單位，並依 failure policy 執行整組 recovery。圖中 JobSet 與 Kueue 的往返代表 controller 協作，不是同步函式呼叫。
 
@@ -90,6 +92,7 @@ Overlay 本身不建立 GKE cluster、JobSet／Kueue controllers、queue resourc
 | Slurm | 獨立 CPU HPC 環境的 multi-node MPI、partition／node／job 排障；不在 Kubernetes MPI 主線後面 |
 | NCCL | 單 GPU transport discovery、IB 不可用後選用 Socket；不是主 MPI demo 自動執行的 benchmark |
 | PyTorch／DDP | GPU runtime、training 與 CPU／Gloo DDP profiling 實驗；runtime adapters 未接入目前 MPI dispatch |
+| 13M causal LM／CUDA profiler | 9/22 單 L4 training、batch 比較、raw CUDA traces；獨立 benchmark runner，未接 MPI API。見 [報告](../performance/causal-lm-l4-20260922.md) |
 | vLLM | 獨立 inference serving、concurrency／throughput／latency 結果與 analyzer |
 | Prometheus／Grafana／DCGM | HTTP、node、GPU 與 serving observability；尚未構成 per-job benchmark result collector |
 | Terraform／Helm／Kustomize／Argo CD | IaC 與部署流程成果；新 platform overlay 與舊 Terraform／Argo CD 環境需分別看待 |
@@ -104,15 +107,15 @@ Terraform dev 目前定義 `hpc-dev` 與 primary／observability pools；Argo CD
 
 成功 JobSet 為 `mpi-52eedc2a-f6b1-4c97-9c11-529223ed6899`；[E2E evidence](../demo/end-to-end-mpi-jobset-demo.md) 保存 `SUSPENDED=false`、launcher／workers 與三個 MPI rank 輸出。
 
-目前 repo MPI template request CPU、輸出 rank／hostname，沒有 request GPU 或執行 GPU 計算。2026-09-21 新增 launcher successPolicy、移除 `sleep 900` 並加入 child Job deadline；新模板與 completion collector 已打包至 `hpc-api:mpi-collector-20260921-v1` 並 rollout。實測 API job 已由 accepted／submitted 收斂至 completed，回收 ranks 0／1／2並同步 PostgreSQL status。這不代表 multi-node GPU performance 或自動持續 reconciliation。
+目前 MPI template request CPU，輸出 rank／hostname。9/21 的手動 collector image 已由 9/22 的 `automatic-worker-20260922-v1` 取代；現在背景輪詢自動提交與收集，並已驗證兩筆 MPI completed／ranks 0／1／2 與 worker 重啟接續。這些是 CPU MPI launch 證據，沒有 GPU performance 結論。
 
 **尚未完成：**
 
-- 自動 worker／collector daemon 與 watch reconciliation（目前是手動 HTTP trigger）。
+- Kubernetes watch（目前採用背景 polling reconciliation）。
 - 跨 Redis／PostgreSQL 的交易一致性與失敗補償。
 - 大型 benchmark artifacts 的 object storage（目前 launcher log 保存於 Redis result）。
 - 涵蓋 submission、execution、completion、failure 與 result persistence 的 full lifecycle state machine。
 
-API 在 MPI dispatch 後保存 `submitted` 與 JobSet name；手動呼叫 completion collector 後，會讀取 JobSet terminal condition 與 launcher log，將 completed／failed、ranks 與完成時間保存到 Redis，並同步 PostgreSQL status。retry_count 尚未同步，兩個資料庫也不是單一交易；現有手動 trigger 與 retry／dead-letter 操作仍不等於自動化 distributed job 全生命週期管理。
+背景 worker 在 MPI dispatch 後保存 submitted 與 JobSet name，再於後續輪詢讀取 terminal condition／launcher log，DB-first 發布結果。retry_count 尚未同步至 PostgreSQL；兩個資料庫不是單一交易，也沒有 Redis 資料全失恢復保證。
 
 評估本作品時，應分別檢視主 E2E 的執行證據與 supporting paths 的排障／效能證據；完成 rank execution 不代表已完成 benchmark closed loop。

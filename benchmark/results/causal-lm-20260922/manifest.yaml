@@ -1,0 +1,462 @@
+apiVersion: v1
+data:
+  causal_lm_benchmark.py: "\"\"\"Small byte-token causal LM: controlled batch comparison\
+    \ and separate CUDA traces.\"\"\"\nimport gzip\nimport hashlib\nimport json\n\
+    import math\nimport os\nimport platform\nimport statistics\nimport subprocess\n\
+    import threading\nimport time\nfrom datetime import datetime, timezone\nfrom pathlib\
+    \ import Path\n\nimport torch\nfrom torch.profiler import ProfilerActivity, profile,\
+    \ record_function\n\nSEED = 20260922\nSEQ = 256\nHIDDEN = 512\nLAYERS = 4\n\n\n\
+    class CausalLM(torch.nn.Module):\n    def __init__(self):\n        super().__init__()\n\
+    \        self.tokens = torch.nn.Embedding(256, HIDDEN)\n        self.positions\
+    \ = torch.nn.Embedding(SEQ, HIDDEN)\n        layer = torch.nn.TransformerEncoderLayer(\n\
+    \            HIDDEN, 8, HIDDEN * 4, dropout=0.0, activation='gelu',\n        \
+    \    batch_first=True, norm_first=True,\n        )\n        self.blocks = torch.nn.TransformerEncoder(layer,\
+    \ LAYERS, enable_nested_tensor=False)\n        self.norm = torch.nn.LayerNorm(HIDDEN)\n\
+    \        self.head = torch.nn.Linear(HIDDEN, 256, bias=False)\n        self.register_buffer('mask',\
+    \ torch.triu(torch.ones(SEQ, SEQ, dtype=torch.bool), 1))\n\n    def forward(self,\
+    \ tokens):\n        length = tokens.shape[1]\n        x = self.tokens(tokens)\
+    \ + self.positions(torch.arange(length, device=tokens.device))\n        x = self.blocks(x,\
+    \ mask=self.mask[:length, :length], is_causal=True)\n        return self.head(self.norm(x))\n\
+    \n\ndef step(model, optimizer, batches, number):\n    x, y = batches[number %\
+    \ len(batches)]\n    with record_function('train.zero_grad'):\n        optimizer.zero_grad(set_to_none=True)\n\
+    \    with record_function('train.forward_loss'), torch.autocast('cuda', dtype=torch.bfloat16):\n\
+    \        logits = model(x)\n        loss = torch.nn.functional.cross_entropy(logits.reshape(-1,\
+    \ 256), y.reshape(-1))\n    with record_function('train.backward'):\n        loss.backward()\n\
+    \    with record_function('train.optimizer'):\n        optimizer.step()\n    return\
+    \ loss.detach()\n\n\ndef prepare(corpus, batch):\n    torch.manual_seed(SEED)\n\
+    \    torch.cuda.manual_seed_all(SEED)\n    model = CausalLM().cuda().train()\n\
+    \    optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4)\n    # Same ordered\
+    \ examples for both settings; batch 16 groups twice as many examples.\n    generator\
+    \ = torch.Generator().manual_seed(SEED + 1)\n    starts = torch.randint(len(corpus)\
+    \ - SEQ, (128,), generator=generator)\n    windows = torch.stack([corpus[s:s +\
+    \ SEQ + 1] for s in starts]).cuda()\n    batches = [(windows[i:i + batch, :-1],\
+    \ windows[i:i + batch, 1:])\n               for i in range(0, len(windows), batch)]\n\
+    \    return model, optimizer, batches\n\n\ndef telemetry(stop, rows):\n    while\
+    \ not stop.is_set():\n        try:\n            sample = subprocess.check_output([\n\
+    \                'nvidia-smi', '--query-gpu=timestamp,uuid,utilization.gpu,memory.used,power.draw,temperature.gpu',\n\
+    \                '--format=csv,noheader,nounits',\n            ], text=True, timeout=5).strip()\n\
+    \            rows.append({'unix_time': time.time(), 'sample': sample})\n     \
+    \   except (OSError, subprocess.SubprocessError) as exc:\n            rows.append({'error':\
+    \ str(exc)})\n        stop.wait(1)\n\n\ndef main():\n    if not torch.cuda.is_available()\
+    \ or not torch.cuda.is_bf16_supported():\n        raise RuntimeError('BF16 CUDA\
+    \ device required')\n    output = Path(os.getenv('OUTPUT_DIR', '/results'))\n\
+    \    output.mkdir(parents=True, exist_ok=True)\n    source = Path(os.getenv('CORPUS_PATH',\
+    \ '/benchmark/corpus.txt')).read_bytes()\n    if len(source) <= SEQ:\n       \
+    \ raise ValueError('Corpus too short')\n    corpus = torch.tensor(list(source),\
+    \ dtype=torch.long)\n    torch.set_num_threads(2)\n    warmup, measured = 20,\
+    \ 40\n    result = {\n        'recorded_at': datetime.now(timezone.utc).isoformat(),\n\
+    \        'scope': 'single-L4 small causal LM training on local UTF-8 bytes; not\
+    \ pretrained LLM quality',\n        'config': {'seed': SEED, 'sequence_length':\
+    \ SEQ, 'hidden': HIDDEN, 'layers': LAYERS,\n                   'heads': 8, 'vocab':\
+    \ 256, 'precision': 'BF16 autocast', 'optimizer': 'AdamW',\n                 \
+    \  'learning_rate': 3e-4, 'dropout': 0.0, 'warmup': warmup, 'measured_steps':\
+    \ measured,\n                   'order': [8, 16, 16, 8, 8, 16], 'token_unit':\
+    \ 'UTF-8 byte',\n                   'data_residency': 'preloaded GPU; excludes\
+    \ tokenizer/storage/data-loader'},\n        'environment': {'torch': torch.__version__,\
+    \ 'cuda': torch.version.cuda,\n                        'gpu': torch.cuda.get_device_name(0),\
+    \ 'python': platform.python_version(),\n                        'hostname': platform.node(),\
+    \ 'cpu_threads': torch.get_num_threads(),\n                        'nvidia_smi':\
+    \ subprocess.check_output(['nvidia-smi'], text=True)},\n        'corpus': {'bytes':\
+    \ len(source), 'sha256': hashlib.sha256(source).hexdigest(),\n               \
+    \    'source': 'repository README.md snapshot, UTF-8 bytes; 128 fixed windows'},\n\
+    \        'runs': [], 'profiles': {},\n    }\n    rows, stop = [], threading.Event()\n\
+    \    thread = threading.Thread(target=telemetry, args=(stop, rows), daemon=True)\n\
+    \    thread.start()\n    try:\n        for index, batch in enumerate(result['config']['order']):\n\
+    \            model, optimizer, batches = prepare(corpus, batch)\n            result['parameter_count']\
+    \ = sum(p.numel() for p in model.parameters())\n            if index == 0:\n \
+    \               # Changing future tokens must not change prefix logits.\n    \
+    \            with torch.no_grad():\n                    x = batches[0][0][:1].clone()\n\
+    \                    before = model(x)[:, :32]\n                    x[:, 32:]\
+    \ = (x[:, 32:] + 1) % 256\n                    difference = (before - model(x)[:,\
+    \ :32]).abs().max().item()\n                    assert difference < 1e-5, difference\n\
+    \                    result['causality_check_max_prefix_difference'] = difference\n\
+    \                    del before, x\n            initial_loss = float(step(model,\
+    \ optimizer, batches, 0))\n            for n in range(warmup):\n             \
+    \   step(model, optimizer, batches, n)\n            torch.cuda.synchronize()\n\
+    \            torch.cuda.reset_peak_memory_stats()\n            latencies = []\n\
+    \            started_at = time.time()\n            for n in range(measured):\n\
+    \                start = time.perf_counter()\n                loss = step(model,\
+    \ optimizer, batches, n)\n                torch.cuda.synchronize()\n         \
+    \       latencies.append((time.perf_counter() - start) * 1000)\n            final_loss\
+    \ = float(loss)\n            assert math.isfinite(final_loss)\n            result['runs'].append({\n\
+    \                'order_index': index, 'batch_size': batch, 'started_at_unix':\
+    \ started_at,\n                'finished_at_unix': time.time(), 'step_ms': latencies,\n\
+    \                'mean_step_ms': statistics.fmean(latencies),\n              \
+    \  'p95_step_ms': sorted(latencies)[math.ceil(.95 * len(latencies)) - 1],\n  \
+    \              'tokens_per_second': batch * SEQ * measured / (sum(latencies) /\
+    \ 1000),\n                'peak_allocated_mib': torch.cuda.max_memory_allocated()\
+    \ / 2**20,\n                'peak_reserved_mib': torch.cuda.max_memory_reserved()\
+    \ / 2**20,\n                'initial_loss': initial_loss, 'final_loss': final_loss,\n\
+    \            })\n            del model, optimizer, batches, loss\n           \
+    \ torch.cuda.empty_cache()\n            print(f'Measured case {index + 1}/6, batch={batch}',\
+    \ flush=True)\n\n        # Profiler overhead is excluded from all throughput numbers\
+    \ above.\n        for batch in (8, 16):\n            model, optimizer, batches\
+    \ = prepare(corpus, batch)\n            for n in range(warmup):\n            \
+    \    step(model, optimizer, batches, n)\n            torch.cuda.synchronize()\n\
+    \            with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],\n\
+    \                         record_shapes=True, profile_memory=True) as prof:\n\
+    \                for n in range(5):\n                    step(model, optimizer,\
+    \ batches, n)\n                    prof.step()\n                torch.cuda.synchronize()\n\
+    \            events = prof.key_averages()\n            operators = [{'name': e.key,\
+    \ 'calls': e.count,\n                          'self_cpu_us': e.self_cpu_time_total,\n\
+    \                          'self_device_us': e.self_device_time_total,\n     \
+    \                     'device_total_us': e.device_time_total}\n              \
+    \           for e in events]\n            operators.sort(key=lambda e: e['self_device_us'],\
+    \ reverse=True)\n            assert sum(e['self_device_us'] for e in operators)\
+    \ > 0, 'CUDA profiler events absent'\n            result['profiles'][str(batch)]\
+    \ = {'steps': 5, 'operators': operators}\n            prof.export_chrome_trace(str(output\
+    \ / f'batch{batch}.trace.json'))\n            with gzip.open(output / f'batch{batch}.trace.json.gz',\
+    \ 'wb') as f:\n                f.write((output / f'batch{batch}.trace.json').read_bytes())\n\
+    \            del model, optimizer, batches, prof, events\n            torch.cuda.empty_cache()\n\
+    \    finally:\n        stop.set()\n        thread.join(timeout=6)\n        result['telemetry']\
+    \ = rows\n        (output / 'result.json').write_text(json.dumps(result, indent=2)\
+    \ + '\\n')\n    print('BENCHMARK_COMPLETE', flush=True)\n\n\nif __name__ == '__main__':\n\
+    \    main()\n"
+  corpus.txt: "# \u73FE\u884C\u958B\u767C\u5165\u53E3\n\n2026-09-22\uFF1ADay 4 \u81EA\
+    \u52D5 worker \u5DF2\u90E8\u7F72\u4E26\u901A\u904E\u5BE6\u6A5F\u9A57\u6536\uFF0C\
+    \u5305\u542B\u6B63\u5E38\u5B8C\u6210\u3001worker\n\u91CD\u555F\u63A5\u7E8C\u3001\
+    \u4E09\u6B21\u6A21\u64EC dispatch \u5931\u6557\u8207 DB \u72C0\u614B\u6838\u5C0D\
+    \u3002\u898B [\u9A57\u6536 JSON](docs/evidence/automatic-worker-20260922.json)\n\
+    \u53CA [\u64CD\u4F5C\u5165\u53E3](docs/runbooks/automatic-worker.md)\u3002Day\
+    \ 5\uFF0F6 profiling \u8207 Day 7 \u6574\u9AD4\u6536\u5C3E\u4ECD\u672A\u5168\u90E8\
+    \u5B8C\u6210\u3002\n\n2026-09-21 \u958B\u59CB [\u4E00\u9031\u4F5C\u54C1\u885D\u523A\
+    ](docs/career/one-week-sprint.md)\u3002\u73FE\u884C\u64CD\u4F5C\u898B [\u5E73\u53F0\
+    \u90E8\u7F72\u8207\u9A57\u6536](docs/runbooks/platform-bootstrap.md)\uFF0C\u552F\
+    \u8B80\u6AA2\u67E5\u4F7F\u7528 `python3 scripts/platform.py check`\u3002\n\u672C\
+    \u8F2A\u5DF2\u4FEE\u5FA9 JobSet controller \u6392\u7A0B\u5BB9\u91CF\u3001\u5C07\
+    \u7A7A Redis \u79FB\u81F3 PVC\uFF0C\u4E26\u9A57\u8B49 Pod \u66FF\u63DB\u5F8C\u6E2C\
+    \u8A66\u8CC7\u6599\u4FDD\u7559\u53CA API \u6062\u5FA9\u3002\u898B [\u9077\u79FB\
+    \u5831\u544A](docs/evidence/redis-persistence-migration-20260921.json) \u8207\
+    \ [\u4FEE\u5FA9\u5F8C\u6AA2\u67E5](docs/evidence/platform-preflight-after-20260921.json)\u3002\
+    Terraform \u4E3B\u74B0\u5883\u5DF2\u5B8C\u6210 import \u8207\u96F6 drift\uFF1B\
+    \u9694\u96E2 CPU-only cluster \u5DF2\u5B8C\u6210 apply\uFF0FRUNNING\uFF0Fzero\
+    \ drift\uFF0Fdestroy\u3002\u4E0B\u65B9\u539F\u6709\u6210\u529F demo \u70BA\u6B77\
+    \u53F2\u7D00\u9304\u3002\n\n\u65B0 MPI collector image \u5DF2 rollout\uFF0C\u4E26\
+    \u7531 API \u5BE6\u6E2C JobSet Completed\u3001ranks 0\uFF0F1\uFF0F2 \u8207 PostgreSQL\
+    \ status \u56DE\u5BEB\uFF0C\u898B [lifecycle evidence](docs/evidence/mpi-api-lifecycle-20260921.json)\u3002\
+    \u820A MPI \u5DE5\u4F5C\u6062\u5FA9\u5931\u6557\u5247\u53E6\u884C\u4FDD\u7559\uFF0C\
+    \u8A73\u898B [\u672C\u8F2A\u4FEE\u5FA9\u8207\u9A57\u6536](docs/demo/platform-recovery-20260921.md)\u3002\
+    \n\n# Week1\uFF5EWeek20 \u5B78\u7FD2\u7E3D\u89BD\n\n\u5F9E Linux \u8207 Python\
+    \ \u57FA\u790E\u51FA\u767C\uFF0C\u9010\u6B65\u5B78\u7FD2\u5BB9\u5668\u5316\u3001\
+    \u5E73\u53F0\u958B\u767C\u3001\u96F2\u7AEF\u90E8\u7F72\u3001\u6548\u80FD\u5206\
+    \u6790\uFF0C\u4EE5\u53CA HPC\uFF0FAI \u5206\u6563\u5F0F\u904B\u7B97\u8207\u6392\
+    \u969C\u3002\u4E0B\u8868\u4F9D\u5404\u9031\u5B78\u7FD2\u6587\u4EF6\u6574\u7406\
+    \uFF1B\u9EDE\u9078\u9031\u6B21\u53EF\u67E5\u770B\u5B8C\u6574\u7B46\u8A18\u8207\
+    \u5BE6\u9A57\u7D00\u9304\u3002\u8868\u4E2D\u7684\u6982\u5FF5\u5B78\u7FD2\u8207\
+    \u6B77\u53F2\u5BE6\u4F5C\u4E0D\u4EE3\u8868\u76EE\u524D\u5E73\u53F0\u5DF2\u5168\
+    \u9762\u6574\u5408\uFF0C\u5BE6\u969B\u9A57\u8B49\u7BC4\u570D\u898B\u5F8C\u7E8C\
+    \u5E73\u53F0\u4ECB\u7D39\u8207 [Evidence Index](docs/evidence/README.md)\u3002\
+    \n\n| \u9031\u6B21 | \u5B78\u7FD2\u4E3B\u984C | \u5B78\u7FD2\u5167\u5BB9\u8207\
+    \u80FD\u529B | \u6280\u80FD\uFF0F\u6280\u8853 |\n|---|---|---|---|\n| [Week1](docs/week1/)\
+    \ | Linux \u7CFB\u7D71\u57FA\u790E | \u7406\u89E3\u7A0B\u5E8F\u3001CPU \u6392\u7A0B\
+    \u3001\u4E0A\u4E0B\u6587\u5207\u63DB\u3001\u8A18\u61B6\u9AD4\u8207\u78C1\u789F\
+    \ I/O\uFF1B\u5EFA\u7ACB\u9010\u5C64\u5B9A\u4F4D\u6548\u80FD\u74F6\u9838\u7684\u601D\
+    \u8DEF | Linux\u3001Process\uFF0FPID\u3001Scheduler\u3001Context Switch\u3001\
+    top\u3001ps\u3001free\u3001iostat |\n| [Week2](docs/week2/) | Python \u8207\u7CFB\
+    \u7D71\u8CC7\u8A0A\u6536\u96C6 | \u4F7F\u7528\u8B8A\u6578\u3001\u51FD\u5F0F\u8207\
+    \u56DE\u50B3\u503C\u7D44\u7E54\u7A0B\u5F0F\uFF0C\u4EE5\u8CC7\u6599\u7D50\u69CB\
+    \u8868\u793A\u7A0B\u5E8F\u8CC7\u8A0A\uFF1B\u57F7\u884C Linux \u6307\u4EE4\u4E26\
+    \u53D6\u5F97\u8F38\u51FA | Python\u3001Function\u3001return\u3001List\u3001Dictionary\u3001\
+    subprocess\u3001stdout |\n| [Week3](docs/week3/) | Docker \u5BB9\u5668\u5316 |\
+    \ \u5B89\u88DD Docker\u3001\u5340\u5206 Image \u8207 Container\uFF1B\u5EFA\u7F6E\
+    \u76E3\u63A7\u7A0B\u5F0F\u6620\u50CF\u3001\u7BA1\u7406\u5BB9\u5668\u751F\u547D\
+    \u9031\u671F\uFF0C\u7406\u89E3 namespace \u9694\u96E2 | Docker Engine\u3001Dockerfile\u3001\
+    Image\u3001Container\u3001Docker Compose\u3001Namespace |\n| [Week4](docs/week4/)\
+    \ | \u5E73\u53F0 API \u8207\u5DE5\u4F5C\u4F47\u5217 | \u8A2D\u8A08\u5DE5\u4F5C\
+    \u63D0\u4EA4\u8207\u67E5\u8A62 API\u3001Job ID \u8207\u8A18\u61B6\u9AD4\u4F47\u5217\
+    \uFF1B\u6574\u5408\u5BB9\u5668\u8A2D\u5B9A\u3001\u5065\u5EB7\u6AA2\u67E5\u3001\
+    \u65E5\u8A8C\u8207\u57FA\u672C\u6307\u6A19 | FastAPI\u3001Uvicorn\u3001REST API\u3001\
+    Pydantic\u3001OpenAPI\u3001Producer\uFF0FConsumer\u3001Docker Compose |\n| [Week5](docs/week5/)\
+    \ | \u5DE5\u4F5C\u72C0\u614B\u8207\u8CC7\u6599\u6301\u4E45\u5316 | \u5C07\u72C0\
+    \u614B\u79FB\u81F3 Redis\uFF0C\u5B78\u7FD2\u6301\u4E45\u5316\u3001worker \u72C0\
+    \u614B\u8F49\u79FB\u3001\u903E\u6642\u6062\u5FA9\u8207\u91CD\u8A66\u4E0A\u9650\
+    \uFF1B\u4EE5 PostgreSQL \u4FDD\u5B58 metadata | Redis\u3001RDB\uFF0FAOF\u3001\
+    Processing Queue\u3001Retry\u3001Dead Letter Queue\u3001PostgreSQL\u3001SQLAlchemy\
+    \ ORM |\n| [Week6](docs/week6/) | Kubernetes \u5E73\u53F0\u90E8\u7F72 | \u7406\
+    \u89E3\u63A7\u5236\u5668\u8207\u670D\u52D9\u63A2\u7D22\uFF1B\u5EFA\u7ACB K3s \u74B0\
+    \u5883\uFF0C\u90E8\u7F72 API\u3001Redis\u3001PostgreSQL\uFF0C\u4E32\u63A5\u670D\
+    \u52D9\u8207\u6301\u4E45\u5316\u5132\u5B58 | Kubernetes\u3001K3s\u3001Pod\u3001\
+    Deployment\u3001ReplicaSet\u3001Service\u3001Namespace\u3001StatefulSet\u3001\
+    PVC |\n| [Week7](docs/week7/) | Kubernetes \u670D\u52D9\u7BA1\u7406 | \u5206\u96E2\
+    \u8A2D\u5B9A\u8207\u654F\u611F\u8CC7\u8A0A\u3001\u914D\u7F6E\u8CC7\u6E90\u8207\
+    \u5065\u5EB7\u63A2\u91DD\uFF1B\u5EFA\u7ACB\u5C0D\u5916\u8DEF\u7531\uFF0C\u900F\
+    \u904E\u8CA0\u8F09\u6E2C\u8A66\u89C0\u5BDF HPA \u64F4\u5BB9 | ConfigMap\u3001\
+    Secret\u3001Requests\uFF0FLimits\u3001QoS\u3001Probes\u3001NodePort\u3001Ingress\uFF0F\
+    Traefik\u3001HPA\u3001k6 |\n| [Week8](docs/week8/) | GitOps \u8207\u591A\u74B0\
+    \u5883\u90E8\u7F72 | \u5B78\u7FD2\u5BA3\u544A\u5F0F\u540C\u6B65\uFF0C\u5C07\u670D\
+    \u52D9\u5C01\u88DD\u70BA Helm Charts\uFF1B\u7BA1\u7406 release\uFF0Frollback\uFF0C\
+    \u6574\u5408 dev\uFF0Fstage\uFF0Fprod \u8A2D\u5B9A\u8207\u90E8\u7F72 | GitOps\u3001\
+    Argo CD\u3001Helm\u3001Values\uFF0FTemplates\u3001Release\u3001Kustomize Base\uFF0F\
+    Overlay\u3001Reconciliation |\n| [Week9](docs/week9/) | Infrastructure as Code\
+    \ | \u7BA1\u7406\u96F2\u7AEF\u8CC7\u6E90\u751F\u547D\u9031\u671F\u3001state \u8207\
+    \ module \u91CD\u69CB\uFF1B\u4E32\u63A5 VM\u3001\u7DB2\u8DEF\u3001\u9632\u706B\
+    \u7246\u53CA\u591A\u74B0\u5883\u8A2D\u5B9A\uFF0C\u5EFA\u7ACB GKE \u8207 Node Pool\
+    \ | Terraform\u3001HCL\u3001Provider\u3001Plan\uFF0FApply\u3001State Migration\u3001\
+    Module\uFF0FOutput\u3001GCP VPC\u3001GKE |\n| [Week10](docs/week10/) | CI/CD \u8207\
+    \u81EA\u52D5\u5316\u6E2C\u8A66 | \u5EFA\u7ACB\u8A9E\u6CD5\u3001\u54C1\u8CEA\u8207\
+    \ API \u6E2C\u8A66\u6D41\u7A0B\uFF0C\u4EE5 mock \u9694\u96E2\u5916\u90E8\u4F9D\
+    \u8CF4\uFF1B\u4E32\u63A5\u6620\u50CF\u5EFA\u7F6E\u3001\u63A8\u9001\u8207 GitOps\
+    \ \u90E8\u7F72\u66F4\u65B0 | GitHub Actions\u3001Ruff\u3001Pytest\u3001TestClient\u3001\
+    Fixture\uFF0FMonkeypatch\u3001Docker Build\u3001Artifact Registry\u3001Argo CD\
+    \ |\n| [Week11](docs/week11/) | \u5E73\u53F0\u53EF\u89C0\u6E2C\u6027 | \u5EFA\u7ACB\
+    \u76E3\u63A7 Node Pool\uFF0C\u7406\u89E3 pull model \u8207 target \u72C0\u614B\
+    \uFF1B\u6536\u96C6 API\uFF0FNode \u6307\u6A19\uFF0C\u6574\u5408\u81EA\u52D5\u63A2\
+    \u7D22\u8207\u5100\u8868\u677F | Prometheus\u3001Scrape Job\uFF0FTarget\u3001\
+    FastAPI Instrumentator\u3001Node Exporter\u3001Grafana\u3001Kubernetes Service\
+    \ Discovery\u3001RBAC |\n| [Week12](docs/week12/) | Linux \u6548\u80FD\u8A3A\u65B7\
+    \ | \u5206\u6790 CPU\u3001\u8A18\u61B6\u9AD4\u3001\u78C1\u789F\u8207\u6B77\u53F2\
+    \u8CA0\u8F09\uFF1B\u5EFA\u7ACB CPU baseline\uFF0C\u900F\u904E profiling \u8207\
+    \ system call \u8FFD\u8E64\u5B9A\u4F4D\u74F6\u9838 | top\u3001mpstat\u3001pidstat\u3001\
+    vmstat\u3001iostat\u3001sar\uFF0Fsysstat\u3001fio\u3001sysbench\u3001perf\u3001\
+    strace |\n| [Week13](docs/week13/) | Benchmark \u8207\u7D50\u679C\u6574\u5408\
+    \ | \u91CF\u6E2C API\u3001Redis\u3001\u8CC7\u6599\u5EAB\u3001CPU\u3001\u5132\u5B58\
+    \u8207\u7DB2\u8DEF\uFF1B\u6BD4\u8F03\u4F75\u767C\u3001\u541E\u5410\u8207\u5EF6\
+    \u9072\uFF0C\u6574\u5408\u8CC7\u6E90\u89C0\u5BDF\u3001PASS\uFF0FFAIL \u8207\u7D50\
+    \u679C\u4FDD\u5B58 | ApacheBench\u3001redis-benchmark\u3001pgbench\u3001stress-ng\u3001\
+    fio\u3001iperf3\u3001kubectl top\u3001Shell\u3001tee\uFF0Fpipefail |\n| [Week14](docs/week14/)\
+    \ | GPU \u6392\u7A0B\u8207\u76E3\u63A7 | \u7406\u89E3 GPU \u8CC7\u6E90\u5BA3\u544A\
+    \u8207 Pending \u539F\u56E0\uFF0C\u5EFA\u7ACB GKE GPU Node Pool\uFF1B\u57F7\u884C\
+    \ CUDA workload\uFF0C\u89C0\u5BDF GPU \u4F7F\u7528\u7387\u3001\u986F\u5B58\u8207\
+    \u6EAB\u5EA6 | NVIDIA Device Plugin\u3001nvidia.com/gpu\u3001Taints\uFF0FTolerations\u3001\
+    CUDA\u3001nvidia-smi\u3001DCGM Exporter\u3001Prometheus\u3001Grafana |\n| [Week15](docs/week15/)\
+    \ | AI Runtime \u8207\u63A8\u8AD6\u6548\u80FD | \u57F7\u884C PyTorch \u8A13\u7DF4\
+    \u8207 vLLM \u63A8\u8AD6\uFF0C\u5EFA\u7ACB runtime adapter\uFF1B\u4EE5 concurrency\
+    \ benchmark \u8207 JSON \u7D50\u679C\u5206\u6790\u541E\u5410\u548C\u5EF6\u9072\
+    \u53D6\u6368 | PyTorch\u3001DataLoader\u3001CUDA\u3001vLLM\u3001Runtime Abstraction\u3001\
+    Continuous Batching\u3001KV\uFF0FPrefix Cache\u3001TTFT\uFF0FTPOT\uFF0FITL |\n\
+    | [Week16](docs/week16/) | \u5206\u6563\u5F0F\u8A13\u7DF4\u8207\u901A\u8A0A\u6548\
+    \u80FD | \u7406\u89E3 rank\u3001rendezvous \u8207\u68AF\u5EA6\u540C\u6B65\uFF1B\
+    \u5BE6\u4F5C CPU\uFF0FGloo DDP\uFF0C\u5206\u6790 1\u21922 workers scaling\uFF0C\
+    \u9032\u884C\u55AE GPU NCCL \u6E2C\u8A66 | torchrun\u3001PyTorch DDP\u3001Gloo\u3001\
+    RANK\uFF0FWORLD_SIZE\u3001AllReduce\u3001NCCL\u3001nccl-tests\u3001Speedup\uFF0F\
+    Scaling Efficiency |\n| [Week17](docs/week17/) | HPC \u5206\u6563\u5F0F\u904B\u7B97\
+    \u8207\u6392\u7A0B | \u5BE6\u4F5C MPI \u901A\u8A0A\u8207\u55AE\u7BC0\u9EDE OSU\
+    \ \u6E2C\u8A66\u3001Slurm CPU \u591A\u7BC0\u9EDE MPI\u3001Ray tasks\uFF0Factors\uFF1B\
+    \u6BD4\u8F03\u6392\u7A0B\u5C64\u6B21\uFF0C\u7406\u89E3 RDMA \u901A\u8A0A\u67B6\
+    \u69CB\u8207\u786C\u9AD4\u9700\u6C42 | Open MPI\u3001OSU Micro-Benchmarks\u3001\
+    Slurm\u3001MUNGE\u3001Ray\uFF0FKubeRay\u3001RayJob\uFF1BRDMA\uFF0FRoCE\uFF0FInfiniBand\
+    \ \u6982\u5FF5 |\n| [Week18](docs/week18/) | \u7DB2\u8DEF\u8207\u5206\u6563\u5F0F\
+    \u901A\u8A0A\u6392\u969C | \u5EFA\u7ACB\u983B\u5BEC\u3001\u5EF6\u9072\u3001\u4E1F\
+    \u5305\u8207 MTU \u57FA\u7DDA\uFF1B\u5F9E\u5C01\u5305\u8FFD\u67E5\u9023\u7DDA\u6545\
+    \u969C\uFF0C\u9010\u5C64\u6AA2\u67E5 Kubernetes \u7DB2\u8DEF\u3001NCCL Socket\
+    \ fallback \u8207 GPU\uFF0FNIC\uFF0FNUMA locality | ip\uFF0Fss\u3001ping\u3001\
+    iperf3\u3001tcpdump\u3001iptables\u3001ethtool\u3001DNS\uFF0FEndpointSlice\u3001\
+    NCCL Debug\u3001PCIe\uFF0FNUMA |\n| [Week19](docs/week19/) | GPU \u5171\u4EAB\u8207\
+    \u5DE5\u4F5C\u51C6\u5165 | \u6BD4\u8F03 GPU \u5171\u4EAB\u6A21\u5F0F\uFF0C\u5BE6\
+    \u9A57 time-slicing\u3001quota\u3001priority\uFF0Fpreemption\uFF1B\u6574\u5408\
+    \ JobSet MPI\uFF0C\u9A57\u8B49\u55AE GPU node \u7684 TAS placement | Time-Slicing\u3001\
+    MPS\uFF0FMIG \u6982\u5FF5\u3001Kueue\u3001ResourceFlavor\u3001ClusterQueue\uFF0F\
+    LocalQueue\u3001PriorityClass\u3001JobSet\u3001TAS |\n| [Week20](docs/week20/)\
+    \ | \u5B89\u5168\u3001\u6545\u969C\u6062\u5FA9\u8207\u6280\u8853\u9078\u578B |\
+    \ \u5BE6\u4F5C\u6700\u5C0F\u6B0A\u9650\u8207 Pod hardening\u3001NetworkPolicy\
+    \ \u8A2D\u8A08\uFF0Fschema \u9A57\u8B49\u53CA\u9694\u96E2 Calico \u5C01\u5305\u9A57\
+    \u6536\uFF1B\u5206\u6790 JobSet recovery\u3001Ray retry\u3001Slurm node failure\uFF0C\
+    \u6574\u7406\u8DE8\u5C64\u6392\u969C\u8207\u67B6\u69CB\u9078\u578B | RBAC\uFF0F\
+    ServiceAccount\u3001SecurityContext\u3001Image\uFF0FSecret Security\u3001NetworkPolicy\u3001\
+    FailurePolicy\u3001Runbook\uFF1BOpenStack\uFF0FHTCondor\uFF0FLSF\uFF0FDLRover\
+    \ \u6982\u5FF5 |\n\n\u9019 20 \u9031\u7684\u5B78\u7FD2\u9010\u6B65\u5F62\u6210\
+    \u4E0B\u65B9\u7684 **HPC AI Performance Engineering Platform**\uFF1A\u4EE5 API\u3001\
+    \u4F47\u5217\u8207 Kubernetes \u5DE5\u4F5C\u57F7\u884C\u70BA\u4E3B\u7DDA\uFF0C\
+    \u642D\u914D\u76E3\u63A7\u3001\u6548\u80FD\u5BE6\u9A57\u53CA\u6545\u969C\u6392\
+    \u67E5\u6848\u4F8B\u3002\u4EE5\u4E0B\u8AAA\u660E\u6574\u5408\u5F8C\u7684\u5E73\
+    \u53F0\u67B6\u69CB\u3001\u4E3B\u8981 demo\u3001\u53EF\u8FFD\u6EAF\u6210\u679C\u8207\
+    \u76EE\u524D\u9650\u5236\u3002\n\n---\n\n# HPC AI Performance Engineering Platform\n\
+    \n## Overview\n\n\u4EE5 API \u9A45\u52D5 distributed HPC\uFF0FAI workload submission\u3001\
+    scheduling\u3001execution \u8207\u7D50\u679C\u56DE\u6536\uFF0C\u7D50\u5408 observability\u3001\
+    performance analysis \u548C failure troubleshooting \u7684\u5DE5\u7A0B\u4F5C\u54C1\
+    \u3002\n\n\u4E3B\u5C55\u793A\u662F FastAPI \u2192 Redis \u2192 \u81EA\u52D5 worker\
+    \ \u2192 Kubernetes JobSet\uFF0FKueue \u2192 MPI ranks \u2192 \u81EA\u52D5\u7D50\
+    \u679C\u56DE\u6536\uFF1BRay\u3001Slurm\u3001NCCL \u8207\u6548\u80FD\u5BE6\u9A57\
+    \u63D0\u4F9B\u5E73\u884C\u7684 supporting evidence\u30022026-09-22 \u5DF2\u9A57\
+    \u8B49\u80CC\u666F polling reconciliation\u3001worker \u91CD\u555F\u63A5\u7E8C\
+    \u8207\u4E09\u6B21\u6A21\u64EC dispatch \u5931\u6557\u5F8C\u56DE\u5831 failed\uFF1B\
+    artifact storage \u5C1A\u672A\u5B8C\u6210\u3002\u898B [\u81EA\u52D5\u6D41\u7A0B\
+    \u8B49\u64DA](docs/evidence/automatic-worker-20260922.json)\u3002\n\n## Architecture\n\
+    \n```mermaid\nflowchart LR\n    C[\"Client\"] --> A[\"FastAPI\"]\n    A --> D[\"\
+    PostgreSQL: initial metadata\"]\n    A --> R[\"Redis: job state / queue\"]\n \
+    \   R --> W[\"Worker / Dispatcher\"]\n    W --> K[\"Kubernetes API\"]\n    K -->|\"\
+    poll terminal state / launcher log\"| W\n    W -->|\"result\"| R\n    W -->|\"\
+    status\"| D\n    K --> J[\"JobSet\"]\n    J --> Q[\"Kueue admission\"]\n    Q\
+    \ --> M[\"MPI launcher + workers\"]\n```\n\nWorker \u70BA\u7368\u7ACB Deployment\uFF0C\
+    \u6BCF\u4E94\u79D2\u8F2A\u8A62\u6301\u4E45\u5316 job records\uFF0C\u81EA\u52D5\
+    \u63D0\u4EA4\u4E26\u56DE\u6536 JobSet \u7D42\u614B\u3001launcher log \u8207 ranks\u3002\
+    \u4E3B overlay \u5DF2\u505C\u7528\u624B\u52D5 worker endpoints\u3002Kueue \u8655\
+    \u7406 queue\uFF0Fquota\uFF0FTAS admission\uFF1BJobSet \u7BA1\u7406 distributed\
+    \ job grouping\uFF1Badmission \u5F8C\u7531 Kubernetes Scheduler \u5B8C\u6210 Pod\
+    \ placement\u3002\u64CD\u4F5C\u898B [\u81EA\u52D5 worker runbook](docs/runbooks/automatic-worker.md)\u3002\
+    \n\n\u5B8C\u6574\u5206\u5DE5\u8207 Node Pool \u908A\u754C\u898B [Final Architecture](docs/architecture/platform-architecture.md)\u3002\
+    \n\n## Main Demo\n\n`POST /benchmark` \u2192 Redis queue \u2192 worker dispatch\
+    \ \u2192 \u52D5\u614B `mpi-<job_id>` JobSet \u2192 Kueue admission \u2192 1 launcher\
+    \ + 3 workers \u2192 3 MPI ranks\u3002\n\n\u5DF2\u4FDD\u5B58\u6210\u529F JobSet\
+    \ `mpi-52eedc2a-f6b1-4c97-9c11-529223ed6899` \u8207 rank 0\uFF0F1\uFF0F2 \u8F38\
+    \u51FA\u3002\u9019\u662F GPU node pool \u4E0A\u7684 CPU MPI execution demo\uFF0C\
+    \u4E0D\u80FD\u7B49\u540C multi-node GPU benchmark\u3002\n\n- [End-to-End MPI JobSet\
+    \ Demo](docs/demo/end-to-end-mpi-jobset-demo.md)\uFF1A\u524D\u7F6E\u689D\u4EF6\
+    \u3001\u64CD\u4F5C\u8207\u6210\u529F evidence\u3002\n- [Platform Demo Script](docs/demo/platform-demo-script.md)\uFF1A\
+    \u5C55\u793A\u9806\u5E8F\u3002\n\n## Core Capabilities\n\n| \u9818\u57DF | \u5DF2\
+    \u6709\u80FD\u529B\u8207\u7BC4\u570D |\n|---|---|\n| Platform / API | FastAPI\
+    \ submission\uFF0Fquery\u3001Redis queue\uFF0Fretry\uFF0Fdead-letter\u3001MPI\
+    \ dispatch\u3001JobSet terminal state\uFF0Frank collection\u3001PostgreSQL status\
+    \ sync |\n| Distributed Compute | MPI JobSet \u4E3B\u7DDA\uFF1B\u7368\u7ACB Ray\uFF0F\
+    KubeRay tasks \u8207 Slurm CPU multi-node MPI experiments |\n| GPU / AI Performance\
+    \ | L4 BF16 Transformer repeated benchmark\uFF0Fbatch tuning\u3001vLLM concurrency\
+    \ analysis\u3001CPU DDP profiling\u3001\u55AE GPU NCCL transport evidence |\n\
+    | Scheduling | Kueue queue\uFF0Fquota\uFF0FResourceFlavor\u3001priority\uFF0F\
+    preemption\u3001\u55AE GPU node TAS placement |\n| Observability | API metrics\u3001\
+    Prometheus\uFF0FGrafana\uFF0FDCGM manifests \u8207\u6B77\u53F2\u9A57\u8B49 |\n\
+    | Infrastructure | GKE\u3001Helm\uFF0FKustomize\uFF1Bgpu-sg Terraform import \u96F6\
+    \ drift\uFF0C\u9694\u96E2 cluster apply\uFF0Fdestroy \u5DF2\u9A57\u8B49\uFF1B\
+    Argo CD \u5C1A\u5F85\u5C0D\u9F4A |\n| Security | Namespace ServiceAccount\uFF0F\
+    RBAC\u3001Pod hardening experiments\u3001\u9694\u96E2 Calico NetworkPolicy allow\uFF0F\
+    deny\uFF0Frecovery |\n| Troubleshooting | Admission\u3001placement\u3001runtime\
+    \ resource mismatch\u3001worker failure\u3001Slurm node failure\u3001NCCL fallback\
+    \ |\n\n## Supporting Demos\n\n\u4EE5\u4E0B\u662F\u5E73\u884C\u6848\u4F8B\uFF0C\
+    \u4E0D\u662F MPI \u57F7\u884C\u5F8C\u81EA\u52D5\u4E32\u63A5\u7684 pipeline\uFF1B\
+    Ray\uFF0FSlurm \u5C1A\u672A\u63A5\u5165\u4E3B API\u3002\n\n- [Ray Worker Recovery](docs/demo/ray-worker-recovery-demo.md)\uFF1A\
+    resource mismatch\u3001NODE_DIED retry \u8207 KubeRay reconciliation\u3002\n-\
+    \ [Slurm Failure Troubleshooting](docs/demo/slurm-failure-troubleshooting-demo.md)\uFF1A\
+    \u6210\u529F CPU multi-node MPI baseline \u8207 PENDING\uFF0Fnode failure \u6839\
+    \u56E0\u5B9A\u4F4D\u3002\n- [NCCL Transport Fallback](docs/demo/nccl-transport-fallback-demo.md)\uFF1A\
+    IB \u4E0D\u53EF\u7528\u5F8C\u9078\u7528 Socket\uFF0C\u55AE rank \u521D\u59CB\u5316\
+    \ evidence\u3002\n- [JobSet Recovery](docs/demo/jobset-recovery-demo.md)\uFF1A\
+    \u6B77\u53F2 mpi-real exit 42\u3001\u6574\u7D44 Recreate\u3001JobsReady \u8207\
+    \ Kueue admission blockage\u3002\n\n## Performance\n\n\u56FA\u5B9A 128 requests\
+    \ \u7684 vLLM \u7D50\u679C\u4E2D\uFF0Cconcurrency 16\uFF0F32\uFF0F64 \u7684 throughput\
+    \ \u70BA **16.748\uFF0F24.988\uFF0F32.379 req/s**\uFF1Bmean TTFT \u70BA **135.601\uFF0F\
+    188.663\uFF0F448.579 ms**\u300232 \u2192 64 \u7684 throughput \u589E\u52A0 29.6%\uFF0C\
+    TTFT \u589E\u52A0 137.8%\uFF0C\u5448\u73FE\u6B64 workload \u7684 latency tradeoff\u3002\
+    \n\n2026-09-21 \u5728 L4 time-sharing share \u91CD\u8DD1 BF16 synthetic Transformer\
+    \ training\uFF1Abatch 8\u219216 \u7684 mean token throughput \u70BA **101,096\u2192\
+    176,335 tokens/s\uFF08+74.4%\uFF09**\uFF0Cmean step latency **+14.0%**\uFF0Cpeak\
+    \ allocated memory **+50.8%**\u3002\u6BCF\u7D44\u5305\u542B 10 warmup \u8207 3\xD7\
+    20 measured steps\uFF1B\u8A73\u898B [\u6BD4\u8F03\u5831\u544A](docs/performance/transformer-training-l4-20260921.md)\u3002\
+    \n\n\u53E6\u4FDD\u5B58 stress-ng CPU saturation\u3001fio ephemeral-storage baseline\u3001\
+    \u540C node iperf3\u3001CPU\uFF0FGloo DDP profiling\u3001\u55AE GPU NCCL fallback\uFF0C\
+    \u4EE5\u53CA\u6B77\u53F2 P100 DCGM dashboard evidence\u3002\u5B83\u5011\u4F86\u81EA\
+    \u4E0D\u540C\u74B0\u5883\uFF0C\u672A\u7531\u4E3B E2E \u81EA\u52D5\u56DE\u6536\u3002\
+    \n\n\u8A73\u898B [Performance Report](docs/performance/performance-report.md)\uFF0C\
+    \u5305\u542B\u6578\u64DA\u4F86\u6E90\u3001\u6E2C\u8A66\u65B9\u6CD5\u8207\u9650\
+    \u5236\u3002\n\n## Infrastructure\n\n\u4E3B E2E \u4F7F\u7528 GKE `hpc-gpu-sg`\u3001\
+    namespace `hpc-platform-dev`\uFF1A`system-pool` \u627F\u8F09 CPU platform\uFF0F\
+    control workloads\uFF0C`gpu-pool` \u63D0\u4F9B\u4E00\u5F35 NVIDIA L4 \u7D66 distributed\uFF0F\
+    GPU workload\u3002Node Pool \u4E0D\u7B49\u65BC\u55AE\u4E00 node\uFF1B\u6B64\u74B0\
+    \u5883\u7684 GPU quota \u56FA\u5B9A\u70BA\u4E00\u5F35\uFF0C\u56E0\u6B64 GPU \u9A57\
+    \u6536\u76F4\u63A5\u5728\u65E2\u6709 cluster \u9032\u884C\uFF0C\u4E0D\u5EFA\u7ACB\
+    \u7B2C\u4E8C\u500B GPU rehearsal cluster\u3002\u5B8C\u6574 platform overlay \u5DF2\
+    \u90E8\u7F72\u81F3\u65E2\u6709\u53E2\u96C6\uFF0CAPI\uFF0FRedis\uFF0FPostgreSQL\
+    \ \u7684 system-pool placement\u3001rollout \u8207\u8CC7\u6599\u9023\u7DDA\u5DF2\
+    \u9A57\u6536\uFF0C\u898B [\u90E8\u7F72\u8B49\u64DA](docs/evidence/platform-deployment-20260921.json)\u3002\
+    \n\n[Helm](helm/) \u8207 [platform Kustomize overlay](kustomize/overlays/gpu-sg-platform/)\
+    \ \u4FDD\u5B58\u670D\u52D9\u8207 API RBAC\u3002[gpu-sg Terraform](terraform/environments/gpu-sg/main.tf)\
+    \ \u5DF2\u63CF\u8FF0\u73FE\u6709 GKE \u8207\u5169\u500B node pools\uFF0Cimport\
+    \ \u5F8C plan \u70BA\u96F6 drift\u3002[bootstrap tool](scripts/bootstrap_cluster.py)\
+    \ \u9396\u5B9A controllers \u7248\u672C\u8207 checksum\uFF0C\u7DE8\u6392 queues\u3001\
+    runtime Secrets \u53CA platform deployment\uFF1B\u5168\u65B0 CPU-only cluster\
+    \ \u5DF2\u5B8C\u6210 apply\uFF0Facceptance\uFF0Fdestroy\u3002\u5168\u65B0 GPU\
+    \ cluster \u56E0\u5C08\u6848\u5168\u57DF GPU quota 1\uFF0F1 \u5C1A\u672A\u5B8C\
+    \u6210 MPI \u9A57\u6536\u3002[Argo CD dev](argocd/application-dev.yaml) \u4ECD\
+    \u5C6C\u820A\u74B0\u5883\uFF0CGitOps \u5C1A\u672A\u5C0D\u9F4A\u4E3B\u74B0\u5883\
+    \u3002\n\n## Security\n\nAPI \u4F7F\u7528 [api-jobset-runner ServiceAccount\uFF0F\
+    namespace RBAC](k8s/security/api-jobset-rbac.yaml)\uFF0C\u4EE5 least privilege\
+    \ \u9650\u5236 JobSet \u64CD\u4F5C\u3002\u53E6\u6709 [Pod hardening \u7D00\u9304\
+    ](docs/week20/day2-pod-image-secret-security.md)\uFF1B[NetworkPolicy \u5BE6\u6E2C\
+    ](docs/evidence/network-policy-validation-20260921.json) \u5728\u9694\u96E2 Calico\
+    \ GKE \u5B8C\u6210 baseline\u3001allow\u3001deny timeout \u8207 policy \u79FB\u9664\
+    \u5F8C\u6062\u5FA9\u3002\u4E3B cluster enforcement \u4ECD\u95DC\u9589\u3002SSH\
+    \ private keys \u4E0D\u653E\u5165 repo\u3002\n\n## Evidence\n\n[Evidence Index\
+    \ / Capability Matrix](docs/evidence/README.md) \u5C07\u5404\u9805\u80FD\u529B\
+    \u5C0D\u61C9\u5230\u771F\u5BE6 scripts\u3001manifests\u3001JSON\uFF0Flog \u8207\
+    \ historical records\uFF0C\u9010\u9805\u6A19\u793A verified scope \u548C limitation\u3002\
+    \u6B77\u53F2\u7D50\u679C\u4E0D\u4EE3\u8868\u76EE\u524D cluster \u5373\u6642\u72C0\
+    \u614B\u3002\n\n## Current Boundary\n\n**\u5DF2\u5B8C\u6210\uFF1A** API submission\
+    \ \u2192 queue \u2192 dispatch \u2192 Kueue admission \u2192 MPI ranks \u2192\
+    \ terminal condition\uFF0Frank collection \u2192 Redis\uFF0FPostgreSQL completed\u3002\
+    \n\n**\u5C1A\u672A\u5B8C\u6210\uFF1A** artifact object storage\u3001\u8DE8 Redis\uFF0F\
+    PostgreSQL \u539F\u5B50\u4EA4\u6613\u3001\u5B8C\u6574 lifecycle state machine\
+    \ \u8207 Kubernetes watch\u3002\u80CC\u666F polling reconciliation \u5DF2\u5BE6\
+    \u6E2C\u5B8C\u6210\uFF1B\u5176\u4ED6 benchmark \u5206\u652F\u4ECD\u70BA simulated\u3002\
+    Redis \u8CC7\u6599\u5168\u5931\u6062\u5FA9\u8207 exactly-once \u672A\u4FDD\u8B49\
+    \u3002\u5355 GPU \u74B0\u5883\u4E0D\u4E3B\u5F35 multi-GPU\uFF0Fmulti-node scaling\u3002\
+    \n\n## Repository Structure\n\n```text\napi/          FastAPI\u3001database\u3001\
+    MPI renderer\uFF0Fdispatcher\nbenchmark/    Benchmark scripts \u8207\u4FDD\u5B58\
+    \u7D50\u679C\nruntime/      PyTorch\uFF0FvLLM runtime adapters\nk8s/         \
+    \ Scheduling\u3001security\u3001workload manifests\nhelm/         Service\uFF0F\
+    runtime\uFF0Fmonitoring charts\nkustomize/    Deployment overlays\nterraform/\
+    \    Infrastructure modules \u8207 environments\nanalysis/     Performance analyzer\n\
+    docs/        Architecture\u3001demos\u3001evidence\u3001reports\u3001\u6B77\u53F2\
+    \u7D00\u9304\n```\n\n## Demo Quick Start\n\n1. \u5148\u5B8C\u6210 [Demo prerequisite](docs/demo/end-to-end-mpi-jobset-demo.md)\uFF1A\
+    \u78BA\u8A8D cluster context\u3001namespace\u3001\u5E73\u53F0\u670D\u52D9\u3001\
+    JobSet\uFF0FKueue\uFF0Fqueues\u3001SSH Secret \u8207 DB init\u3002\u6B64\u8655\
+    \u5047\u8A2D\u5E73\u53F0\u5DF2\u90E8\u7F72\u4E14\u53EF\u7528\uFF0C\u5B8C\u6574\
+    \u8A2D\u5B9A\u898B\u8A72\u6587\u4EF6\u3002\n2. \u53E6\u958B terminal \u4FDD\u6301\
+    \ API port-forward\uFF1A\n\n```bash\nkubectl port-forward -n hpc-platform-dev\
+    \ service/api-service 8000:8000\n```\n\n3. \u63D0\u4EA4 MPI \u5DE5\u4F5C\uFF0C\
+    \u8A18\u4E0B\u56DE\u50B3\u7684 `job_id`\uFF1A\n\n```bash\ncurl -sS -X POST http://127.0.0.1:8000/benchmark\
+    \ \\\n  -H 'Content-Type: application/json' -d '{\"benchmark\":\"mpi\"}'\n```\n\
+    \n4. Worker \u81EA\u52D5\u8655\u7406\uFF1B\u4F7F\u7528\u672C\u6B21 `job_id` \u67E5\
+    \u8A62 `status` \u8207 `result.jobset_name`\uFF1A\n\n```bash\ncurl -sS \"http://127.0.0.1:8000/jobs/<job_id>\"\
+    \n```\n\n5. \u5C07\u4E0B\u9762 placeholder \u66FF\u63DB\u70BA\u672C\u6B21\u56DE\
+    \u50B3\u7684 JobSet name\uFF0C\u67E5\u770B admission \u5F8C\u662F\u5426 `SUSPENDED=false`\uFF1A\
+    \n\n```bash\nMPI_JOBSET='mpi-<job_id>'\nkubectl get jobset \"$MPI_JOBSET\" -n\
+    \ hpc-platform-dev\n```\n\n6. Launcher \u555F\u52D5\u5F8C\u67E5\u770B\u8A72 child\
+    \ Job \u7684 log\uFF0C\u78BA\u8A8D rank 0\uFF0F1\uFF0F2\uFF1A\n\n```bash\nkubectl\
+    \ logs -n hpc-platform-dev \"job/${MPI_JOBSET}-launcher-0\" -c launcher\n```\n\
+    \n7. JobSet \u7D50\u675F\u5F8C worker \u81EA\u52D5\u56DE\u6536\u7D50\u679C\uFF0C\
+    \u518D\u4EE5\u63D0\u4EA4\u6642\u53D6\u5F97\u7684 `job_id` \u67E5\u8A62\uFF1A\n\
+    \n```bash\ncurl -sS \"http://127.0.0.1:8000/jobs/<job_id>\"\n```\n\n\u56DE\u61C9\
+    \u61C9\u5305\u542B `status: completed`\u3001JobSet terminal condition \u8207 `ranks:\
+    \ [0, 1, 2]`\u3002\n\n## Limitations / Future Improvements\n\n\u5F8C\u7E8C\u6539\
+    \u5584\u96C6\u4E2D\u65BC result artifact storage\u3001\u8DE8\u8CC7\u6599\u5EAB\
+    \u4E00\u81F4\u6027\u3001\u975E\u7A7A Redis \u5099\u4EFD\u9084\u539F\u3001Alembic\
+    \ schema migration\uFF0C\u4EE5\u53CA IaC\uFF0FGitOps alignment\u3002\u81EA\u52D5\
+    \ worker\u3001Redis PVC \u8207 graceful Pod replacement \u5DF2\u9A57\u8B49\u3002\
+    Multi-node GPU\uFF0FRDMA performance \u9700\u53E6\u5099\u786C\u9AD4\u8207\u9A57\
+    \u8B49\u3002\n"
+kind: ConfigMap
+metadata:
+  name: causal-lm-20260922-a
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: causal-lm-benchmark
+  name: causal-lm-20260922-a
+spec:
+  activeDeadlineSeconds: 1200
+  containers:
+  - command:
+    - sh
+    - -c
+    - python /benchmark/causal_lm_benchmark.py && sleep 900
+    image: pytorch/pytorch:2.12.0-cuda12.6-cudnn9-runtime
+    name: benchmark
+    resources:
+      limits:
+        cpu: '4'
+        memory: 10Gi
+        nvidia.com/gpu: '1'
+      requests:
+        cpu: '2'
+        memory: 6Gi
+        nvidia.com/gpu: '1'
+    volumeMounts:
+    - mountPath: /benchmark
+      name: script
+      readOnly: true
+    - mountPath: /results
+      name: results
+  nodeSelector:
+    cloud.google.com/gke-nodepool: gpu-pool
+  restartPolicy: Never
+  tolerations:
+  - effect: NoSchedule
+    key: nvidia.com/gpu
+    operator: Equal
+    value: present
+  volumes:
+  - configMap:
+      name: causal-lm-20260922-a
+    name: script
+  - emptyDir: {}
+    name: results

@@ -14,6 +14,9 @@ metadata:
 #quote會強制把值包成字串
 # 鍵值資料；Secret 的 data 使用 Base64 編碼，ConfigMap 通常是純文字。
 data:
+  # worker 與 API 共用：前者讀輪詢間隔，後者依開關拒絕舊手動端點。
+  AUTOMATIC_WORKER: {{ .Values.worker.enabled | quote }}
+  WORKER_POLL_SECONDS: {{ .Values.worker.pollSeconds | quote }}
   REDIS_HOST: {{ .Values.config.redisHost | quote }}
   REDIS_PORT: {{ .Values.config.redisPort | quote }}
   POSTGRES_HOST: {{ .Values.config.postgresHost | quote }}

@@ -68,3 +68,20 @@ def test_default_mode_never_applies_or_initializes_db(monkeypatch, tmp_path):
     assert deploy_platform.deploy("test-context", False, tmp_path / "report.json") == 0
     assert len(calls) == 2
     assert "--dry-run=server" in calls[-1]
+
+
+def test_enabled_worker_rollout_is_part_of_acceptance(monkeypatch, tmp_path):
+    from types import SimpleNamespace
+
+    calls = []
+    monkeypatch.setattr(deploy_platform, 'inspect', lambda *a, **kw: {'passed': True})
+    monkeypatch.setattr(deploy_platform, 'render', lambda:
+                        'kind: Deployment\nmetadata:\n  name: api-worker\n')
+
+    def run(args, **kwargs):
+        calls.append(args)
+        return SimpleNamespace(returncode=0, stdout='')
+
+    monkeypatch.setattr(deploy_platform.subprocess, 'run', run)
+    assert deploy_platform.deploy('test-context', True, tmp_path / 'report.json') == 0
+    assert any('rollout' in c and 'deployment/api-worker' in c for c in calls)

@@ -94,6 +94,7 @@ def collect_mpi_jobset(jobset_name: str, namespace: str = NAMESPACE) -> dict | N
         namespace=namespace,
         plural="jobsets",
         name=jobset_name,
+        _request_timeout=15,
     )
     if classify_jobset(jobset) is None:
         return None
@@ -106,6 +107,7 @@ def collect_mpi_jobset(jobset_name: str, namespace: str = NAMESPACE) -> dict | N
     launcher_pods = core_api.list_namespaced_pod(
         namespace=namespace,
         label_selector=selector,
+        _request_timeout=15,
     ).items
 
     if not launcher_pods:
@@ -122,6 +124,7 @@ def collect_mpi_jobset(jobset_name: str, namespace: str = NAMESPACE) -> dict | N
                     name=launcher_pod.metadata.name,
                     namespace=namespace,
                     container="launcher",
+                    _request_timeout=15,
                 )
             )
         except ApiException as exc:

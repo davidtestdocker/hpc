@@ -1,5 +1,9 @@
 # End-to-End MPI JobSet Demo
 
+2026-09-22 現行入口：[自動 worker 操作](../runbooks/automatic-worker.md) 與
+[自動驗收](../evidence/automatic-worker-20260922.json)。現在提交後自動 dispatch／collect，
+以下手動 endpoint 操作與輸出保留為 9/21 及更早版本的歷史紀錄。
+
 > 2026-09-21 更新：以下成功輸出保留為歷史 evidence。現行部署請先看 [平台 runbook](../runbooks/platform-bootstrap.md)。controller 與空 Redis 遷移已完成；新模板與 completion collector 已 rollout，另有 API lifecycle 驗收。舊 MPI 工作存在未修復的 reconciliation 問題，見 [本輪修復 demo](platform-recovery-20260921.md)。
 
 ## Demo 目的

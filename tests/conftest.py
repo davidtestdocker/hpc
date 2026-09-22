@@ -7,6 +7,18 @@ import api.main
 
 # class 定義 FakeRedis 類別，封裝相關資料與方法。
 class FakeRedis:
+    def pipeline(self):
+        return self
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        pass
+
+    def execute(self):
+        return []
+
     # 定義 set 函式；參數由呼叫端傳入，return 將結果交還呼叫端。
     def set(self, *args, **kwargs):
         return True

@@ -12,6 +12,13 @@ warmup、重複量測與 profiler 分析 NVIDIA L4 training／LLM serving 的吞
 
 ## 建議 Bullet
 
+- 在單張 NVIDIA L4 實作 13M causal language model 的 next-byte 訓練 baseline，
+  固定 corpus／seed、causal mask 與 BF16，交錯三次 batch 8／16 測試；byte-token
+  throughput +81.29%，代價為 step latency +10.25%、peak allocated memory +41.96%。
+- 將 throughput 計時與 CUDA profiling 分開，保存兩份 raw trace 與 operator／GPU
+  遙測；觀察 multi-tensor kernel 每五步約 21.7 ms 不隨 batch 翻倍，分析固定
+  optimizer 成本攤薄與 GEMM 工作量增加的取捨，避免把 kernel 時間相加當成 wall time。
+
 - 在 NVIDIA L4 time-sharing share 建立 BF16 synthetic Transformer training
   benchmark，固定 seed／模型／sequence，執行 10 warmup steps 與 3×20 measured
   steps，保存 step latency、tokens/s、peak memory 與 CV raw JSON。
@@ -30,6 +37,9 @@ warmup、重複量測與 profiler 分析 NVIDIA L4 training／LLM serving 的吞
 
 ## 面試邊界
 
-本輪 Transformer 是 synthetic 小模型，沒有真實 tokenizer／dataset、DCGM 同步
+9/21 Transformer 是 synthetic 小模型，沒有真實 tokenizer／dataset、DCGM 同步
 telemetry、FSDP 或 multi-GPU scaling；GPU time-sharing 也不保證獨占算力。數據只
 支持該次 L4 workload，不能泛化為大型 LLM 容量結論。
+
+9/22 新實驗使用 repo 文字 byte tokens 與 13M causal LM，有 CUDA trace 和
+nvidia-smi telemetry；仍非 pretrained LLM fine-tuning，也未證明泛化品質。

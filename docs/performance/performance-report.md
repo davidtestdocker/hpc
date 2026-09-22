@@ -1,5 +1,10 @@
 # Performance Report
 
+2026-09-22 新增 [13M causal LM＋CUDA profiling](causal-lm-l4-20260922.md)：
+單 L4、固定文字快照、交錯 batch 8／16、各三次量測與獨立 CUDA traces。
+byte-token throughput +81.29%、step latency +10.25%、peak allocated memory +41.96%。
+以下 9/21 synthetic 與歷史實驗保留，各自的模型與 token 單位不可混用。
+
 本報告彙整 repo 已保存的 performance evidence。2026-09-21 L4 Transformer benchmark 是本輪重跑；其餘多數結果來自不同歷史環境，不能視為同一次主 MPI E2E 的自動收集結果。能力與來源索引見 [Evidence Index](../evidence/README.md)。
 
 ## NVIDIA L4：Synthetic Transformer Training

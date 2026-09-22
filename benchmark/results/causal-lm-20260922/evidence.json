@@ -1,0 +1,15 @@
+{
+  "context": "gke_project-4b82f780-0a12-4087-b94_asia-southeast1-a_hpc-gpu-sg",
+  "pod": "causal-lm-20260922-a",
+  "node": "gke-hpc-gpu-sg-gpu-pool-9ad99345-81l2",
+  "image_id": "docker.io/pytorch/pytorch@sha256:00ff90463ea886af84a8501ad0299fe29db47d110131c21c2fc101a2788dbda9",
+  "sha256": {
+    "result.json": "d6312e4cd2aacc90037404778f9d8f74af05c9741dda443d437ad837b6c634e8",
+    "batch8.trace.json.gz": "e69e93ce14ef3208b4ac87b973c3d1fb0e9eef0c51076df27cea1082f87a3feb",
+    "batch16.trace.json.gz": "cccf43fd86b615337010fccb0398d8050674df69ac832ee5f838aeff14e9ef99",
+    "corpus.txt": "fdbf59e534ee015f65a75326ad6b03338f981ab9ac78318b8538dd59bc9d961d",
+    "benchmark-source.py": "204d836224b94086fe95e12885e6a23496d01a1a20f76b1e49a593b387f72171"
+  },
+  "passed": true,
+  "cleanup": "temporary Pod deletion requested; ConfigMap deleted; artifacts retained"
+}

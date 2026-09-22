@@ -12,6 +12,10 @@ submission／scheduling／execution 平台，並將既有 GKE 納入 Terraform�
 
 ## 建議 Bullet
 
+- 以獨立 worker 自動提交與輪詢 MPI JobSet；驗證 worker 停止期間的新工作、
+  submitted 工作在重啟後自動回收 ranks 0／1／2，且相同 job 僅有一個 JobSet；
+  另驗證三次模擬 dispatch 失敗進入 failed／dead-letter，API 與 DB 狀態一致。
+
 - 建立 `hpc-gpu-sg` 獨立 Terraform root module，將既有 zonal GKE、CPU
   system pool 與 L4 GPU pool import 後收斂至 zero drift；另完成隔離 cluster
   `3 add → RUNNING → zero drift → 3 destroy` lifecycle rehearsal。
@@ -34,6 +38,6 @@ submission／scheduling／execution 平台，並將既有 GKE 納入 Terraform�
 
 ## 面試邊界
 
-目前 worker／collector 仍由 HTTP 手動觸發；缺 GCS remote state、完整 GitOps、
-全新 GPU cluster 的 MPI 驗收、持續 reconciliation 與跨 Redis／PostgreSQL 交易一致性。NetworkPolicy
+2026-09-22 已完成 polling worker／collector 與 restart acceptance；仍缺 GCS remote state、完整 GitOps、
+全新 GPU cluster 的 MPI 驗收、artifact storage 與跨 Redis／PostgreSQL 原子交易。NetworkPolicy
 封包驗證在隔離 Calico cluster，主 cluster enforcement 仍關閉。

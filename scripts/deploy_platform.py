@@ -68,7 +68,12 @@ def deploy(context, execute, output, require_gpu=True):
             if execute:
                 run(["apply", "-f", str(path)])
                 record("overlay applied")
-                for resource in ("deployment/redis", "statefulset/postgres", "deployment/api"):
+                workloads = ['deployment/redis', 'statefulset/postgres', 'deployment/api']
+                if any(doc and doc.get('kind') == 'Deployment'
+                       and doc.get('metadata', {}).get('name') == 'api-worker'
+                       for doc in yaml.safe_load_all(manifest)):
+                    workloads.append('deployment/api-worker')
+                for resource in workloads:
                     run(["rollout", "status", resource, "--timeout=180s"], timeout=210)
                     record(f"{resource} rollout passed")
                 run(["exec", "deployment/api", "--", "python", "-m", "api.database.init_db"])

@@ -1,0 +1,44 @@
+# 背景 worker 部署：與 API 共用映像與連線設定，獨立執行輪詢程序。
+# Helm 的 if 只在 worker.enabled=true 時渲染此資源；操作見自動 worker runbook。
+{{- if .Values.worker.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "api.fullname" . }}-worker
+  namespace: {{ .Release.Namespace }}
+spec:
+  # Demo 使用一個副本；每筆工作的 Redis lease 額外提供重複處理協調。
+  replicas: 1
+  strategy:
+    # Recreate 先停舊版再啟新版，避免小型 system-pool 承擔升級 surge 容量。
+    type: Recreate
+  selector:
+    # selector 與下方 Pod labels 相符，讓 Deployment 管理自己的 worker Pods。
+    matchLabels:
+      app: {{ include "api.fullname" . }}-worker
+  template:
+    metadata:
+      labels:
+        app: {{ include "api.fullname" . }}-worker
+    spec:
+      # 沿用 namespace 最小 RBAC 身分，允許建立／讀取 JobSet 與回收 launcher log。
+      serviceAccountName: {{ .Values.worker.serviceAccountName }}
+      # 預設排入 system-pool；worker 負責協調，自己不申請 GPU。
+      nodeSelector:
+        {{- toYaml .Values.worker.nodeSelector | nindent 8 }}
+      containers:
+        - name: worker
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # 覆寫映像預設的 Uvicorn 命令，啟動獨立 Python worker。
+          command: ["python", "-m", "api.worker"]
+          envFrom:
+            # ConfigMap 提供服務位址與輪詢設定；密碼沿用外部建立的 Secret。
+            - configMapRef:
+                name: {{ include "api.fullname" . }}-config
+            - secretRef:
+                name: postgres-secret
+          resources:
+            # requests 供排程器計算容量，limits 限制容器 CPU／記憶體上限。
+            {{- toYaml .Values.worker.resources | nindent 12 }}
+{{- end }}

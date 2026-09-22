@@ -1,20 +1,24 @@
 # HPC AI Performance Engineering Platform — Project Interview Guide
 
+2026-09-22 更新：自動 worker 已完成重啟接續驗收，單 L4 causal LM 已保存
+新 CUDA traces。現行完整展示見 [本輪 demo](../demo/interview-demo-20260922.md)。
+文末保留 9/21 的後續優先順序，作為歷史規劃；不能將它當成本輪未完成清單。
+
 本指南以 [Final Architecture](../architecture/platform-architecture.md)、[Evidence Index](../evidence/README.md) 與保存的 demo 為依據。回答區分已驗證結果、架構設計與未完成工作；不把歷史環境描述為即時 cluster 狀態。
 
 ## 30 秒版本
 
-我想解決 HPC／AI workload 從提交到資源 admission、distributed execution 之間難以追蹤與排障的問題。我用 FastAPI、Redis、PostgreSQL 建立 submission layer，再透過 Kubernetes Python Client 動態建立 JobSet，由 Kueue admission 後啟動 MPI launcher 與三個 workers。Completion collector 讀取 JobSet 終態與 launcher log，已實測將 ranks 0／1／2、completed 與完成時間回寫 Redis/API，並同步 PostgreSQL status；目前 worker 與 collector 仍由 HTTP 手動觸發。
+我用 FastAPI、Redis、PostgreSQL、Kueue 和 JobSet 建立可自動提交與回收 MPI 結果的平台，驗證 worker 重啟後接續執行與 DB 狀態回寫。效能方面，在單 L4 上用固定 13M causal LM 比較 batch 8／16，分開記錄 throughput 與 CUDA profiler，展示效能收益、延遲和記憶體代價。兩條路徑各有實測證據與明確範圍。
 
 ## 2 分鐘版本
 
 1. **問題**：單獨跑通 benchmark 不足以展示平台能力，因此我把 submission、queue、admission、execution 與 troubleshooting 分層，讓每個成果都有 evidence。
-2. **Main E2E**：API 建立 job ID、保存 PostgreSQL 初始 metadata 與 Redis queue；手動觸發 worker handler 後，dispatcher 建立動態 JobSet。
+2. **Main E2E**：API 建立 job ID、commit DB 後發布 Redis job／queue；獨立 polling worker 自動建立動態 JobSet 並收集終態。
 3. **Scheduling**：Kueue 管 queue、quota、ResourceFlavor 與 TAS；Pod placement 最後由 Kubernetes Scheduler 處理。另有 priority／preemption 的歷史驗證。
 4. **Distributed execution**：JobSet 管 launcher／worker grouping，launcher 經 DNS／SSH 用 mpirun 啟動三個 ranks。這是 CPU MPI workload，三個 worker Pods 不等於三台實體 nodes。
 5. **Performance／Observability**：本輪 L4 BF16 Transformer 重複量測顯示 batch 8→16 tokens/s +74.4%、step latency +14.0%、memory +50.8%；固定組 vLLM JSON 另顯示 concurrency 32→64 throughput +29.6%、TTFT +137.8%。
 6. **Failure troubleshooting**：以 JobSet exit 42、Ray NODE_DIED、Slurm node 不回應、NCCL Socket fallback 展示不同 failure domains。Ray／Slurm 是平行案例，未串入 API。
-7. **Current boundary**：主線已驗證 MPI terminal status／ranks／PostgreSQL status 回寫；沒有自動 worker／collector daemon、持續 reconciliation、artifact storage 或跨資料庫交易一致性。
+7. **Current boundary**：自動 polling worker／collector 和重啟接續已驗證；artifact storage、跨資料庫原子交易、完整 GitOps 尚未完成。訓練 benchmark 尚未接入 MPI dispatcher。
 
 ## Architecture Questions
 
@@ -42,9 +46,12 @@ GPU pool 的 `nvidia.com/gpu=present:NoSchedule` 會排除沒有對應 toleratio
 
 API 要建立 JobSet，需有明確 Kubernetes identity。`api-jobset-runner` 只在 hpc-platform-dev 授予 JobSet get／list／watch／create，避免給 cluster-admin。這是 Kubernetes resource 權限，不等於 HTTP API 已有完整使用者 authentication。
 
-### Worker 為什麼目前還是 HTTP handler？
+### Worker 如何自動執行並在重啟後接續？
 
-目前用 `POST /worker/process-next` 明確推進一筆工作，方便展示 submission 與 dispatch 的邊界。它不是持續運行的 background consumer，request 不會自動啟動 daemon。後續拆出 worker 前，需要先處理 dispatch 冪等、claim／retry 與失敗一致性，避免只是把同樣風險搬到背景。
+2026-09-22 已拆成獨立 `api-worker`，每五秒掃描 Redis 的持久化 job records，
+以可續期 lease 協調同一 job。固定 JobSet name 與 owner label 防止重試時建立
+第二份資源；submitted 工作自動輪詢終態，先寫 DB 再發布 Redis result。
+實機驗證兩個階段的 worker 停啟接續。仍不保證跨 DB／Redis 原子交易或 exactly-once。
 
 ## Distributed / HPC Questions
 
@@ -122,9 +129,9 @@ Client／server Pods 在同一 node，流量路徑可能主要位於該 host 的
 
 ## Honest Limitations
 
-目前沒有 automatic worker／collector daemon、持續 watch reconciliation、artifact object storage、跨 Redis／PostgreSQL 交易一致性或 full lifecycle state machine；沒有 multi-node GPU scaling、RDMA hands-on benchmark，也未完成主 E2E 的 GitOps alignment。Redis 非空備份還原、schema migration 與整體 HA 仍有改善空間。Ray／Slurm 未接 API，historical evidence 不能替代目前環境健康檢查。
+目前有 automatic polling worker／collector 與重啟驗證；仍缺 artifact object storage、跨 Redis／PostgreSQL 原子交易與完整 lifecycle state machine。没有 multi-node GPU scaling／RDMA，也未完成主 E2E GitOps alignment。Redis 非空備份還原、schema migration 與整體 HA 仍待補強；Ray／Slurm 未接 API。
 
-若繼續開發，優先順序為：
+以下保留 2026-09-21 當時的開發排序（1／2 的背景 worker 與 polling 已於 9/22 補上；不是職缺原文）：
 
 1. 先明確定義 durable job state、dispatch 冪等與 queue／DB 失敗處理，再引入獨立 worker daemon。
 2. 將手動 completion collector 改成 background watch／reconciliation，補 retry 與補償流程。

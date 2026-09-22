@@ -1,0 +1,114 @@
+{
+  "recorded_at": "2026-09-22T04:58:58.875811+00:00",
+  "context": "gke_project-4b82f780-0a12-4087-b94_asia-southeast1-a_hpc-gpu-sg",
+  "passed": true,
+  "scope": "CPU MPI on existing single-L4 cluster; automatic polling worker",
+  "manual_worker_endpoint_calls": 0,
+  "jobs": {
+    "restart": {
+      "job_id": "a697300a-b267-4554-bdd5-2c82bb9c9eda",
+      "accepted_without_worker": true,
+      "completed_in_kubernetes_while_worker_stopped": true,
+      "result": {
+        "job_id": "a697300a-b267-4554-bdd5-2c82bb9c9eda",
+        "benchmark": "mpi",
+        "simulate_failure": false,
+        "status": "completed",
+        "result": {
+          "message": "MPI JobSet completed",
+          "jobset_name": "mpi-a697300a-b267-4554-bdd5-2c82bb9c9eda",
+          "ranks": [
+            0,
+            1,
+            2
+          ],
+          "rank_evidence_complete": true,
+          "launcher_log": "Warning: Permanently added '[mpi-a697300a-b267-4554-bdd5-2c82bb9c9eda-worker-0-0.mpi-a697300a-b267-4554-bdd5-2c82bb9c9eda]:2222' (RSA) to the list of known hosts.\nWarning: Permanently added '[mpi-a697300a-b267-4554-bdd5-2c82bb9c9eda-worker-1-0.mpi-a697300a-b267-4554-bdd5-2c82bb9c9eda]:2222' (RSA) to the list of known hosts.\nWarning: Permanently added '[mpi-a697300a-b267-4554-bdd5-2c82bb9c9eda-worker-2-0.mpi-a697300a-b267-4554-bdd5-2c82bb9c9eda]:2222' (RSA) to the list of known hosts.\nRANK=1 HOST=mpi-a697300a-b267-4554-bdd5-2c82bb9c9eda-worker-1-0\nRANK=0 HOST=mpi-a697300a-b267-4554-bdd5-2c82bb9c9eda-worker-0-0\nRANK=2 HOST=mpi-a697300a-b267-4554-bdd5-2c82bb9c9eda-worker-2-0\n",
+          "log_error": null,
+          "conditions": [
+            {
+              "lastTransitionTime": "2026-09-22T04:59:18Z",
+              "message": "jobset is resumed",
+              "reason": "ResumeJobs",
+              "status": "False",
+              "type": "Suspended"
+            },
+            {
+              "lastTransitionTime": "2026-09-22T04:59:37Z",
+              "message": "jobset completed successfully",
+              "reason": "AllJobsCompleted",
+              "status": "True",
+              "type": "Completed"
+            }
+          ]
+        },
+        "retry_count": 0,
+        "finished_at": "2026-09-22T04:59:50.416712+00:00"
+      },
+      "jobset_count": 1
+    },
+    "normal": {
+      "job_id": "f2d8df72-aef3-48bf-9d6b-6863523daa65",
+      "benchmark": "mpi",
+      "simulate_failure": false,
+      "status": "completed",
+      "result": {
+        "message": "MPI JobSet completed",
+        "jobset_name": "mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65",
+        "ranks": [
+          0,
+          1,
+          2
+        ],
+        "rank_evidence_complete": true,
+        "launcher_log": "Warning: Permanently added '[mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-1-0.mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65]:2222' (RSA) to the list of known hosts.\nWarning: Permanently added '[mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-0-0.mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65]:2222' (RSA) to the list of known hosts.\nWarning: Permanently added '[mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-2-0.mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65]:2222' (RSA) to the list of known hosts.\nRANK=0 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-0-0\nRANK=1 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-1-0\nRANK=2 HOST=mpi-f2d8df72-aef3-48bf-9d6b-6863523daa65-worker-2-0\n",
+        "log_error": null,
+        "conditions": [
+          {
+            "lastTransitionTime": "2026-09-22T05:00:08Z",
+            "message": "jobset completed successfully",
+            "reason": "AllJobsCompleted",
+            "status": "True",
+            "type": "Completed"
+          }
+        ]
+      },
+      "retry_count": 0,
+      "finished_at": "2026-09-22T05:00:12.963198+00:00"
+    },
+    "simulated_dispatch_failure": {
+      "job_id": "0852fb7b-8efd-4600-b8ac-d4205554f6f3",
+      "benchmark": "mpi",
+      "simulate_failure": true,
+      "status": "failed",
+      "result": {
+        "message": "Simulated dispatch failure"
+      },
+      "retry_count": 3
+    }
+  },
+  "limitations": [
+    "Failure case is simulated dispatch failure, not an injected MPI process failure",
+    "Redis PVC persistence required; not a Redis-loss or cross-store transaction test",
+    "MPI prints ranks; not an MPI throughput benchmark"
+  ],
+  "post_run_audit": {
+    "database_status": {
+      "a697300a-b267-4554-bdd5-2c82bb9c9eda": "completed",
+      "f2d8df72-aef3-48bf-9d6b-6863523daa65": "completed",
+      "0852fb7b-8efd-4600-b8ac-d4205554f6f3": "failed"
+    },
+    "queues": {
+      "job_queue": [],
+      "processing_queue": [],
+      "dead_letter_queue": [
+        "0852fb7b-8efd-4600-b8ac-d4205554f6f3"
+      ]
+    },
+    "manual_endpoint_rejections": {
+      "process-next": 409,
+      "collect-mpi": 409,
+      "recover-stuck": 409
+    }
+  }
+}

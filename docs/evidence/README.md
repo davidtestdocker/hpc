@@ -1,5 +1,23 @@
 # Platform Evidence Index
 
+## 2026-09-22 訓練與 profiling
+
+[13M causal LM 報告](../performance/causal-lm-l4-20260922.md) 對應
+[raw artifact bundle](../../benchmark/results/causal-lm-20260922/evidence.json)：
+六次交錯 batch 8／16 量測、兩份 CUDA traces、文字快照、image digest、hashes 與
+GPU 遙測。byte-token throughput +81.29%，step latency +10.25%，peak memory +41.96%。
+小型模型、單 L4、byte tokenizer 的結果不可延伸為大型 pretrained LLM 或 multi-GPU。
+實驗後主平台檢查見 [preflight](platform-after-training-20260922.json)。
+
+## 2026-09-22 自動流程更新
+
+[自動 worker 驗收](automatic-worker-20260922.json) 保存兩筆真實 CPU MPI
+自動 completed、ranks 0／1／2、唯一 JobSet、queued／submitted 兩階段 worker
+停啟接續，以及三次 simulated dispatch failure 後 failed。操作見
+[runbook](../runbooks/automatic-worker.md)。下方 9/21 手動流程紀錄保留為歷史，
+其中「缺 worker daemon／持續 reconciliation」已由本次背景 polling 補上；
+artifact storage、跨資料庫原子交易與 watch 仍未完成。
+
 ## 2026-09-21 現況盤點
 
 [Preflight JSON](platform-preflight-20260921.json) 是本輪唯讀實測：node、Kueue 與 queue 前置條件通過；JobSet controller 未就緒，整體結果為失敗。system node 的 CPU requests 餘額 292m 小於 controller 的 500m，詳見 [runbook](../runbooks/platform-bootstrap.md)。
@@ -60,7 +78,7 @@ LocalQueue Active、PVC Bound、API／Redis healthy、DB table 可查、RBAC all
 
 | Capability | Evidence | What was verified | Limitation |
 |---|---|---|---|
-| Main MPI E2E | [API lifecycle evidence](mpi-api-lifecycle-20260921.json)、[API](../../api/main.py)、[collector](../../api/workloads/collector.py)、[dispatcher](../../api/workloads/dispatcher.py)、[template](../../api/workloads/templates/jobset-mpi.yaml) | API／DB initial metadata／Redis queue → JobSet；terminal condition 與 launcher ranks 0／1／2 回寫 Redis/API，PostgreSQL status 同步 completed | CPU MPI workload，不代表 GPU benchmark 或多實體 node；worker／collector 仍由 HTTP 手動觸發，缺持續 reconciliation 與 artifact storage |
+| Main MPI E2E | [9/22 自動驗收](automatic-worker-20260922.json)、[9/21 手動歷史驗收](mpi-api-lifecycle-20260921.json)、[worker](../../api/worker.py)、[collector](../../api/workloads/collector.py) | 自動提交／收集 MPI、queued／submitted 重啟接續、ranks 0／1／2、DB 狀態及失敗 dead-letter 核對 | CPU MPI rank smoke test，非 GPU 效能；仍缺 artifact storage、跨 DB 原子交易和 Redis 全失恢復 |
 | Kueue TAS | [TAS 實驗紀錄](../week19/day6-topology-aware-gpu-scheduling.md)、[Topology](../../k8s/gpu-scheduling/topology.yaml)、[ResourceFlavor](../../k8s/gpu-scheduling/resourceflavor.yaml) | hostname topology request、topologyAssignment 與兩個 Pod 的 same-hostname placement | 歷史環境單 GPU node；Pod 最後仍為 ContainerCreating，只驗證 placement；未驗證 multi-node／cross-zone 選擇 |
 | Kueue Priority / Preemption | [preemption 紀錄](../week19/day4-priority-preemption-multi-tenancy.md)、[ClusterQueue](../../k8s/gpu-scheduling/clusterqueue.yaml)、[PriorityClass](../../k8s/gpu-scheduling/priorityclasses.yaml) | Low workload 被 evict、quota 釋放、high workload admitted 並 Running | 執行證據在 Week 文件；同一 ClusterQueue、單 L4 time-sharing shares，不是四張實體 GPU，也不是完整 tenant isolation |
 | JobSet Recovery | [JobSet recovery demo](../demo/jobset-recovery-demo.md)、[failure／recovery 紀錄](../week20/day4-ha-node-failure-recovery.md)、[固定名稱 example](../../k8s/gpu-scheduling/examples/jobset-mpi.yaml)、[目前動態 template](../../api/workloads/templates/jobset-mpi.yaml) | Worker exit 42 → RestartJobSet／Recreate → restarts=1、JobsReady；另記錄 cordon／uncordon admission blockage | Recovery evidence 來自歷史 mpi-real；未另證明動態 JobSet 本次也做過 fault injection；cordon 不是硬體故障，單 GPU node 無 node failover |
@@ -75,7 +93,8 @@ LocalQueue Active、PVC Bound、API／Redis healthy、DB table 可查、RBAC all
 | GPU / DCGM Monitoring | [dashboard 驗證](../week14/Day6-gpu-dashboard-establish-and-gpuworkload-verification.md)、[DCGM integration](../week14/Day5-GPU-Metrics-Monitoring-integration.md)、[exporter manifest](../../benchmark/k8s/dcgm-exporter-remote.yaml) | CUDA workload 前後 utilization、temperature、VRAM 等指標由 DCGM／Prometheus／Grafana 觀察 | 早期 dashboard 數據是 P100，不可標為 hpc-gpu-sg L4 本次結果；manifest 存在不代表目前 scrape target 健康 |
 | Linux Performance | [CPU analysis](../week12/Day1-Linux-CPU-Performance-Analysis.md)、[perf](../week12/Day6-Linux-CPU-Profiling-with-perf.md)、[strace](../week12/Day7-Linux-System-Call-Analysis-with-strace.md)、[CPU report](../../benchmark/cpu/results/cpu_benchmark_20260810.md) | Linux CPU／process／system-call 診斷紀錄與 stress-ng CPU saturation baseline | 歷史環境的輸出／報告；不是主 MPI job 的自動 profiling 或跨機型可直接比較的結果 |
 | RBAC / Security | [API JobSet RBAC](../../k8s/security/api-jobset-rbac.yaml)、[RBAC 驗證](../week20/day1-rbac-serviceaccount-least-privilege.md)、[Pod hardening](../week20/day2-pod-image-secret-security.md)、[NetworkPolicy 實測](network-policy-validation-20260921.json) | API namespace-scoped JobSet 權限設定；歷史 benchmark-runner 允許／拒絕；隔離 Calico GKE ingress baseline／allow／deny／recovery | benchmark-runner 與 api-jobset-runner 是不同身份；NetworkPolicy 實測不在主 cluster，未涵蓋 egress、跨 namespace 或全平台 hardening |
-| Terraform / GitOps | [本輪 Terraform 證據](terraform-gpu-sg-20260921.md)、[bootstrap validation](cluster-bootstrap-validation-20260921.json)、[gpu-sg root](../../terraform/environments/gpu-sg/main.tf)、[歷史 GitOps 紀錄](../week10/Day7-GitHub-Actions-GitOps-自動部署-ArgoCD.md) | 現有 cluster／兩個 pools import 後零 drift；隔離 CPU-only cluster 完成 apply／destroy；釘版 controllers、Secrets、queues 與 platform bootstrap 已實作且 server dry-run 通過 | 尚未在全新 GPU cluster 執行 bootstrap／MPI acceptance；缺 remote state；Argo dev 仍指舊 overlays/dev |
+| Terraform / GitOps | [Terraform 證據](terraform-gpu-sg-20260921.md)、[CPU-only bootstrap 驗收](cpu-bootstrap-acceptance-20260921.json)、[gpu-sg root](../../terraform/environments/gpu-sg/main.tf)、[歷史 GitOps 紀錄](../week10/Day7-GitHub-Actions-GitOps-自動部署-ArgoCD.md) | 主環境 import 零 drift；全新 CPU-only cluster 完成 controllers／Secrets／queues／平台 bootstrap、health／RBAC／PVC 驗收及銷毀 | 不涵蓋全新 GPU cluster MPI 執行；缺 remote state；Argo dev 仍指舊 overlays/dev |
+| L4 Causal LM / CUDA Profiling | [9/22 報告](../performance/causal-lm-l4-20260922.md)、[原始證據與 hashes](../../benchmark/results/causal-lm-20260922/evidence.json) | 13M causal LM、文字 byte tokens、交錯三次量測、兩份 CUDA traces、同步 nvidia-smi 遙測 | 單 L4 time-sharing；非 pretrained LLM 品質或多 GPU 結論；獨立 runner 尚未接 MPI API |
 
 ## Capability Matrix
 
@@ -88,9 +107,9 @@ LocalQueue Active、PVC Bound、API／Redis healthy、DB table 可查、RBAC all
 
 | 分類 | 範圍 | 狀態 | Partial 邊界／未完成項目 |
 |---|---|---|---|
-| Platform | API submission、Redis queue、MPI dispatch／rank execution／terminal collection | Implemented · Validated · Documented · Partial | MPI final status／ranks／DB status 已回寫；缺 worker daemon、持續 reconciliation、artifact storage、transaction consistency 與 full lifecycle state machine |
+| Platform | API submission、背景 polling worker、MPI dispatch／rank execution／terminal collection | Implemented · Validated · Documented · Partial | 9/22 自動結果回收與重啟接續已驗證；仍缺 artifact storage、跨 DB／Redis 原子交易與 full lifecycle state machine |
 | Distributed Compute | MPI JobSet、Ray tasks／recovery、Slurm multi-node MPI | Implemented · Validated · Documented · Partial | 各自獨立；Ray／Slurm 未接 API；Ray retry evidence 到 RUNNING，Slurm 歷史 compute VM 已移除 |
-| GPU / AI Performance | L4 Transformer training、PyTorch DDP profiling、vLLM result analysis、NCCL transport | Implemented · Validated · Documented · Partial | L4 training 為 synthetic 單 GPU time-sharing；DDP profiling 是 CPU／Gloo；NCCL 單 GPU；無 multi-node GPU scaling／RDMA performance evidence |
+| GPU / AI Performance | 13M causal LM training／CUDA profiling、歷史 DDP／vLLM／NCCL | Implemented · Validated · Documented · Partial | 單 L4 time-sharing、byte corpus；無 pretrained LLM 品質、multi-node GPU scaling／RDMA 結論 |
 | Scheduling | Kueue queue／quota／priority／preemption／TAS | Implemented · Validated · Documented · Partial | 單實體 GPU node 的 quota／placement 實驗；無 multi-node／cross-zone TAS 驗證 |
 | Observability | API metrics、Prometheus／Grafana／DCGM 設定與歷史監控 | Implemented · Validated · Documented · Partial | 缺主 E2E per-job metrics／result 關聯；舊 P100 dashboard evidence 與目前 L4 分開 |
 | Infrastructure | Terraform、bootstrap、Helm、Kustomize、Argo CD | Implemented · Validated · Documented · Partial | 全新 CPU-only cluster 已完成 Terraform、controllers、queues、Secrets、platform apply／acceptance／destroy；Spot GPU rehearsal 被全域 quota 阻擋並清理，尚缺全新 GPU MPI 執行、remote state 與 Argo CD 對齊 |

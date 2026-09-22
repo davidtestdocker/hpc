@@ -2,6 +2,7 @@
 # Python 語法：縮排界定區塊；def 定義函式，冒號後接區塊；型別註記說明預期型別。
 import yaml
 from kubernetes import client, config
+from kubernetes.client.exceptions import ApiException
 
 from api.workloads.renderer import render_mpi_jobset
 
@@ -20,12 +21,27 @@ def submit_mpi_jobset(job_id: str) -> str:
     api = client.CustomObjectsApi()
 
     # 依 group／version／plural 呼叫自訂資源 API；body 是完整 manifest。
-    response = api.create_namespaced_custom_object(
-        group="jobset.x-k8s.io",
-        version="v1alpha2",
-        namespace=NAMESPACE,
-        plural="jobsets",
-        body=manifest,
-    )
+    # 將平台 job ID 寫入 owner label；相同名稱衝突時據此確認是自己的重試。
+    manifest['metadata'].setdefault('labels', {})['platform-job-id'] = job_id
+    try:
+        response = api.create_namespaced_custom_object(
+            group="jobset.x-k8s.io",
+            version="v1alpha2",
+            namespace=NAMESPACE,
+            plural="jobsets",
+            body=manifest,
+            _request_timeout=15,
+        )
+    except ApiException as exc:
+        # create 成功後程序可能中斷。409 時查回同名資源，而不是產生第二個 JobSet。
+        # 其他 API 錯誤保持拋出，讓背景 worker 留待下一輪重試。
+        if exc.status != 409:
+            raise
+        response = api.get_namespaced_custom_object(
+            group='jobset.x-k8s.io', version='v1alpha2', namespace=NAMESPACE,
+            plural='jobsets', name=manifest['metadata']['name'], _request_timeout=15,
+        )
+        if response.get('metadata', {}).get('labels', {}).get('platform-job-id') != job_id:
+            raise RuntimeError('Existing JobSet is not owned by this platform job') from exc
 
     return response["metadata"]["name"]

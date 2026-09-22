@@ -4,28 +4,28 @@
 
 ### 一句話版本
 
-建立 API 驅動的 HPC／AI workload submission 平台，串接 FastAPI、Redis、PostgreSQL、Kubernetes JobSet 與 Kueue，完成 MPI rank execution，並以獨立效能分析與故障案例展示跨層工程能力。
+建立 API 驅動的 HPC／AI 平台，自動提交 MPI、回收結果並在 worker 重啟後接續；以單 L4 小型 causal LM 的重複量測與 CUDA profiling 展示效能分析能力。
 
 ### 3 Bullet 版本
 
-- 整合 FastAPI／Redis／PostgreSQL 與 Kubernetes Python Client，動態建立 JobSet，經 Kueue admission 啟動 1 launcher、3 workers 與 3 MPI ranks；completion collector 回收終態／logs／ranks，實測 API 與 PostgreSQL status 完成同步。
+- 整合 FastAPI／Redis／PostgreSQL、Kueue 與 JobSet，以獨立 polling worker 自動提交 MPI 並收集終態／logs／ranks；實測 queued／submitted 兩階段重啟接續、唯一 JobSet、API／DB 狀態同步與模擬失敗 dead-letter。
 - 驗證 Kueue quota／priority／preemption／單 GPU node TAS 與 JobSet recovery，並整理獨立 Ray NODE_DIED retry、Slurm CPU multi-node MPI／node failure、NCCL Socket fallback 案例，建立可追溯的跨層排障 evidence。
-- 在 L4 上以 warmup 與 3 次重複量測分析 synthetic Transformer training，量化 batch 8→16 的 tokens/s +74.4%、step latency +14.0%、memory +50.8%；另分析 Qwen2.5-0.5B-Instruct concurrency 32→64 的 throughput +29.6%／TTFT +137.8% 取捨。
+- 在 L4 上以固定 13M causal LM、文字 byte tokens、暖機與每組三次交錯量測比較 batch 8／16：byte-token throughput +81.29%、step latency +10.25%、peak allocated memory +41.96%；另保存兩份 CUDA traces，分析固定 optimizer 成本與 GEMM 工作量的取捨。
 
 ### English Resume Version
 
 **1-line project description**
 
-Built an API-driven HPC/AI workload submission platform with Kubernetes JobSet and Kueue, supported by performance analysis and distributed-systems failure investigations.
+Built an HPC/AI platform with automatic MPI dispatch, result collection and worker restart recovery, supported by single-L4 causal language-model benchmarks and CUDA profiling.
 
 **3 resume bullets**
 
-- Integrated FastAPI, Redis, PostgreSQL, and the Kubernetes Python client to dispatch dynamic JobSets through Kueue, then collected terminal status and ranks 0/1/2 back into API/Redis and PostgreSQL state.
+- Integrated FastAPI, Redis, PostgreSQL, Kueue and JobSet with a polling worker; validated automatic MPI completion, queued/submitted restart recovery, a single JobSet per tested job, status synchronization and simulated dispatch failure handling.
 - Validated Kueue quota, priority preemption, single-GPU-node topology placement, and JobSet recovery; documented separate Ray task retries, Slurm CPU multi-node MPI and node-failure investigations, and NCCL Socket fallback cases.
-- Built a repeated BF16 Transformer training benchmark on NVIDIA L4; increasing batch size from 8 to 16 improved token throughput by 74.4% while step latency rose 14.0% and peak memory 50.8%. Also quantified vLLM throughput/TTFT tradeoffs for Qwen2.5-0.5B-Instruct.
+- Benchmarked a 13M causal language model on one NVIDIA L4 using fixed byte-token data, warmup and three interleaved repetitions per batch. Batch 8 to 16 increased byte-token throughput by 81.29%, with 10.25% higher step latency and 41.96% higher peak allocated memory; separate CUDA traces supported analysis of optimizer and GEMM costs.
 
 ## Evidence 與使用邊界
 
-面試可依序開啟 [主 E2E](../demo/end-to-end-mpi-jobset-demo.md)、[Evidence Index](../evidence/README.md)、[Performance Report](../performance/performance-report.md)。[架構文件](../architecture/platform-architecture.md) 說明 platform 與 supporting paths 的分工。
+面試依 [9/22 展示順序](../demo/interview-demo-20260922.md) 開啟自動 MPI 驗收與 causal LM profiling，再以 [Evidence Index](../evidence/README.md) 查原始結果。[架構文件](../architecture/platform-architecture.md) 說明平台與獨立效能實驗的分工。
 
-上述成果不代表 production-ready、multi-node GPU／RDMA benchmark、Ray／Slurm API integration 或 complete HA。主線 worker／collector 仍是手動 HTTP handlers；TAS 為單 GPU node，舊 dashboard 數據來自 P100。Terraform 已完成主環境 import／zero drift 與隔離 apply／destroy；全新 CPU-only cluster bootstrap 已實際通過，但 remote state、全新 GPU cluster MPI 驗收與 GitOps 尚未完成。
+上述成果限於已保存的驗收範圍。主線為背景 polling worker；訓練為單 L4、13M 小型模型與 byte tokens，未驗證 pretrained LLM 品質或 multi-GPU／RDMA。TAS 為單 GPU node，歷史 dashboard 來自 P100。CPU-only fresh bootstrap 已通過；remote state、GitOps、跨資料庫原子交易與完整 HA 尚未完成。訓練 runner、Ray／Slurm 仍未接入 MPI API。

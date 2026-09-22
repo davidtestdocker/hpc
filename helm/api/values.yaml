@@ -228,3 +228,20 @@ config:
 
 
 containerPort: 8000
+
+worker:
+  # 主 overlay 啟用後，自動 dispatch／collect，API 的手動 worker endpoints 回傳 409。
+  enabled: false
+  # 每一輪掃描結束後的等待秒數，不是保證每筆工作五秒內處理完。
+  pollSeconds: 5
+  # 此身分須已由部署入口建立；worker 模板本身不額外建立 RBAC。
+  serviceAccountName: api-jobset-runner
+  nodeSelector:
+    cloud.google.com/gke-nodepool: system-pool
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi

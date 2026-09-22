@@ -1,5 +1,10 @@
 # HPC AI Performance Engineering Platform - Demo Script
 
+2026-09-22：主環境已改為自動 worker，現行展示以
+[自動 worker runbook](../runbooks/automatic-worker.md) 為準；只需提交與查詢。
+[驗收證據](../evidence/automatic-worker-20260922.json) 包含 worker 重啟接續。
+下列手動流程保留為舊版展示。
+
 ## Demo 目標
 
 展示平台如何從 API Request 開始，在手動呼叫 worker HTTP handler 後將 MPI Workload 提交到 Kubernetes，經過 Kueue Admission 後執行 Distributed MPI。
