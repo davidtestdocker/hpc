@@ -1,388 +1,69 @@
-# Week6 Day1 - Kubernetes Foundation
+<!-- current-curriculum: 2026-09-22 -->
+# Week6 Day1 — Kubernetes 控制迴圈
 
-## 對應檔案
+[本週基礎](README.md) · [本週目錄](README.md) · [下一課](<Day2_Pod_Foundation.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [k8s/api-deployment.yaml](../../k8s/api-deployment.yaml)
-- [k8s/api-service.yaml](../../k8s/api-service.yaml)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Kubernetes 控制迴圈」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日平台增加什麼
+## 概念解說
 
-今天沒有安裝 Kubernetes。
+kubectl 對 API server 送出宣告，controller 再逐步收斂；apply 成功只表示宣告被接受。CRD 讓 JobSet／Kueue 類型可被辨識，還需要對應 controller 才能執行協調。
 
-今天建立的是 Kubernetes 最重要的觀念：
+## 在現在的專案中
 
-```text
-Docker
+K3s 是獨立基礎練習選項，不是本次主環境；雲端修改只依 runbook。
 
-↓
+本課對照：[scripts/bootstrap_cluster.py](<../../scripts/bootstrap_cluster.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
-Kubernetes
+```python
+def download_controller(name, target):
+    # Release URL 與 digest 同時鎖定，避免相同操作取得不同或遭竄改的 manifest。
+    metadata = CONTROLLERS[name]
+    with urllib.request.urlopen(metadata["url"], timeout=60) as response:
+        content = response.read()
+    digest = hashlib.sha256(content).hexdigest()
+    if digest != metadata["sha256"]:
+        raise RuntimeError(f"{name} manifest checksum mismatch")
+    target.write_bytes(content)
+
+
+def validate_postgres_env(path):
+    # 僅回傳鍵名集合；錯誤與 evidence 都不包含密碼值。
+    values = {}
+    for raw_line in path.read_text().splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" not in line:
+            raise RuntimeError("PostgreSQL env file 格式錯誤")
+        key, value = line.split("=", 1)
+        values[key.strip()] = value.strip()
+    required = {"POSTGRES_USER", "POSTGRES_PASSWORD"}
+    if any(not values.get(key) for key in required):
 ```
 
-理解：
+## 閱讀與練習
 
-> Docker 負責執行 Container。
-
-> Kubernetes 負責管理 Container。
-
----
-
-# Platform Problem
-
-目前平台：
-
-```text
-Docker Compose
-
-├── api
-├── redis
-└── postgres
-```
-
-查看：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 讀 bootstrap 安裝順序，解釋 CRD 存在、controller Available、實際 MPI completed 三個檢查各證明什麼。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-docker ps
+sed -n '40,63p' 'scripts/bootstrap_cluster.py'
 ```
 
-結果：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```text
-api
-redis
-postgres
-```
+## 怎樣判斷自己讀懂了
 
-平台共有：
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/cpu-bootstrap-acceptance-20260921.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-```text
-3 Containers
-```
+## 舊版與新版本的關係
 
-架構：
-
-```text
-Docker Host
-│
-├── api Container
-├── redis Container
-└── postgres Container
-```
-
----
-
-# Docker 的限制
-
-假設：
-
-```text
-api
-
-↓
-
-api × 3
-```
-
-變成：
-
-```text
-api-1
-api-2
-api-3
-redis
-postgres
-```
-
-如果：
-
-```text
-api-2 Crash
-```
-
-Docker 不會：
-
-* 自動建立新 Container
-* 維持固定數量
-* 自動修復
-
-需要人工：
-
-```bash
-docker compose restart api
-```
-
-或：
-
-```bash
-docker compose up -d
-```
-
----
-
-# Kubernetes 解決什麼？
-
-Kubernetes 不負責建立 Container。
-
-Kubernetes 負責：
-
-```text
-Desired State
-```
-
-例如：
-
-```text
-API
-
-我要 3 個
-```
-
-如果：
-
-```text
-api-2 Crash
-```
-
-Kubernetes：
-
-```text
-重新建立新的 Pod
-```
-
-自動恢復到：
-
-```text
-API = 3
-```
-
-這就是：
-
-```text
-Self Healing
-```
-
----
-
-# Docker vs Kubernetes
-
-Docker：
-
-```text
-Build Image
-
-Run Container
-```
-
-Kubernetes：
-
-```text
-Scheduling
-
-Scaling
-
-Self Healing
-
-Service Discovery
-
-Container Orchestration
-```
-
-兩者不是互相取代，而是合作。
-
----
-
-# 今日知識鏈
-
-```text
-Container
-      │
-      ▼
-Pod
-      │
-      ▼
-ReplicaSet
-      │
-      ▼
-Deployment
-      │
-      ▼
-Service
-```
-
-Week6 全部內容都圍繞這條知識鏈展開。
-
----
-
-# 今日重點
-
-Docker：
-
-```text
-Container Runtime
-```
-
-Kubernetes：
-
-```text
-Container Orchestrator
-```
-
-Container 是 Docker 的核心。
-
-Pod 是 Kubernetes 的核心。
-
-Kubernetes 管理的是：
-
-```text
-Pod
-```
-
-不是：
-
-```text
-Container
-```
-
----
-
-# 用目前的平台理解
-
-現在：
-
-```text
-Docker Compose
-
-api
-redis
-postgres
-```
-
-未來：
-
-```text
-api Pod
-└── api Container
-
-redis Pod
-└── redis Container
-
-postgres Pod
-└── postgres Container
-```
-
-目前每個 Pod 都只有一個 Container。
-
-因此：
-
-```text
-Pod ≠ Container
-```
-
-只是目前：
-
-```text
-1 Pod = 1 Container
-```
-
----
-
-# Platform Evolution
-
-目前：
-
-```text
-Docker Host
-│
-├── api Container
-├── redis Container
-└── postgres Container
-```
-
-未來：
-
-```text
-Kubernetes Cluster
-│
-├── api Pod
-│     └── api Container
-│
-├── redis Pod
-│     └── redis Container
-│
-└── postgres Pod
-      └── postgres Container
-```
-
----
-
-# Interview Q&A
-
-## Q1：Docker 和 Kubernetes 的差別？
-
-Docker 負責建立與執行 Container。
-
-Kubernetes 負責管理大量 Container，提供自動修復、擴展、排程與服務管理。
-
----
-
-## Q2：為什麼 Docker Compose 不夠？
-
-Docker Compose 適合單機開發。
-
-當服務需要：
-
-* 自動修復
-* 自動擴展
-* 高可用
-* 多台主機管理
-
-就需要 Kubernetes。
-
----
-
-# 今日成果
-
-建立 Kubernetes 最重要的基礎觀念：
-
-```text
-Docker
-    │
-    ▼
-Container
-```
-
-以及：
-
-```text
-Kubernetes
-    │
-    ▼
-Pod
-```
-
-理解：
-
-* Docker 管理 Container。
-* Kubernetes 管理 Pod。
-* Kubernetes 透過 Desired State 維持平台運作。
-
----
-
-# 下一步
-
-Week6 Day2：
-
-Pod Foundation
-
-學習內容：
-
-* Pod 是什麼
-* Pod 與 Container 的差別
-* Pod Lifecycle
-* 第一個 Pod YAML
-* 使用 kubectl 建立與查看 Pod
-
+[改寫前完整教材快照](<../history/20260922-before-current/week6/Day1_Kubernetes_Foundation.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

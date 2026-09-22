@@ -1,468 +1,58 @@
-# Week8 Day5 - Kustomize Foundation
+<!-- current-curriculum: 2026-09-22 -->
+# Week8 Day5 — Kustomize overlay
 
-## 對應檔案
+[上一課](<Day4_Helm_Advanced.md>) · [本週目錄](README.md) · [下一課](<Day6-Helm-Kustomize-Integration.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-文中的 `base/`、`ingress-patch.yaml` 與 `/tmp/*.yaml` 為歷史結構或產物；目前可追蹤的是以下 overlays。
+## 先備知識與本課目標
 
-- [kustomize/overlays/dev/deployment-patch.yaml](../../kustomize/overlays/dev/deployment-patch.yaml)
-- [kustomize/overlays/dev/kustomization.yaml](../../kustomize/overlays/dev/kustomization.yaml)
-- [kustomize/overlays/prod/deployment-patch.yaml](../../kustomize/overlays/prod/deployment-patch.yaml)
-- [kustomize/overlays/prod/kustomization.yaml](../../kustomize/overlays/prod/kustomization.yaml)
-- [kustomize/overlays/stage/deployment-patch.yaml](../../kustomize/overlays/stage/deployment-patch.yaml)
-- [kustomize/overlays/stage/kustomization.yaml](../../kustomize/overlays/stage/kustomization.yaml)
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Kustomize overlay」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
----
+## 概念解說
 
-## 本日成果
+overlay 描述環境差異，patch 的 target 決定影響哪些資源。nodeSelector patch 限制 system 服務位置，不等於所有工作都搬到 system-pool。
 
-完成 Kustomize 基礎架構，建立 Base / Overlay 多環境管理模式，並完成 dev、stage、prod 三個環境的 Render 與驗證。
+## 在現在的專案中
 
-> **注意：本日尚未整合 Helm。Helm + Kustomize Integration 將於 Week8 Day6 完成。**
+主線是 Helm／Kustomize 渲染與 deploy 工具；Argo CD 為獨立 GitOps 設定教材。
 
----
-
-# 今日目標
-
-學習 Kustomize 的核心概念：
-
-* Base
-* Overlay
-* Patch
-* Namespace
-* Images
-* Resources
-* Environment
-* Ingress
-* 多環境管理
-
----
-
-# 為什麼需要 Kustomize？
-
-Kustomize 並不是 Template Engine。
-
-它的核心概念是：
-
-```text
-Base
-    │
-    ▼
-Overlay
-    │
-    ▼
-Patch
-    │
-    ▼
-新的 Kubernetes YAML
-```
-
-它是在**既有 Kubernetes YAML** 上做修改，而不是重新產生 YAML。
-
----
-
-# 建立目錄
-
-建立：
-
-```text
-kustomize/
-
-├── base
-│   ├── deployment.yaml
-│   ├── service.yaml
-│   ├── ingress.yaml
-│   └── kustomization.yaml
-│
-└── overlays
-    ├── dev
-    │   ├── deployment-patch.yaml
-    │   ├── ingress-patch.yaml
-    │   └── kustomization.yaml
-    │
-    ├── stage
-    │   ├── deployment-patch.yaml
-    │   ├── ingress-patch.yaml
-    │   └── kustomization.yaml
-    │
-    └── prod
-        ├── deployment-patch.yaml
-        ├── ingress-patch.yaml
-        └── kustomization.yaml
-```
-
----
-
-# Base
-
-Base 保存所有環境共用設定。
-
-包含：
-
-* Deployment
-* Service
-* Ingress
-
-Base 不包含任何 dev、stage、prod 專屬設定。
-
----
-
-# Overlay
-
-Overlay 只保存環境差異。
-
-例如：
-
-```text
-dev
-
-↓
-
-replicas = 2
-
-image = :dev
-
-APP_ENV = dev
-```
-
-Base 完全不用修改。
-
----
-
-# Deployment Patch
-
-Base：
+本課對照：[kustomize/overlays/gpu-sg-platform/kustomization.yaml](<../../kustomize/overlays/gpu-sg-platform/kustomization.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```yaml
-replicas: 1
+patches:
+  - path: system-pool-patch.yaml
+    target:
+      kind: Deployment
+      name: api|redis
+  - path: system-pool-patch.yaml
+    target:
+      kind: StatefulSet
+      name: postgres
+  - path: api-serviceaccount-patch.yaml
+    target:
+      kind: Deployment
+      name: api
 ```
 
-Dev：
-
-```yaml
-replicas: 2
-```
-
-Stage：
-
-```yaml
-replicas: 3
-```
-
-Prod：
-
-```yaml
-replicas: 5
-```
-
-透過 Strategic Merge Patch 修改 Deployment。
-
----
-
-# Namespace
-
-各環境：
-
-Dev：
-
-```text
-hpc-platform-dev
-```
-
-Stage：
-
-```text
-hpc-platform-stage
-```
-
-Prod：
-
-```text
-hpc-platform-prod
-```
-
-使用：
-
-```yaml
-namespace:
-```
-
-統一修改所有 Namespaced Resource，而不是逐一 Patch。
-
----
-
-# Image Tag
-
-Dev：
-
-```text
-hpc-ai-benchmark-platform-api:dev
-```
-
-Stage：
-
-```text
-hpc-ai-benchmark-platform-api:stage
-```
-
-Prod：
-
-```text
-hpc-ai-benchmark-platform-api:v1.0.0
-```
-
-使用：
-
-```yaml
-images:
-```
-
-修改，不需改 Deployment。
-
----
-
-# APP_ENV
-
-Base：
-
-```text
-APP_ENV=prod
-```
-
-Dev：
-
-```text
-APP_ENV=dev
-```
-
-Stage：
-
-```text
-APP_ENV=stage
-```
-
-Prod：
-
-```text
-APP_ENV=prod
-```
-
-利用 Deployment Patch 精準修改 Container Environment。
-
----
-
-# Resources
-
-Dev：
-
-```text
-CPU Request : 50m
-CPU Limit   : 200m
-
-Memory Request : 64Mi
-Memory Limit   : 256Mi
-```
-
-Stage：
-
-```text
-CPU Request : 100m
-CPU Limit   : 300m
-
-Memory Request : 128Mi
-Memory Limit   : 384Mi
-```
-
-Prod：
-
-```text
-CPU Request : 250m
-CPU Limit   : 1000m
-
-Memory Request : 256Mi
-Memory Limit   : 1Gi
-```
-
-不同環境使用不同資源配置。
-
----
-
-# Ingress Host
-
-Dev：
-
-```text
-api-dev.hpc.local
-```
-
-Stage：
-
-```text
-api-stage.hpc.local
-```
-
-Prod：
-
-```text
-api.hpc.example.com
-```
-
-透過 Ingress Patch 管理。
-
----
-
-# Render
-
-Dev：
+## 閱讀與練習
+
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 讀 patches 的 kind／name 與 system-pool-patch，指出 worker 的 nodeSelector 是另在 values 中控制；別把 patch 路徑當 shell 指令。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-kubectl kustomize overlays/dev
+sed -n '41,53p' 'kustomize/overlays/gpu-sg-platform/kustomization.yaml'
 ```
 
-Stage：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```bash
-kubectl kustomize overlays/stage
-```
+## 怎樣判斷自己讀懂了
 
-Prod：
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/platform-deployment-20260921.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-```bash
-kubectl kustomize overlays/prod
-```
+## 舊版與新版本的關係
 
-成功產生三套不同環境的 Kubernetes YAML。
-
----
-
-# Dry Run 驗證
-
-建立 Render 結果：
-
-```bash
-kubectl kustomize overlays/dev > /tmp/dev.yaml
-kubectl kustomize overlays/stage > /tmp/stage.yaml
-kubectl kustomize overlays/prod > /tmp/prod.yaml
-```
-
-驗證：
-
-```bash
-kubectl apply --dry-run=client -f /tmp/dev.yaml
-kubectl apply --dry-run=client -f /tmp/stage.yaml
-kubectl apply --dry-run=client -f /tmp/prod.yaml
-```
-
-三個環境皆成功通過驗證。
-
----
-
-# 三個環境
-
-## Dev
-
-* Namespace：hpc-platform-dev
-* Replicas：2
-* Image：hpc-ai-benchmark-platform-api:dev
-* APP_ENV：dev
-* Host：api-dev.hpc.local
-
----
-
-## Stage
-
-* Namespace：hpc-platform-stage
-* Replicas：3
-* Image：hpc-ai-benchmark-platform-api:stage
-* APP_ENV：stage
-* Host：api-stage.hpc.local
-
----
-
-## Prod
-
-* Namespace：hpc-platform-prod
-* Replicas：5
-* Image：hpc-ai-benchmark-platform-api:v1.0.0
-* APP_ENV：prod
-* Host：api.hpc.example.com
-
----
-
-# 本日重點
-
-Kustomize 並不是用來取代 Helm。
-
-今天完成的是：
-
-```text
-Base Kubernetes YAML
-        │
-        ▼
-Kustomize Overlay
-        │
-        ├── dev
-        ├── stage
-        └── prod
-```
-
-**今天尚未進行 Helm 整合。**
-
-Helm + Kustomize 的整合流程將於 Day6 完成。
-
----
-
-# Interview Q&A
-
-## Q1：Kustomize 的 Base 與 Overlay 分別負責什麼？
-
-Base 保存所有環境共用的 Kubernetes 資源；Overlay 只保存各環境的差異設定，避免複製整份 YAML。
-
----
-
-## Q2：什麼情況下使用 `namespace:`，什麼情況使用 Patch？
-
-如果整個環境的資源都要切換到同一個 Namespace，使用 `namespace:` 最簡單；只有個別資源需要不同 Namespace 時，才使用 Patch。
-
----
-
-## Q3：今天完成 Helm 與 Kustomize 整合了嗎？
-
-沒有。今天完成的是 Kustomize Foundation。Helm + Kustomize Integration 將於 Week8 Day6 完成。
-
----
-
-# 今日成果
-
-完成：
-
-* Kustomize Base
-* Kustomize Overlay
-* Deployment Patch
-* Ingress Patch
-* Namespace 管理
-* Image Tag 管理
-* APP_ENV 管理
-* Resource 管理
-* Dev / Stage / Prod 三環境
-* Render 驗證
-* Client Dry Run 驗證
-
-平台已具備企業常見的 Kustomize 多環境管理能力。
-
----
-
-# 下一步
-
-Week8 Day6：
-
-**Helm + Kustomize Integration**
-
-學習：
-
-* Helm 與 Kustomize 的整合方式
-* Helm Render 與 Kustomize Overlay 的關係
-* 企業 GitOps 專案架構
-* 為 Argo CD 做完整準備
-
+[改寫前完整教材快照](<../history/20260922-before-current/week8/Day5_Kustomize_Foundation.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

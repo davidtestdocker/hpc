@@ -1,289 +1,69 @@
-# Week4 Day4 - Memory Queue
+<!-- current-curriculum: 2026-09-22 -->
+# Week4 Day4 — Memory queue 的限制
 
-## 對應檔案
+[上一課](<day3-job-identity.md>) · [本週目錄](README.md) · [下一課](<day5-dockerize-api.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [api/main.py](../../api/main.py)：API、工作狀態與佇列處理
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Memory queue 的限制」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日平台增加什麼？
+## 概念解說
 
-今天平台加入 **Memory Queue** 與 **Consumer**。
+Python list 只在單一程序記憶體中，程序重啟或 API 多副本就無法共享一致的待處理列表。現行以 Redis record 保存工作，worker 掃描 record 接續，不只依賴 queue 中還有 ID。
 
-平台流程由：
+## 在現在的專案中
 
-```text
-POST /benchmark
-    ↓
-建立 Job
-```
+現行 GKE 主線；本機先用 mock 測試學習，不需要先拿雲端權限。
 
-進化成：
-
-```text
-POST /benchmark
-    ↓
-Producer
-    ↓
-Job Storage
-    ↓
-Memory Queue
-    ↓
-Consumer
-    ↓
-Benchmark Result
-```
-
-平台開始具備最基本的非同步任務處理流程。
-
----
-
-## 今日解決的 Platform Problem
-
-如果平台收到大量 Benchmark Request：
-
-```text
-Job A
-Job B
-Job C
-```
-
-API 不應等待所有 Benchmark 執行完成才回應 Client。
-
-正確流程應為：
-
-```text
-Producer
-    ↓
-Queue
-    ↓
-Consumer
-```
-
-API 只負責建立 Job，真正執行工作交由 Worker 處理。
-
----
-
-## 今日知識鏈
-
-```text
-Synchronous
-      ↓
-Asynchronous
-      ↓
-Producer
-      ↓
-Consumer
-      ↓
-Queue
-      ↓
-Memory Queue
-```
-
----
-
-## 今日實作
-
-### 1. 建立 Job Storage
+本課對照：[api/worker.py](<../../api/worker.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```python
-jobs = {}
+    for key in redis.scan_iter(match='job:*', count=100):
+        job_id = key.removeprefix('job:')
+        if redis.get(f'worker:done:{job_id}'):
+            continue
+        # 不等待其他持有者；thread_local=False 讓續期執行緒可使用相同 lock token。
+        lock = redis.lock(f'worker:lock:{job_id}', timeout=120, blocking=False,
+                          thread_local=False)
+        if not lock.acquire(blocking=False):
+            continue
+        finished = threading.Event()
+        lost = threading.Event()
+
+        def renew(finished=finished, lock=lock, lost=lost):
+            """每 30 秒把 lease 有效期重設為 120 秒；失敗後通知主流程停止發布。"""
+            # 預設參數固定本次迴圈的物件，避免執行緒引用到下一筆工作的變數。
+            while not finished.wait(30):
+                try:
+                    lock.extend(120, replace_ttl=True)
+                except Exception:
+                    logger.exception('Worker lease renewal failed')
+                    lost.set()
+                    return
+
+        def guard(lost=lost, lock=lock):
 ```
 
-用途：
+## 閱讀與練習
 
-* 保存所有 Job
-* 使用 `job_id` 快速查詢
-
----
-
-### 2. 建立 Memory Queue
-
-```python
-job_queue = []
-```
-
-用途：
-
-* 保存等待執行的 Job ID
-* 模擬 Queue（FIFO）
-
----
-
-### 3. Producer
-
-`POST /benchmark`
-
-建立：
-
-* UUID
-* Job
-* Job Storage
-* Queue
-
-```python
-jobs[job_id] = {...}
-job_queue.append(job_id)
-```
-
----
-
-### 4. 查詢 API
-
-新增：
-
-```text
-GET /jobs
-GET /jobs/{job_id}
-```
-
-用途：
-
-* 查詢所有 Job
-* 查詢單一 Job
-
-不存在的 Job：
-
-```text
-404 Not Found
-```
-
-而不是：
-
-```text
-500 Internal Server Error
-```
-
----
-
-### 5. Consumer
-
-新增：
-
-```text
-POST /worker/process-next
-```
-
-流程：
-
-```text
-Queue
-    ↓
-取出第一個 Job
-    ↓
-status = completed
-    ↓
-寫入 result
-```
-
-模擬 Worker 處理 Benchmark。
-
----
-
-## 今日驗證
-
-建立 Job：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 用自己的話比較 list、Redis queue、Redis job record 的責任；在 worker 找掃描和 done marker，說明為何 queue 清空不能代表所有工作資料消失。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-curl -X POST http://localhost:8000/benchmark \
-  -H "Content-Type: application/json" \
-  -d '{"benchmark":"cpu"}'
+sed -n '84,107p' 'api/worker.py'
 ```
 
-處理下一個 Job：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```bash
-curl -X POST http://localhost:8000/worker/process-next
-```
+## 怎樣判斷自己讀懂了
 
-查詢 Job：
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/automatic-worker-20260922.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-```bash
-curl http://localhost:8000/jobs
-```
+## 舊版與新版本的關係
 
-結果：
-
-```text
-status = completed
-result = benchmark simulated
-```
-
----
-
-## 今日平台架構
-
-```text
-Client
-      │
-POST /benchmark
-      │
-      ▼
-Producer
-      │
-      ▼
-Job Storage (jobs)
-      │
-      ▼
-Memory Queue (job_queue)
-      │
-      ▼
-Worker
-      │
-      ▼
-Benchmark Result
-      │
-      ▼
-GET /jobs
-```
-
----
-
-## 今日學到的重點
-
-* Producer 負責建立 Job。
-* Consumer 負責處理 Queue 中的 Job。
-* Job Storage 與 Queue 是不同資料結構。
-* Queue 採 FIFO（First In, First Out）。
-* API 應回傳正確 HTTP 狀態碼，例如不存在的 Job 回傳 404。
-
----
-
-## 它最後會變成平台哪一部分？
-
-今天完成的是 **平台任務流程（Job Flow）**。
-
-後續會演進成：
-
-```text
-Producer
-      ↓
-Redis Queue
-      ↓
-Worker
-      ↓
-Benchmark Engine
-      ↓
-Database
-      ↓
-Result API
-```
-
-Week5 會把 Memory Queue 換成 Redis Queue，而 API Contract 幾乎不用修改。
-
----
-
-## Interview
-
-### Q1：為什麼 Job Storage 和 Queue 要分開？
-
-Job Storage 用來保存完整 Job 資訊並提供查詢；Queue 用來管理等待處理的順序。兩者職責不同，因此通常會使用不同的資料結構。
-
----
-
-### Q2：為什麼不存在的 Job 要回傳 404，而不是 500？
-
-404 表示請求的資源不存在，屬於正常的業務情境；500 則代表伺服器內部發生未預期錯誤。平台應將 `KeyError` 轉換為 `404 Not Found`，提供正確的 HTTP API 語意。
-
+[改寫前完整教材快照](<../history/20260922-before-current/week4/day4-memory-queue.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

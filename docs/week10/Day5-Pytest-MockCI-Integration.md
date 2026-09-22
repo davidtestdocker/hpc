@@ -1,216 +1,69 @@
-# Week10 Day5 - Pytest Mock & CI Integration
+<!-- current-curriculum: 2026-09-22 -->
+# Week10 Day5 — Mock 與故障分支
 
-## 對應檔案
+[上一課](<Day4-Pytest-API-Testing-Foundation.md>) · [本週目錄](README.md) · [下一課](<Day6-Docker-Build-inCI.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [.github/workflows/ci.yml](../../.github/workflows/ci.yml)：CI／映像建置與 GitOps 更新
-- [tests/conftest.py](../../tests/conftest.py)
-- [tests/test_api.py](../../tests/test_api.py)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Mock 與故障分支」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日目標
+## 概念解說
 
-- 學習 Unit Test 與 Integration Test 的差異
-- 使用 Fake Object 隔離外部依賴
-- 使用 Fixture 與 Monkey Patch
-- 將 Pytest 整合至 GitHub Actions
+worker 測試用假的 Redis／DB／Kubernetes 觸發真實難重現的失敗窗口。重點不是 mock 越多越好，而是確認有沒有測到 DB-first、409 owner 與 lease 失效等契約。
 
----
+## 在現在的專案中
 
-# 今日成果
+只跑本機測試／離線讀 CI；不觸發 push、映像發佈或 Argo 同步。
 
-- 建立 `tests/conftest.py`
-- 建立 Fake Redis
-- 建立 Fake SQLAlchemy Session
-- 使用 `fixture`
-- 使用 `monkeypatch`
-- Mock Redis 與 PostgreSQL
-- Pytest 全部通過
-- GitHub Actions 新增 Pytest Workflow
-
----
-
-# conftest.py
-
-pytest 會自動載入 `conftest.py`。
-
-用途：
-
-- Fixture
-- Fake Object
-- Mock
-- 共用測試設定
-
----
-
-# Fake Object
-
-建立：
-
-- FakeRedis
-- FakeSession
-
-取代：
-
-- Redis
-- PostgreSQL
-
-避免單元測試依賴真正外部服務。
-
----
-
-# Fixture
+本課對照：[tests/test_worker.py](<../../tests/test_worker.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```python
-@pytest.fixture
+def test_dispatch_recovers_without_queue_entry(store, state):
+    data, _ = store
+    data[f'job:{JOB_ID}'] = json.dumps(job(state))
+    worker.tick()
+    assert json.loads(data[f'job:{JOB_ID}'])['status'] == 'submitted'
+    main.submit_mpi_jobset.assert_called_once_with(JOB_ID)
+
+
+@pytest.mark.parametrize('terminal', ['completed', 'failed'])
+def test_collects_terminal_status_automatically(store, monkeypatch, terminal):
+    data, _ = store
+    data[f'job:{JOB_ID}'] = json.dumps(job('submitted'))
+    monkeypatch.setattr(main, 'collect_mpi_jobset', lambda _: {
+        'status': terminal, 'result': {'ranks': [0, 1, 2]}})
+    worker.tick()
+    saved = json.loads(data[f'job:{JOB_ID}'])
+    assert saved['status'] == terminal
+    assert saved['result']['ranks'] == [0, 1, 2]
+    assert 'finished_at' in saved
+    main.persist_job_status.assert_called_with(JOB_ID, terminal)
+
+
+def test_db_outage_leaves_submitted_for_retry(store, monkeypatch):
+    data, _ = store
 ```
 
-用途：
+## 閱讀與練習
 
-建立可重複使用的測試物件。
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 選一個 DB failure 測試，逐行說明設定、執行和斷言；再對照實機 restart evidence，說明兩者各自的限制。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
-例如：
-
-- fake_redis
-- fake_session
-
----
-
-# Monkey Patch
-
-```python
-monkeypatch.setattr(...)
+```bash
+sed -n '44,67p' 'tests/test_worker.py'
 ```
 
-用途：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-測試期間暫時替換正式程式中的物件。
+## 怎樣判斷自己讀懂了
 
-例如：
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../../tests/test_worker.py>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-```
-redis_client
-        ↓
-FakeRedis
-```
+## 舊版與新版本的關係
 
-```
-SessionLocal()
-        ↓
-FakeSession()
-```
-
-測試結束後自動還原。
-
----
-
-# Pytest Workflow
-
-Git Push
-
-↓
-
-GitHub Actions
-
-↓
-
-Python Syntax Check
-
-↓
-
-Ruff
-
-↓
-
-Pytest
-
-↓
-
-Pass
-
----
-
-# 今日遇到的問題
-
-### Redis Connection Error
-
-原因：
-
-Pytest 執行時未啟動 Redis。
-
-解法：
-
-使用 FakeRedis + Monkey Patch。
-
----
-
-### PostgreSQL Connection Error
-
-原因：
-
-SessionLocal() 建立真正 Database Session。
-
-解法：
-
-建立 FakeSession 並 Monkey Patch SessionLocal。
-
----
-
-### API Contract Drift
-
-原因：
-
-API Response 已修改，但測試仍驗證舊欄位。
-
-解法：
-
-更新 Test Case，使測試符合最新 API Contract。
-
----
-
-# Unit Test vs Integration Test
-
-Unit Test
-
-- Fake Redis
-- Fake PostgreSQL
-- 快速
-- 不依賴外部服務
-
-Integration Test
-
-- 真正 Redis
-- 真正 PostgreSQL
-- 驗證整體系統
-
----
-
-# 今日重點
-
-- conftest.py 為 pytest 共用設定。
-- Fixture 建立共用測試資源。
-- Fake Object 隔離外部依賴。
-- Monkey Patch 暫時替換正式物件。
-- GitHub Actions 已完成 Pytest 自動化驗證。
-
----
-
-# Interview Q&A
-
-### Q1：為什麼 Unit Test 要使用 Mock？
-
-避免依賴 Redis、PostgreSQL 等外部服務，使測試快速、穩定且可重複執行。
-
----
-
-### Q2：Monkey Patch 的用途？
-
-測試期間暫時替換正式程式中的物件，例如將 `redis_client` 或 `SessionLocal()` 替換為 Fake Object，測試結束後自動恢復。
-
----
-
-# 本日總結
-
-完成 Pytest Mock 機制，使用 Fixture、Fake Object 與 Monkey Patch 隔離 Redis、PostgreSQL，成功將 API 單元測試整合至 GitHub Actions，建立企業級 CI 自動化測試流程。
+[改寫前完整教材快照](<../history/20260922-before-current/week10/Day5-Pytest-MockCI-Integration.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

@@ -1,173 +1,69 @@
-# Week 3 Day 5－Docker Compose 與 Container 生命週期
+<!-- current-curriculum: 2026-09-22 -->
+# Week3 Day5 — Compose 與服務連線
 
-## 對應檔案
+[上一課](<day4-dockerfile.md>) · [本週目錄](README.md) · [下一課](<day6-containerize-monitoring.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [compose.yaml](../../compose.yaml)：本機服務組合
-- [docker/Dockerfile](../../docker/Dockerfile)：容器映像建置
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Compose 與服務連線」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日目標
+## 概念解說
 
-理解 Docker Compose 的用途，以及 Container 為什麼會持續執行或停止。
+Compose 的 redis 名稱能讓同一網路的容器互找，但主機連線可能需映射埠。現有 compose.yaml 是本機範例；未包含完整背景 worker 與 Kueue／JobSet 前置條件。
 
----
+## 在現在的專案中
 
-# Docker Compose
+本週以檢查與離線讀設定為主；不要求安裝另一個 Docker daemon 或啟動正式服務。
 
-Docker Compose 用於管理多個相關服務（Services）。
-
-透過 `compose.yaml` 可以描述整個平台需要啟動的 Container。
-
-例如：
+本課對照：[compose.yaml](<../../compose.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```yaml
 services:
-  monitor:
-    image: hpc-monitor:v4
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    # 連接埠設定清單；容器宣告埠號本身不會自動對外公開。
+    ports:
+      - "8000:8000"
+    environment:
+      APP_NAME: HPC API Dev
+    # Pod 可掛載的儲存來源，例如 Secret、ConfigMap 或 PVC。
+    volumes:
+      - ./api:/app/api
+  redis:
+    # 容器映像及標籤，決定執行的檔案系統與程式版本。
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    # 覆寫容器入口指令；多行字串中的 Shell 語法由指定的 shell 解讀。
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+  postgres:
+    image: postgres:16-alpine
 ```
 
-Docker Compose 會根據設定建立 Container。
+## 閱讀與練習
 
----
-
-# compose.yaml
-
-Compose 描述的是 **Service**，不是 Container。
-
-Container 是 Service 啟動後產生的執行實體。
-
----
-
-# docker compose config
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 讀 services、ports、volumes，再核對 API 的 DB／Redis 環境變數。列出本機配置與主 overlay 的差異，不把預設示範密碼帶到雲端。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-docker compose config
+sed -n '4,27p' 'compose.yaml'
 ```
 
-可驗證 compose.yaml 是否正確。
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-Docker Compose 也會自動建立預設 Network。
+## 怎樣判斷自己讀懂了
 
----
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../../docker/Dockerfile>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-# docker compose up
+## 舊版與新版本的關係
 
-```bash
-docker compose up
-```
-
-作用：
-
-- 建立 Network
-- 建立 Container
-- 啟動 Container
-
----
-
-# Main Process
-
-Container 的生命週期由 Main Process 決定。
-
-例如：
-
-```dockerfile
-CMD ["ls","/app"]
-```
-
-流程：
-
-```
-ls
-
-↓
-
-執行完成
-
-↓
-
-Container 停止
-```
-
----
-
-改為：
-
-```dockerfile
-CMD ["tail","-f","/dev/null"]
-```
-
-流程：
-
-```
-tail
-
-↓
-
-持續等待
-
-↓
-
-Container 持續執行
-```
-
----
-
-# Docker Compose 與 Docker Run
-
-docker run：
-
-適合啟動單一 Container。
-
-docker compose：
-
-適合管理多個服務。
-
-未來平台中的：
-
-- FastAPI
-- Monitoring
-- Prometheus
-- Grafana
-
-都會透過 Compose 管理。
-
----
-
-# 與 HPC AI Performance Engineering Platform 的關聯
-
-目前平台：
-
-```
-Dockerfile
-        │
-        ▼
-Image
-        │
-        ▼
-Compose
-        │
-        ▼
-Container
-```
-
-後續將加入：
-
-- FastAPI
-- Monitoring Framework
-- Prometheus
-- Grafana
-
-共同組成完整平台。
-
----
-
-# 今日重點
-
-- Docker Compose 管理的是 Service。
-- Compose 會建立 Container 與 Network。
-- Container 的生命週期由 Main Process 決定。
-- Main Process 持續執行，Container 就會持續 Running。
-- Main Process 結束，Container 就會停止。
+[改寫前完整教材快照](<../history/20260922-before-current/week3/day5-docker-compose.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

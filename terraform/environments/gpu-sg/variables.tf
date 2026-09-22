@@ -1,3 +1,5 @@
+# 本 root 的輸入契約；依序決定專案／位置、共享網路、節點數與保護機制。
+# 不要只改 cluster_name 就沿用主環境 state 做 rehearsal；隔離驗收必須隔離 state。
 variable "project_id" {
   description = "GCP project ID"
   type        = string
@@ -44,6 +46,7 @@ variable "system_node_count" {
   }
 }
 
+# CPU-only rehearsal 設 0；此設定不表示有額外 GPU 配額可用。
 variable "gpu_node_count" {
   description = "Fixed number of L4 nodes; keep zero only for a CPU-only rehearsal"
   type        = number
@@ -61,12 +64,14 @@ variable "gpu_spot" {
   default     = false
 }
 
+# 主環境預設保護；不得為了照跑歷史 destroy 指令而關閉。
 variable "deletion_protection" {
   description = "Protect the cluster from accidental Terraform deletion"
   type        = bool
   default     = true
 }
 
+# 預設 false 對應主環境現況；僅建立 NetworkPolicy 物件不會啟用封包隔離。
 variable "enable_network_policy" {
   description = "Enable GKE Calico NetworkPolicy enforcement; use true for isolated validation clusters"
   type        = bool

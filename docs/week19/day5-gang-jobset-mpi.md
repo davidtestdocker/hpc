@@ -1,377 +1,69 @@
-# Week19 Day5 — Gang Scheduling / JobSet / MPI Launcher-Worker
+<!-- current-curriculum: 2026-09-22 -->
+# Week19 Day5 — JobSet 與 MPI 群組
 
-## 對應檔案
+[上一課](<day4-priority-preemption-multi-tenancy.md>) · [本週目錄](README.md) · [下一課](<day6-topology-aware-gpu-scheduling.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [k8s/gpu-scheduling/clusterqueue.yaml](../../k8s/gpu-scheduling/clusterqueue.yaml)
-- [k8s/gpu-scheduling/examples/jobset-mpi.yaml](../../k8s/gpu-scheduling/examples/jobset-mpi.yaml)：固定名稱的 MPI JobSet 實驗
-- [k8s/gpu-scheduling/localqueue.yaml](../../k8s/gpu-scheduling/localqueue.yaml)
-- [k8s/gpu-scheduling/resourceflavor.yaml](../../k8s/gpu-scheduling/resourceflavor.yaml)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「JobSet 與 MPI 群組」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日目標
+## 概念解說
 
-把 distributed workload 做成：
+launcher 和 workers 分別是 replicatedJobs，JobSet 管理整組狀態。群組生命週期不等於所有 Pod 在同一瞬間開始，也不等於任意失敗都可無成本重跑。
 
-    JobSet
-    + Kueue
-    + MPI launcher
-    + MPI workers
+## 在現在的專案中
 
-並驗證：
+單實體 L4，CPU MPI rank smoke；Kueue quota 與 time-sharing share 都不是實體卡數。
 
-    資源不足
-    → 整組不 admission
+本課對照：[api/workloads/templates/jobset-mpi.yaml](<../../api/workloads/templates/jobset-mpi.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
-    資源足夠
-    → 整組一起啟動
+```yaml
+    targetReplicatedJobs:
+      - launcher
 
----
+  # 工作失敗時由控制器採用的處理策略。
+  failurePolicy:
+    # JobSet 層級允許的重新啟動次數上限。
+    maxRestarts: 1
+    restartStrategy: Recreate
+    # 規則清單；RBAC 中定義 API 存取權限，Ingress 中定義路由。
+    rules:
+      - name: restart_on_child_job_failure
+        action: RestartJobSet
 
-## 1. Gang Scheduling / All-or-Nothing
+  network:
+    enableDNSHostnames: true
 
-Distributed workload 可能需要：
+  # JobSet 管理的子 Job 群組，例如 launcher 與 worker。
+  replicatedJobs:
+    - name: launcher
+      # 期望副本數；設定為 0 表示不維持執行中的副本。
+      replicas: 1
+      # 子物件模板；控制器以此內容建立 Pod 或相關工作資源。
+      template:
+        spec:
+```
 
-    launcher
-    worker-0
-    worker-1
-    worker-2
+## 閱讀與練習
 
-不能只啟動其中一部分。
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 讀 replicatedJobs、failurePolicy、mpirun 命令，解釋固定 job 名與 owner label 怎麼協助 worker 接回提交結果。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
-正確行為：
+```bash
+sed -n '29,52p' 'api/workloads/templates/jobset-mpi.yaml'
+```
 
-    資源不足
-    → 全部等待
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-    資源足夠
-    → 整組放行
+## 怎樣判斷自己讀懂了
 
----
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/automatic-worker-20260922.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-## 2. JobSet
+## 舊版與新版本的關係
 
-JobSet 用來描述：
-
-    一組彼此相關的 Kubernetes Jobs
-
-本次結構：
-
-    JobSet
-    ├─ launcher
-    └─ workers × 3
-
-Kueue 會把整個 JobSet 建成：
-
-    1 個 Workload
-
-而不是每個 child Job 各自 admission。
-
----
-
-## 3. All-or-Nothing 驗證
-
-ClusterQueue GPU quota：
-
-    4
-
-先用 gpu-blocker 使用：
-
-    2 GPU
-
-剩餘：
-
-    2 GPU
-
-distributed-gang 需要：
-
-    3 GPU
-
-結果：
-
-    Workload 未 Admission
-
-    launcher    Suspended
-    worker-0    Suspended
-    worker-1    Suspended
-    worker-2    Suspended
-
-    Pods = 0
-
-證明：
-
-    JobSet 不會 partial start
-
----
-
-## 4. Quota 釋放後
-
-刪除 gpu-blocker 後：
-
-    available GPU = 4
-
-JobSet 立即：
-
-    QuotaReserved=True
-    Admitted=True
-
-Child Jobs：
-
-    launcher    Running
-    worker-0    Running
-    worker-1    Running
-    worker-2    Running
-
-證明：
-
-    resource available
-    → whole JobSet admitted
-
----
-
-## 5. Launcher vs Worker
-
-Launcher：
-
-    負責啟動 distributed processes
-
-本次使用：
-
-    mpirun
-
-Worker：
-
-    真正承載 MPI process
-
-例如：
-
-    worker-0 → rank 0
-    worker-1 → rank 1
-    worker-2 → rank 2
-
----
-
-## 6. SSH / sshd
-
-Launcher 需要：
-
-    ssh client
-
-Worker 需要：
-
-    sshd
-
-作用：
-
-    launcher
-    → SSH 到 worker
-    → 在 worker 上啟動 MPI process
-
-SSH 只是 process launch 機制。
-
-真正 MPI 執行後：
-
-    rank 0
-    ↔
-    rank 1
-    ↔
-    rank 2
-
-MPI processes 直接互相通信。
-
----
-
-## 7. MPI Runtime Image
-
-使用：
-
-    mpioperator/mpi-pi:openmpi
-
-驗證已有：
-
-    mpirun
-    ssh
-    sshd
-
-因此不用額外 build MPI image。
-
----
-
-## 8. SSH Key
-
-建立 Kubernetes Secret：
-
-    mpi-ssh-key
-
-用途：
-
-    launcher private key
-    → SSH client authentication
-
-    authorized_keys
-    → worker 允許 launcher 登入
-
-    host key
-    → worker sshd server identity
-
----
-
-## 9. InitContainer
-
-Secret volume 是 read-only。
-
-因此使用：
-
-    initContainer
-    ↓
-    copy SSH keys 到 emptyDir
-    ↓
-    chown / chmod
-    ↓
-    main container 使用 non-root UID 1000
-
-這樣：
-
-    initContainer
-    → filesystem initialization
-
-    main container
-    → non-root runtime
-
----
-
-## 10. 真正 MPI Launcher 驗證
-
-Launcher 執行：
-
-    mpirun -np 3
-
-然後透過 SSH：
-
-    worker-0
-    worker-1
-    worker-2
-
-實際結果：
-
-    RANK=0 HOST=mpi-real-worker-0-0
-    RANK=1 HOST=mpi-real-worker-1-0
-    RANK=2 HOST=mpi-real-worker-2-0
-
-證明：
-
-    launcher
-    → mpirun
-    → SSH workers
-    → 啟動 MPI ranks
-    → ranks 分別執行於不同 worker Pods
-
----
-
-## 11. 完整架構
-
-    JobSet
-    ↓
-    Kueue
-    ↓
-    all-or-nothing admission
-    ↓
-    launcher + workers
-    ↓
-    launcher: mpirun
-    ↓
-    SSH / sshd
-    ↓
-    worker MPI ranks
-    ↓
-    distributed communication
-
----
-
-## 12. Kueue / JobSet / Volcano
-
-Kueue：
-
-    queue
-    quota
-    admission
-    priority
-    preemption
-
-JobSet：
-
-    描述一組相關 Jobs
-
-Kubernetes scheduler：
-
-    決定 Pod 放哪個 Node
-
-Volcano：
-
-    更深入 scheduler 層
-    支援 batch / gang scheduling / placement
-
-簡化：
-
-    Kueue
-    → workload 能不能進場
-
-    Volcano
-    → workload 的 Pods 怎麼實際排程
-
----
-
-## 13. LeaderWorkerSet
-
-JobSet：
-
-    適合 batch / finite distributed jobs
-
-例如：
-
-    MPI
-    training
-    launcher + workers
-
-LeaderWorkerSet：
-
-    偏向 leader-worker topology
-    與長時間 distributed serving
-
-例如：
-
-    distributed inference
-    LLM serving
-
----
-
-## 今日結論
-
-完成：
-
-    JobSet installation
-    Kueue + JobSet integration
-    all-or-nothing admission
-    resource shortage waiting
-    quota release admission
-    real MPI launcher
-    worker sshd
-    multi-Pod MPI ranks
-
-最終成功：
-
-    RANK 0 → worker-0
-    RANK 1 → worker-1
-    RANK 2 → worker-2
-
----
-
-## Interview Review
-
-**Q1：Kueue + JobSet 如何避免 distributed workload partial start？**  
-A：Kueue 把整個 JobSet 視為一個 Workload 做 admission，只有整組資源需求都能滿足時才解除 suspend，否則所有 child Jobs 一起等待。
-
-**Q2：MPI launcher 與 worker 的差別？**  
-A：Launcher 使用 mpirun 啟動 distributed processes；worker 承載真正的 MPI ranks。SSH/sshd 可以作為 launcher 在其他 worker 啟動 process 的機制。
+[改寫前完整教材快照](<../history/20260922-before-current/week19/day5-gang-jobset-mpi.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

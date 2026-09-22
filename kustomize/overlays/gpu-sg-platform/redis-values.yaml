@@ -1,3 +1,5 @@
+# 主環境覆寫 Redis chart 的預設值；部署工具會阻擋未掛載此 PVC 的舊 Redis 直接升級。
+# 這是持久化設定，不是資料遷移指令；勿在已有資料時直接換 claimName。
 persistence:
   enabled: true
   claimName: redis-pvc

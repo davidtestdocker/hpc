@@ -1,561 +1,69 @@
-# Week20 Day5 — AI/HPC Production Troubleshooting
+<!-- current-curriculum: 2026-09-22 -->
+# Week20 Day5 — 跨層 production troubleshooting
 
-## 對應檔案
+[上一課](<day4-ha-node-failure-recovery.md>) · [本週目錄](README.md) · [下一課](<day6-ai-hpc-platform-technology-selection.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [ray-cluster.yaml](../../ray-cluster.yaml)：Ray 叢集
-- [ray-resource-mismatch-job.yaml](../../ray-resource-mismatch-job.yaml)：Ray 資源不匹配實驗
-- [ray-worker-recovery-job.yaml](../../ray-worker-recovery-job.yaml)：Ray worker 重試實驗
-- [slurm/pending-cpu-test.sbatch](../../slurm/pending-cpu-test.sbatch)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「跨層 production troubleshooting」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日新增內容
+## 概念解說
 
-今天不重複 Week17 的 Slurm 基礎操作，重點放在：
+排障先找最後成功階段，再沿依賴往下；Ray pending、Slurm node 不存在、Kueue admission blockage 是不同故障。已找到根因但未恢復，應明確記為未恢復。
 
-- Ray scheduler resource mismatch
-- Ray task retry 與 `NODE_DIED`
-- KubeRay Worker recovery
-- Slurm production troubleshooting chain
-- Kubernetes / Kueue / Ray / Slurm 的跨層故障定位
-- 建立 production troubleshooting runbook
+## 在現在的專案中
 
-Runbook：
+保留所有歷史成功與失敗；不宣稱 node failover、Redis 全失恢復或跨資料庫原子交易。
 
-    docs/runbooks/ai-hpc-job-troubleshooting.md
+本課對照：[docs/runbooks/ai-hpc-job-troubleshooting.md](<../runbooks/ai-hpc-job-troubleshooting.md>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
----
+```text
+# AI/HPC Job Troubleshooting Runbook
 
-## 1. Ray：Kubernetes Healthy 不代表 Ray Task 能執行
+## Troubleshooting Order
 
-實測環境：
+遇到 AI/HPC Job 無法執行、卡住或失敗時，依序確認：
 
-    Kubernetes Pods = Running
-    Ray Cluster CPU = 3
-    Ray Cluster GPU = 0
+    1. Queue / Admission
+    2. Scheduler / Placement
+    3. Node / CPU / GPU Resource
+    4. Container / Process
+    5. Distributed Runtime
+    6. Network / NCCL
+    7. Application
 
-Ray Task 要求：
-
-    CPU = 1
-    GPU = 1
-
-Ray scheduler 顯示：
-
-    {'CPU': 1.0, 'GPU': 1.0}: 1+ pending tasks/actors
-
-問題不是：
-
-    Kubernetes scheduler
-
-而是：
-
-    Ray scheduler resource mismatch
-
-因此 troubleshooting 時要區分：
-
-    Kubernetes scheduler
-    ↓
-    負責 Ray Pod placement
-
-    Ray scheduler
-    ↓
-    負責 Task / Actor placement
-
-核心：
-
-    Pod Running != Ray Task schedulable
+不要一開始就直接看 application log。
 
 ---
 
-## 2. Ray Worker Failure 與 Task Retry
+## 1. Kubernetes / Kueue
 
-測試 Task 使用：
-
-    max_retries=2
-
-並設定：
-
-    NodeAffinitySchedulingStrategy(..., soft=True)
-
-Task attempt 0 原本在某個 Ray Worker 執行。
-
-Worker Pod 被刪除後：
-
-    attempt_number = 0
-    state = FAILED
-    error_type = NODE_DIED
-
-Ray 隨後建立：
-
-    attempt_number = 1
-
-並將同一個 Task 排到另一個可用 Ray node。
-
-流程：
-
-    Ray Worker failure
-    ↓
-    Ray detects NODE_DIED
-    ↓
-    Task attempt fails
-    ↓
-    retry policy allows retry
-    ↓
-    Ray scheduler selects another Ray node
-    ↓
-    new task attempt runs
-
-這是：
-
-    Task-level recovery
-
----
-
-## 3. Ray Recovery 與 KubeRay Recovery 不同
-
-這次故障中其實同時存在兩種 recovery。
-
-### Ray
-
-負責：
-
-    Task
-    Actor
-    Runtime scheduling
-    Retry
-
-例如：
-
-    Task attempt 0
-    ↓
-    NODE_DIED
-    ↓
-    Task attempt 1
-
----
-
-### KubeRay
-
-負責：
-
-    RayCluster desired state
-
-當 Worker Pod 被刪除：
-
-    desired workers = 2
-    actual workers = 1
-
-KubeRay Operator 會重新建立 Worker Pod。
-
-因此：
-
-    Ray
-    = Task-level recovery
-
-    KubeRay
-    = Cluster / Worker Pod reconciliation
-
-兩者不要混在一起。
-
----
-
-## 4. MPI / JobSet 與 Ray Recovery 差異
-
-Week20 Day4 的 MPI / JobSet：
-
-    Worker failure
-    ↓
-    Child Job failure
-    ↓
-    JobSet FailurePolicy
-    ↓
-    RestartJobSet
-    ↓
-    Recreate distributed workload
-
-Ray：
-
-    Worker failure
-    ↓
-    Task NODE_DIED
-    ↓
-    retry policy
-    ↓
-    Task may run on another Ray node
-
-因此：
-
-    MPI / JobSet
-    = whole-workload recovery
-
-    Ray
-    = fine-grained task recovery
-
-這反映兩種 distributed runtime 的 recovery model 不同。
-
----
-
-## 5. Slurm Production Troubleshooting
-
-Week17 已經完成：
-
-    slurmctld
-    slurmd
-    Partition
-    sbatch
-    Multi-node
-    MPI
-    Resource scheduling
-
-Day5 不重新建立 Slurm Cluster。
-
-今天新增的是 production troubleshooting chain。
-
----
-
-## 6. Slurm Node Troubleshooting
-
-先看：
-
-    sinfo
-
-如果 Node 狀態異常，例如：
-
-    DOWN
-    DRAIN
-    NOT_RESPONDING
-
-再看：
-
-    scontrol show node <node>
-
-本次實測：
-
-    compute-01
-    compute-02
-
-狀態：
-
-    DOWN+NOT_RESPONDING
-
-Reason：
-
-    Not responding
-
-後來確認：
-
-    compute-01
-    compute-02
-
-原本是 Week17 使用 GCE 建立的 compute VM。
-
-目前 VM 已不存在，但：
-
-    /etc/slurm/slurm.conf
-
-仍保留：
-
-    NodeName=compute-01
-    NodeName=compute-02
-
-所以：
-
-    slurmctld still knows configured nodes
-    ↓
-    no slurmd heartbeat
-    ↓
-    node becomes DOWN+NOT_RESPONDING
-
-這不是 scheduler bug。
-
-真正 failure domain 是：
-
-    underlying compute infrastructure
-
----
-
-## 7. Slurm Job Troubleshooting
-
-Job 15：
-
-    State = PENDING
-
-`squeue` 顯示原因：
-
-    Nodes required for job are DOWN, DRAINED
-    or reserved for jobs in higher priority partitions
-
-再使用：
-
-    scontrol show job 15
-
-確認：
-
-    JobState=PENDING
-    NumNodes=1
-    NumCPUs=1
-    ReqNodeList=(null)
-
-這表示：
-
-    Job 沒有綁死某個指定 Node
-
-而是：
-
-    需要 cpu partition 裡任一可用 Node
-
-但目前：
-
-    compute-01 = DOWN
-    compute-02 = DOWN
-
-所以無法執行。
-
----
-
-## 8. Slurm Accounting
-
-嘗試：
-
-    sacct -j 15
-
-結果：
-
-    Slurm accounting storage is disabled
-
-因此目前環境沒有：
-
-    SlurmDBD / accounting storage
-
-所以：
-
-    sacct
-
-不能作為這套 lab 的 troubleshooting 工具。
-
-實務環境若有啟用 accounting，`sacct` 可用來查：
-
-    COMPLETED
-    FAILED
-    CANCELLED
-    TIMEOUT
-    OUT_OF_MEMORY
-    NODE_FAIL
-    ExitCode
-    Elapsed
-
----
-
-## 9. Cross-Layer Troubleshooting Model
-
-AI/HPC Job 出問題時，不要直接假設是 application 問題。
-
-建議順序：
-
-    Queue / Admission
-    ↓
-    Scheduler / Placement
-    ↓
-    Node / Resource
-    ↓
-    Container / Process
-    ↓
-    Distributed Runtime
-    ↓
-    Network / NCCL
-    ↓
-    Application
-
----
-
-## 10. Kubernetes / Kueue
-
-### Queue / Admission
+### Workload 尚未 Admission
 
 檢查：
 
-    Workload
-    ClusterQueue
-    LocalQueue
-    ResourceFlavor
-    TAS
+```
 
-常見問題：
+## 閱讀與練習
 
-    quota insufficient
-    topology domain unavailable
-    flavor mismatch
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 用排障 runbook 選一例，寫症狀→證據→根因→處置→驗證。不要因文件名稱含 production 就稱整個 demo 已達 production-ready。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
----
+```bash
+sed -n '1,24p' 'docs/runbooks/ai-hpc-job-troubleshooting.md'
+```
 
-### Kubernetes Scheduler
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-常見問題：
+## 怎樣判斷自己讀懂了
 
-    Insufficient cpu
-    Insufficient memory
-    Insufficient nvidia.com/gpu
-    taint mismatch
-    affinity mismatch
-    nodeSelector mismatch
-    SchedulingDisabled
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/automatic-worker-20260922.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
----
+## 舊版與新版本的關係
 
-## 11. Ray
-
-Ray troubleshooting 要再多一層：
-
-    Kubernetes scheduler
-    ↓
-    Ray Pod placement
-
-    Ray scheduler
-    ↓
-    Task / Actor placement
-
-因此可能出現：
-
-    Kubernetes Healthy
-    +
-    Ray Pods Running
-    +
-    Ray Tasks Pending
-
----
-
-## 12. Slurm
-
-Slurm troubleshooting：
-
-    Job
-    ↓
-    Partition
-    ↓
-    Node
-    ↓
-    slurmd
-    ↓
-    VM / Physical Server
-
-常用工具：
-
-    sinfo
-    squeue
-    scontrol show node
-    scontrol show job
-
----
-
-## 13. GPU / Distributed Runtime
-
-如果 scheduler 都正常，但 workload 還是失敗，再往下看：
-
-    NVIDIA Driver
-    CUDA
-    GPU memory
-    NCCL
-    MPI
-    Ray
-    DDP
-
-不能一看到：
-
-    GPU training failed
-
-就直接判斷：
-
-    GPU hardware broken
-
----
-
-## 14. Network Layer
-
-Distributed AI/HPC 常見：
-
-    DNS
-    MTU
-    TCP
-    RDMA
-    RoCE
-    InfiniBand
-    NCCL transport
-
-例如之前 NCCL 實測：
-
-    NET/IB : No device found
-
-之後 fallback：
-
-    NET/Socket
-
-這代表：
-
-    NCCL 可以啟動
-
-但沒有使用：
-
-    RDMA / IB transport
-
----
-
-## 15. Production Troubleshooting 思路
-
-錯誤案例：
-
-    Training Job 沒跑
-    ↓
-    直接看 Python traceback
-
-較好的做法：
-
-    Job 是否 Admission？
-    ↓
-    Pod 是否建立？
-    ↓
-    Pod 是否 Scheduled？
-    ↓
-    Node 是否 Healthy？
-    ↓
-    Runtime 是否有足夠 Resource？
-    ↓
-    Distributed communication 是否正常？
-    ↓
-    最後才看 Application
-
-核心：
-
-    Locate failure domain first.
-
----
-
-## Day5 Outcome
-
-完成：
-
-    Ray resource mismatch troubleshooting
-    Ray NODE_DIED task recovery
-    KubeRay Worker reconciliation
-    MPI / Ray recovery model comparison
-    Slurm node troubleshooting
-    Slurm pending reason troubleshooting
-    Cross-layer AI/HPC troubleshooting model
-    Production troubleshooting runbook
-
-新增：
-
-    docs/runbooks/ai-hpc-job-troubleshooting.md
-
----
-
-## Interview Review
-
-### Q1. Kubernetes 的 Ray Pods 都是 Running，為什麼 Ray Task 還可能 Pending？
-
-因為 Kubernetes scheduler 只負責 Ray Pod placement，而 Ray Task / Actor 是由 Ray scheduler 再次排程。如果 Task 要求的 CPU、GPU 或其他 Ray resource 不存在，即使所有 Kubernetes Pod 都 Running，Task 仍會 Pending。
-
-### Q2. Ray Worker Pod 掛掉後，Ray 與 KubeRay 分別做什麼？
-
-Ray 負責 Task / Actor runtime recovery，例如偵測 `NODE_DIED` 並依 retry policy 重新執行 Task；KubeRay Operator 則負責維持 RayCluster desired state，例如 Worker Pod 數量不足時重新建立 Worker Pod。
+[改寫前完整教材快照](<../history/20260922-before-current/week20/day5-ai-hpc-production-troubleshooting.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

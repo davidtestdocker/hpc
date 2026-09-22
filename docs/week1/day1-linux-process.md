@@ -1,299 +1,53 @@
-# Week 1 Day 1－Linux Process（程序）
+<!-- current-curriculum: 2026-09-22 -->
+# Week1 Day1 — 程序與 PID
 
-## 對應檔案
+[本週基礎](README.md) · [本週目錄](README.md) · [下一課](<day2-cpu-scheduler.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-文中的 `benchmark.py` 是示意檔名，儲存庫未保存該檔案；下方監控程式是程序查詢的現有對照。
+## 先備知識與本課目標
 
-- [monitoring/process_monitor.py](../../monitoring/process_monitor.py)：程序資訊收集
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「程序與 PID」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
----
+## 概念解說
 
-## 今日目標
+同一份 Python 程式可以啟動多個程序，各有自己的 PID。API 與 worker 即使用同一 image，也因啟動命令不同而執行不同角色；程序存在不等於它已完成工作。
 
-理解 Linux 如何執行程式，以及 CPU 如何透過 Scheduler（排程器）分配 Process（程序）到 CPU Core 執行。
+## 在現在的專案中
 
-今天不是學 Linux 指令，而是建立 Linux Performance Analysis 的核心觀念。
+本週在自己的 Linux 學習環境做唯讀觀察，不聲稱主叢集當下健康。
 
----
+本課對照：[monitoring/process_monitor.py](<../../monitoring/process_monitor.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
-# 為什麼要學 Process？
+```python
+result = subprocess.run(
+    ["ps", "-eo", "pid,comm"],
+    capture_output=True,
+    text=True,
+    check=False
+)
 
-在 HPC AI Performance Engineering Platform 中，所有服務本質上都是 Linux Process，例如：
+print(result.stdout)
+```
 
-- FastAPI
-- Benchmark Worker
-- Prometheus
-- Grafana
-- vLLM
-- Python Monitoring Script
+## 閱讀與練習
 
-當未來需要分析效能瓶頸時，第一步就是確認有哪些 Process 正在執行，以及它們之間的關係。
-
----
-
-# Program 與 Process
-
-## Program（程式）
-
-Program 是儲存在磁碟上的程式檔案。
-
-例如：
-
-- python
-- nginx
-- benchmark.py
-
-Program 本身不會執行。
-
-只有被 Linux 載入記憶體後，才會建立 Process。
-
----
-
-## Process（程序）
-
-Process 是正在執行中的程式。
-
-每個 Process 都會有自己的：
-
-- PID（Process ID）
-- PPID（Parent Process ID）
-- 記憶體空間
-- 執行狀態
-
-例如：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 用 ps -eo pid,ppid,stat,comm 查看父子關係，再找監控程式如何取得 PID。S 是等待狀態，不能單憑它判定故障。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-python benchmark.py
+sed -n '6,13p' 'monitoring/process_monitor.py'
 ```
 
-Linux 會建立一個新的 Process。
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
----
+## 怎樣判斷自己讀懂了
 
-# Linux Scheduler
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/README.md>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-CPU 不會同時執行所有 Process。
+## 舊版與新版本的關係
 
-Scheduler（排程器）會決定：
-
-- 哪個 Process 可以先執行
-- 執行多久
-- 下一個換誰執行
-
-例如：
-
-Process A
-
-↓
-
-Process B
-
-↓
-
-Process C
-
-↓
-
-Process A
-
-↓
-
-Process D
-
-CPU 就是不斷在不同 Process 之間切換。
-
----
-
-# CPU Core
-
-假設：
-
-4 Core CPU
-
-同一時間最多可以同時執行四個工作。
-
-例如：
-
-Core0 → Process A
-
-Core1 → Process B
-
-Core2 → Process C
-
-Core3 → Process D
-
-如果系統有 100 個 Process，就只能透過 Scheduler 不斷切換。
-
----
-
-# Kernel Thread
-
-使用：
-
-```bash
-ps -ef
-```
-
-可以看到大量名稱像是：
-
-- kthreadd
-- kworker
-- ksoftirqd
-- migration
-
-它們不是使用者啟動的程式。
-
-而是 Linux Kernel 自己建立的背景工作。
-
-例如：
-
-- 處理硬體事件
-- 管理記憶體
-- 執行背景工作
-- 處理系統資源
-
-因此稱為 Kernel Thread。
-
----
-
-# User Process
-
-User Process 是使用者啟動的程式。
-
-例如：
-
-- bash
-- python
-- docker
-- prometheus
-
-未來平台中的：
-
-- FastAPI
-- Benchmark Worker
-- Prometheus
-- Grafana
-- vLLM
-
-全部都屬於 User Process。
-
----
-
-# PID 與 PPID
-
-PID（Process ID）
-
-Linux 會替每個 Process 分配一個唯一編號。
-
-例如：
-
-```
-PID 323404
-bash
-```
-
----
-
-PPID（Parent Process ID）
-
-每個 Process 都有自己的父程序。
-
-例如：
-
-```
-sshd
-    │
-    ▼
-bash
-    │
-    ▼
-python benchmark.py
-```
-
-bash 啟動了 python，因此：
-
-- bash 是 Parent Process
-- python 是 Child Process
-
-Linux 會記錄這個父子關係，方便管理 Process。
-
----
-
-# 今天使用的指令
-
-查看目前所有 Process：
-
-```bash
-ps -ef
-```
-
----
-
-# 今天實際觀察
-
-在 GCP Ubuntu VM 中：
-
-- 約有 150 個 Process
-- 觀察到大量 Kernel Thread
-- 看到 systemd、sshd 等系統服務
-- 看到 bash、VS Code Server 等 User Process
-
-可以將 Process 分成三大類：
-
-```
-Linux
-
-├── Kernel Thread
-│      ├── kthreadd
-│      ├── kworker
-│      ├── ksoftirqd
-│
-├── System Service
-│      ├── systemd
-│      ├── sshd
-│      ├── chronyd
-│
-└── User Process
-       ├── bash
-       ├── python
-       ├── vscode-server
-```
-
----
-
-# 今日重點整理
-
-今天建立了以下觀念：
-
-- Program 是磁碟上的程式。
-- Process 是正在執行中的程式。
-- CPU Core 數量決定同時可執行的工作數。
-- Scheduler 負責分配 CPU 執行 Process。
-- Linux Process 可分為 Kernel Thread 與 User Process。
-- PID 用來識別 Process。
-- PPID 用來記錄 Parent Process。
-
----
-
-# 與 HPC AI Performance Engineering Platform 的關聯
-
-未來平台中的每一個服務，本質上都是 Linux Process。
-
-例如：
-
-- FastAPI
-- Prometheus
-- Grafana
-- Benchmark Worker
-- vLLM
-
-效能分析的第一步，就是理解：
-
-- 有哪些 Process？
-- 是誰建立它？
-- 它目前是否正在執行？
-- 它是否成為系統瓶頸？
-
-理解 Process，是後續 CPU Scheduling、Context Switch、System Monitoring 與 Performance Analysis 的基礎。
+[改寫前完整教材快照](<../history/20260922-before-current/week1/day1-linux-process.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

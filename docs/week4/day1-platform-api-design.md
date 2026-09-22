@@ -1,246 +1,69 @@
-# Week4 Day1 - Platform API Design
+<!-- current-curriculum: 2026-09-22 -->
+# Week4 Day1 — 平台 API 設計
 
-## 對應檔案
+[本週基礎](README.md) · [本週目錄](README.md) · [下一課](<day2-rest-api-design.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [api/main.py](../../api/main.py)：API、工作狀態與佇列處理
-- [docker/Dockerfile](../../docker/Dockerfile)：容器映像建置
-- [monitoring/process_monitor.py](../../monitoring/process_monitor.py)：程序資訊收集
-- [requirements.txt](../../requirements.txt)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「平台 API 設計」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日目標
+## 概念解說
 
-建立 **HPC AI Performance Engineering Platform** 的第一個 API 入口。
+API 負責接收和查詢，不該讓 HTTP 連線等待整個 MPI 工作結束。背景 worker 與 API 分開部署，讓工作生命週期不依附某一次請求；但資料發佈失敗仍須處理。
 
-平台從只能執行本機 Python Script：
+## 在現在的專案中
 
-```text
-User
-  ↓
-python monitoring/process_monitor.py
+現行 GKE 主線；本機先用 mock 測試學習，不需要先拿雲端權限。
+
+本課對照：[api/main.py](<../../api/main.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
+
+```python
+def create_benchmark(request: BenchmarkRequest):
+    logger.info(
+        "Received benchmark request: %s",
+        request.benchmark
+    )
+
+    # uuid4 產生隨機識別碼；str 轉成字串，作為 Redis key 與回應中的 job_id。
+    job_id = str(uuid4())
+
+    job = {
+    "job_id": job_id,
+    "benchmark": request.benchmark,
+    "simulate_failure": request.simulate_failure,
+    "status": "accepted",
+    "result": None,
+    "retry_count": 0
+    }
+
+    session = SessionLocal()
+
+    db_job = Job(
+        job_id=job_id,
+        benchmark=job["benchmark"],
+        status=job["status"],
 ```
 
-進化成：
+## 閱讀與練習
 
-```text
-Client / Browser
-        ↓
-      HTTP
-        ↓
-    FastAPI API
-        ↓
-HPC AI Performance Engineering Platform
-```
-
----
-
-# 今日完成內容
-
-## 1. 建立 Python 套件管理
-
-建立 `requirements.txt`
-
-```text
-fastapi
-uvicorn[standard]
-```
-
-目的：
-
-* 統一管理 Python 相依套件
-* Docker Image 可重複建置
-* 不依賴 VM 本機環境
-
----
-
-## 2. 修改 Dockerfile
-
-改為使用：
-
-```dockerfile
-COPY requirements.txt /app/requirements.txt
-
-RUN pip install --no-cache-dir -r /app/requirements.txt
-```
-
-目的：
-
-* Image 建構時安裝套件
-* 不在 Host 安裝 Python 套件
-* 建立可重現的 Runtime
-
----
-
-## 3. 修改 Docker Compose
-
-建立 API Service
-
-```yaml
-services:
-  api:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-    ports:
-      - "8000:8000"
-```
-
-目的：
-
-* 建立 API Container
-* 對外開放 8000 Port
-
----
-
-## 4. 建立第一個 FastAPI
-
-建立：
-
-```text
-api/main.py
-```
-
-提供第一個 API：
-
-```text
-GET /
-```
-
-回傳：
-
-```json
-{
-  "message": "HPC AI Performance Engineering Platform API",
-  "status": "running"
-}
-```
-
----
-
-## 5. 建立 API Runtime
-
-完成：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 追 create_benchmark 的 job 建立、DB commit、Redis publish、回應四段，指出哪一步失敗會留下 DB-only 紀錄。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-docker compose build
-docker compose up -d
+sed -n '106,129p' 'api/main.py'
 ```
 
-成功建立：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```text
-hpc-ai-benchmark-platform-api
-```
+## 怎樣判斷自己讀懂了
 
----
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/automatic-worker-20260922.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-## 6. 驗證 API
+## 舊版與新版本的關係
 
-成功驗證：
-
-```bash
-curl http://localhost:8000/
-```
-
-成功回傳 JSON。
-
----
-
-## 7. 驗證 Swagger
-
-成功：
-
-```text
-http://localhost:8000/docs
-```
-
-FastAPI 自動產生 Swagger UI。
-
----
-
-## 8. 驗證 OpenAPI
-
-成功：
-
-```text
-http://localhost:8000/openapi.json
-```
-
-確認 API Contract 已建立。
-
----
-
-# 今日平台架構
-
-```text
-Client
-    │
- HTTP Request
-    │
-    ▼
-Docker Container
-    │
-    ▼
-Uvicorn
-    │
-    ▼
-FastAPI
-    │
-    ▼
-GET /
-    │
-    ▼
-JSON Response
-```
-
----
-
-# 今日知識重點
-
-```text
-Platform
-    ↓
-API
-    ↓
-HTTP
-    ↓
-FastAPI
-    ↓
-OpenAPI
-    ↓
-Swagger
-```
-
-今天建立的是整個平台的 **API Control Plane**，未來會一路串接：
-
-```text
-API
- ↓
-Redis Queue
- ↓
-Worker
- ↓
-Benchmark
- ↓
-Monitoring
- ↓
-Analysis
-```
-
----
-
-# Interview
-
-### Q1：為什麼平台需要 API，而不是直接執行 Python Script？
-
-因為平台需要讓 Browser、CI/CD、Worker、Dashboard 等外部系統透過 HTTP 呼叫功能，而不是登入主機執行 Python 程式，因此需要 API 作為平台的對外入口。
-
----
-
-### Q2：`docker compose build` 與 `docker compose up` 有什麼不同？
-
-`docker compose build` 依照 Dockerfile 建立 Image；`docker compose up` 則使用 Image 啟動 Container。Build 是建構執行環境，Up 是執行服務。
-
+[改寫前完整教材快照](<../history/20260922-before-current/week4/day1-platform-api-design.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

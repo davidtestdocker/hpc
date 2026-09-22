@@ -1,11 +1,11 @@
 # 主展示環境：部署與驗收入口
 
-2026-09-22 現行補充：主 overlay 使用 `automatic-worker-20260922-v1`，
+2026-09-22 現行版本：主 overlay 使用 `automatic-worker-20260922-v1`，
 新增 `api-worker` Deployment，自動 dispatch／collect；手動 `/worker/*`
 端點停用。現行操作與重啟驗收見 [自動 worker](automatic-worker.md)。
-以下 9/21 collector 手動指令只適用當時版本。
+工作提交／回收依上述自動 worker runbook；9/21 舊手動 collector 流程只留在歷史 demo。
 
-更新：2026-09-21。本文件是現行操作入口；Week 文件保留歷史紀錄。
+更新：2026-09-22。本文件是現行操作入口；Week 文件已改為現行教材，舊版全文見[歷史索引](../history/20260922-before-current/README.md)。
 已完成 JobSet controller 容量修復、空 Redis 移至 PVC、Redis Pod 替換後資料保留、MPI collector image rollout 與 API lifecycle 驗收。
 已在既有主叢集套用完整 overlay，三個服務 rollout 與 DB 初始化通過；Terraform 已完成主環境 import／零 drift。後續全新 CPU-only cluster 的 controllers／平台 bootstrap、驗收與銷毀也已通過；該次不涵蓋 GPU／MPI 執行，證據見下方 CPU bootstrap acceptance。
 
@@ -99,8 +99,8 @@ python3 scripts/platform.py render --output /tmp/hpc-platform.yaml
 helm lint helm/api helm/redis helm/postgres
 ```
 
-主 overlay 目前產生 13 個資源；沒有內嵌 PostgreSQL Secret，也不建立 Ingress。
-API 使用 `mpi-collector-20260921-v1` image；原有 dev CI 不會自動更新這個獨立 values 檔。
+主 overlay 在本次離線渲染產生 14 個資源（含獨立 api-worker）；沒有內嵌 PostgreSQL Secret，也不建立 Ingress。
+API／worker 使用 `automatic-worker-20260922-v1` image；原有 dev CI 不會自動更新這個獨立 values 檔。
 後續 image build 仍需明確更新 `api-values.yaml`，不能把本機程式變更視為已部署。
 
 ## 4. 部署前必須處理的狀態
@@ -121,14 +121,14 @@ PYTHONPATH=. .venv/bin/python -m scripts.deploy_platform \
   --output /tmp/platform-deployment.json
 ```
 
-加入 `--execute` 才會套用 overlay，依序等待 Redis／PostgreSQL／API rollout，
+加入 `--execute` 才會套用 overlay，等待 Redis／PostgreSQL／API，以及啟用時的 api-worker rollout，
 最後執行 DB `create_all`。工具要求明確 context，不建立 controllers、queues 或
 Secrets；這是平台部署階段，還不是從空白叢集完成全部 bootstrap。
 既有 Redis 必須直接掛載 `redis-pvc` 至 `/data`，否則拒絕部署並要求先完成遷移。
 執行中失敗會保留資源與 PVC，JSON 報告記錄最後成功步驟，不做自動資料回滾。
 server dry-run 只驗證 API 接受設定，不能證明 Pod 容量、image pull 或 workload 成功。
 
-以下保留對應手動步驟。完整 overlay 尚未在新 cluster 部署，已實際套用的部分見頁首：
+以下是部署工具的手動對照步驟，不是閱讀教材時必須執行的練習。完整 CPU-only 新叢集 bootstrap 已驗收；新 GPU 叢集 MPI 仍未驗證。先確認目標 context、現有資料與維護時段再執行：
 
 ```bash
 PLATFORM_CONTEXT=gke_project-4b82f780-0a12-4087-b94_asia-southeast1-a_hpc-gpu-sg
@@ -137,6 +137,8 @@ kubectl --context "$PLATFORM_CONTEXT" apply -f /tmp/hpc-platform.yaml
 kubectl --context "$PLATFORM_CONTEXT" -n hpc-platform-dev rollout status deployment/redis --timeout=180s
 kubectl --context "$PLATFORM_CONTEXT" -n hpc-platform-dev rollout status statefulset/postgres --timeout=180s
 kubectl --context "$PLATFORM_CONTEXT" -n hpc-platform-dev rollout status deployment/api --timeout=180s
+# 主 overlay 已啟用背景 worker；其他 overlay 需先確認是否啟用。
+kubectl --context "$PLATFORM_CONTEXT" -n hpc-platform-dev rollout status deployment/api-worker --timeout=180s
 kubectl --context "$PLATFORM_CONTEXT" -n hpc-platform-dev exec deployment/api -- python -m api.database.init_db
 python3 scripts/platform.py check --output /tmp/platform-after.json
 ```

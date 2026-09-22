@@ -6,7 +6,7 @@
 
 ## Normal Multi-node MPI Evidence
 
-[Multi-node 實驗紀錄](../week17/day4-slurm-multinode-hpc-cluster.md) 記載 `hpc-demo` 作為 controller／login host，`compute-01`、`compute-02` 作為 CPU compute nodes。[MPI sbatch](../../mpi-multinode.slurm) 配置 2 nodes、每 node 2 tasks，並以 `mpirun --host compute-01:2,compute-02:2 -np 4 /tmp/mpi_hello` 啟動 [MPI 程式](../../mpi_hello.c)。
+[Multi-node 實驗紀錄](../history/20260922-before-current/week17/day4-slurm-multinode-hpc-cluster.md.txt) 記載 `hpc-demo` 作為 controller／login host，`compute-01`、`compute-02` 作為 CPU compute nodes。[MPI sbatch](../../mpi-multinode.slurm) 配置 2 nodes、每 node 2 tasks，並以 `mpirun --host compute-01:2,compute-02:2 -np 4 /tmp/mpi_hello` 啟動 [MPI 程式](../../mpi_hello.c)。
 
 保存的成功輸出：
 
@@ -25,7 +25,7 @@ Hello from rank 2 out of 4 processes
 
 ## Failure Scenario
 
-後續 [排障紀錄](../week20/day5-ai-hpc-production-troubleshooting.md) 中，controller 仍保留 compute-01／02 設定，但兩台 GCE VM 已不存在。這是與 Job 14 成功執行不同時間點的故障案例。[Pending CPU script](../../slurm/pending-cpu-test.sbatch) 保存 cpu partition 的小型工作請求。
+後續 [排障紀錄](../history/20260922-before-current/week20/day5-ai-hpc-production-troubleshooting.md.txt) 中，controller 仍保留 compute-01／02 設定，但兩台 GCE VM 已不存在。這是與 Job 14 成功執行不同時間點的故障案例。[Pending CPU script](../../slurm/pending-cpu-test.sbatch) 保存 cpu partition 的小型工作請求。
 
 ## Symptoms
 

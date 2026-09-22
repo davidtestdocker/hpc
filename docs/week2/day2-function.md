@@ -1,127 +1,55 @@
-# Week 2 Day 2－Function（函式）
+<!-- current-curriculum: 2026-09-22 -->
+# Week2 Day2 — 函式與參數
 
-## 對應檔案
+[上一課](<day1-python.md>) · [本週目錄](README.md) · [下一課](<day3-return.md>) · [全程導讀](../learning-guide.md)
 
-文中的 `system_monitor.py` 為規劃中的整合模組，目前沒有可連結的實作。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+## 先備知識與本課目標
 
-延伸對照文件：[day6-subprocess](day6-subprocess.md)。
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「函式與參數」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
----
+## 概念解說
 
-## 今日目標
+函式把一件工作封裝成可重複呼叫的步驟。傳入不同 job_id，renderer 應產生不同資源名稱；輸入、輸出與外部副作用要分開看，讀函式不用先讀全部專案。
 
-理解 Function 的用途，以及為什麼 Monitoring Framework 必須使用 Function 來設計程式。
+## 在現在的專案中
 
----
+本週先閱讀與執行純 Python 小例子；不要直接啟動依賴雲端的 worker。
 
-# 為什麼需要 Function？
-
-如果沒有 Function，相同的程式碼需要一直複製。
-
-例如：
+本課對照：[api/workloads/renderer.py](<../../api/workloads/renderer.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```python
-print("Collect Process")
-print("Collect Process")
-print("Collect Process")
+def render_mpi_jobset(job_id: str) -> str:
+    jobset_name = f"mpi-{job_id}".lower()
+
+    template = TEMPLATE_PATH.read_text()
+
+    if PLACEHOLDER not in template:
+        raise ValueError(f"Missing placeholder: {PLACEHOLDER}")
+
+    # 字串 replace 替換所有占位符，讓 JobSet 名稱及 worker DNS 使用同一個識別碼。
+    return template.replace(PLACEHOLDER, jobset_name)
 ```
 
-當程式越來越大，維護會變得非常困難。
+## 閱讀與練習
 
-Function 可以將一段程式命名，之後重複呼叫。
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 找 render_mpi_jobset 的參數、回傳與可能例外。指出讀檔是副作用，但這個函式不會自己向 Kubernetes 建立 JobSet。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
----
-
-# Function
-
-建立 Function：
-
-```python
-def collect_process():
-    print("Collect Process")
+```bash
+sed -n '11,20p' 'api/workloads/renderer.py'
 ```
 
-代表：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-建立一個名為 `collect_process` 的功能。
+## 怎樣判斷自己讀懂了
 
-此時 Function 尚未執行。
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../../tests/test_platform_preflight.py>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
----
+## 舊版與新版本的關係
 
-# 呼叫 Function
-
-程式：
-
-```python
-collect_process()
-```
-
-代表：
-
-呼叫 `collect_process`。
-
-Python Interpreter 會跳到 Function 內部執行程式。
-
----
-
-# 執行流程
-
-程式：
-
-```python
-def collect_process():
-    print("Collect Process")
-
-collect_process()
-```
-
-執行順序：
-
-1. 建立 Function。
-2. 繼續往下執行。
-3. 呼叫 Function。
-4. 執行 Function 內容。
-5. Function 結束。
-6. 程式結束。
-
-Function 不會在定義時立即執行。
-
----
-
-# 今日重點
-
-- Function 是一段有名字、可以重複使用的程式。
-- `def` 用來建立 Function。
-- 建立 Function 不代表執行。
-- 只有呼叫 Function 時才會真正執行。
-- 一個 Function 應只負責一件事情。
-
----
-
-# 與 HPC AI Performance Engineering Platform 的關聯
-
-未來 Monitoring Framework 將由許多 Function 組成，例如：
-
-```text
-get_processes()
-
-get_cpu_usage()
-
-get_memory_usage()
-
-get_disk_usage()
-```
-
-每個 Function 只負責收集一種資訊。
-
-最後由 `system_monitor.py` 統一呼叫，完成整體系統監控。
-
-這種設計可以提升：
-
-- 可讀性
-- 可維護性
-- 可測試性
-- 可擴充性
+[改寫前完整教材快照](<../history/20260922-before-current/week2/day2-function.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

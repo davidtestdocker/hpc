@@ -4,9 +4,11 @@
 
 更新：2026-09-22。本文是主要展示入口，依序呈現架構、真實驗收、效能分析與操作方式；細節由各段連到原始 JSON、trace 和 runbook。主環境為 GKE `hpc-gpu-sg`，namespace `hpc-platform-dev`；GPU quota 為一張。
 
-[架構](#architecture) · [自動工作驗收](#main-demo) · [效能比較](#performance) · [展示順序](#interview-walkthrough) · [執行方式](#demo-quick-start) · [學習紀錄](#learning-history)
+[架構](#architecture) · [自動工作驗收](#main-demo) · [效能比較](#performance) · [展示順序](#interview-walkthrough) · [執行方式](#demo-quick-start) · [現行教材](#learning-history)
 
 ## 已驗證成果
+
+第一次學習請從[基礎到現行專案導讀](docs/learning-guide.md)開始：Week1 起依序學習，每週再對照現行實作與驗證；不需要先看懂下面整張架構圖。
 
 | 能力 | 實際交付與結果 | 原始證據 |
 |---|---|---|
@@ -127,7 +129,7 @@ optimizer 相關成本近乎持平、GEMM 工作量增加，支持「較大 batc
 
 ## Security
 
-API 使用 [api-jobset-runner ServiceAccount／namespace RBAC](k8s/security/api-jobset-rbac.yaml)，以 least privilege 限制 JobSet 操作。另有 [Pod hardening 紀錄](docs/week20/day2-pod-image-secret-security.md)；[NetworkPolicy 實測](docs/evidence/network-policy-validation-20260921.json) 在隔離 Calico GKE 完成 baseline、allow、deny timeout 與 policy 移除後恢復。主 cluster enforcement 仍關閉。SSH private keys 不放入 repo。
+API 使用 [api-jobset-runner ServiceAccount／namespace RBAC](k8s/security/api-jobset-rbac.yaml)，以 least privilege 限制 JobSet 操作。另有 [Pod hardening 歷史紀錄](docs/history/20260922-before-current/week20/day2-pod-image-secret-security.md.txt)；[NetworkPolicy 實測](docs/evidence/network-policy-validation-20260921.json) 在隔離 Calico GKE 完成 baseline、allow、deny timeout 與 policy 移除後恢復。主 cluster enforcement 仍關閉。SSH private keys 不放入 repo。
 
 ## Evidence
 
@@ -229,30 +231,32 @@ PYTHONPATH=. .venv/bin/python -m analysis.causal_lm_report benchmark/results/cau
 
 ## Week1～Week20 學習總覽
 
-從 Linux 與 Python 基礎出發，逐步學習容器化、平台開發、雲端部署、效能分析，以及 HPC／AI 分散式運算與排障。下表依各週學習文件整理；點選週次可查看完整筆記與實驗紀錄。表中的概念學習與歷史實作不代表目前平台已全面整合，現行架構與成果見上方主展示，完整驗證範圍見 [Evidence Index](docs/evidence/README.md)。
+從 [Week1 基礎](docs/week1/README.md)開始，每週依「基礎 → 每日現行教材 → 練習與證據」閱讀。138 篇每日正文已更新，另有 20 篇每週導入；完整路線見[學習導讀](docs/learning-guide.md)，安全的本機練習見[操作分級](docs/current-environment.md)。
+
+舊版全文與成功／失敗輸出另存於[歷史索引](docs/history/20260922-before-current/README.md)，不是刪除後重造結果。下表描述現行教學範圍，不代表所有工具已整合進主平台或本次全部重跑。
 
 | 週次 | 學習主題 | 學習內容與能力 | 技能／技術 |
 |---|---|---|---|
-| [Week1](docs/week1/) | Linux 系統基礎 | 理解程序、CPU 排程、上下文切換、記憶體與磁碟 I/O；建立逐層定位效能瓶頸的思路 | Linux、Process／PID、Scheduler、Context Switch、top、ps、free、iostat |
-| [Week2](docs/week2/) | Python 與系統資訊收集 | 使用變數、函式與回傳值組織程式，以資料結構表示程序資訊；執行 Linux 指令並取得輸出 | Python、Function、return、List、Dictionary、subprocess、stdout |
-| [Week3](docs/week3/) | Docker 容器化 | 安裝 Docker、區分 Image 與 Container；建置監控程式映像、管理容器生命週期，理解 namespace 隔離 | Docker Engine、Dockerfile、Image、Container、Docker Compose、Namespace |
-| [Week4](docs/week4/) | 平台 API 與工作佇列 | 設計工作提交與查詢 API、Job ID 與記憶體佇列；整合容器設定、健康檢查、日誌與基本指標 | FastAPI、Uvicorn、REST API、Pydantic、OpenAPI、Producer／Consumer、Docker Compose |
-| [Week5](docs/week5/) | 工作狀態與資料持久化 | 將狀態移至 Redis，學習持久化、worker 狀態轉移、逾時恢復與重試上限；以 PostgreSQL 保存 metadata | Redis、RDB／AOF、Processing Queue、Retry、Dead Letter Queue、PostgreSQL、SQLAlchemy ORM |
-| [Week6](docs/week6/) | Kubernetes 平台部署 | 理解控制器與服務探索；建立 K3s 環境，部署 API、Redis、PostgreSQL，串接服務與持久化儲存 | Kubernetes、K3s、Pod、Deployment、ReplicaSet、Service、Namespace、StatefulSet、PVC |
-| [Week7](docs/week7/) | Kubernetes 服務管理 | 分離設定與敏感資訊、配置資源與健康探針；建立對外路由，透過負載測試觀察 HPA 擴容 | ConfigMap、Secret、Requests／Limits、QoS、Probes、NodePort、Ingress／Traefik、HPA、k6 |
-| [Week8](docs/week8/) | GitOps 與多環境部署 | 學習宣告式同步，將服務封裝為 Helm Charts；管理 release／rollback，整合 dev／stage／prod 設定與部署 | GitOps、Argo CD、Helm、Values／Templates、Release、Kustomize Base／Overlay、Reconciliation |
-| [Week9](docs/week9/) | Infrastructure as Code | 管理雲端資源生命週期、state 與 module 重構；串接 VM、網路、防火牆及多環境設定，建立 GKE 與 Node Pool | Terraform、HCL、Provider、Plan／Apply、State Migration、Module／Output、GCP VPC、GKE |
-| [Week10](docs/week10/) | CI/CD 與自動化測試 | 建立語法、品質與 API 測試流程，以 mock 隔離外部依賴；串接映像建置、推送與 GitOps 部署更新 | GitHub Actions、Ruff、Pytest、TestClient、Fixture／Monkeypatch、Docker Build、Artifact Registry、Argo CD |
-| [Week11](docs/week11/) | 平台可觀測性 | 建立監控 Node Pool，理解 pull model 與 target 狀態；收集 API／Node 指標，整合自動探索與儀表板 | Prometheus、Scrape Job／Target、FastAPI Instrumentator、Node Exporter、Grafana、Kubernetes Service Discovery、RBAC |
-| [Week12](docs/week12/) | Linux 效能診斷 | 分析 CPU、記憶體、磁碟與歷史負載；建立 CPU baseline，透過 profiling 與 system call 追蹤定位瓶頸 | top、mpstat、pidstat、vmstat、iostat、sar／sysstat、fio、sysbench、perf、strace |
-| [Week13](docs/week13/) | Benchmark 與結果整合 | 量測 API、Redis、資料庫、CPU、儲存與網路；比較併發、吞吐與延遲，整合資源觀察、PASS／FAIL 與結果保存 | ApacheBench、redis-benchmark、pgbench、stress-ng、fio、iperf3、kubectl top、Shell、tee／pipefail |
-| [Week14](docs/week14/) | GPU 排程與監控 | 理解 GPU 資源宣告與 Pending 原因，建立 GKE GPU Node Pool；執行 CUDA workload，觀察 GPU 使用率、顯存與溫度 | NVIDIA Device Plugin、nvidia.com/gpu、Taints／Tolerations、CUDA、nvidia-smi、DCGM Exporter、Prometheus、Grafana |
-| [Week15](docs/week15/) | AI Runtime 與推論效能 | 執行 PyTorch 訓練與 vLLM 推論，建立 runtime adapter；以 concurrency benchmark 與 JSON 結果分析吞吐和延遲取捨 | PyTorch、DataLoader、CUDA、vLLM、Runtime Abstraction、Continuous Batching、KV／Prefix Cache、TTFT／TPOT／ITL |
-| [Week16](docs/week16/) | 分散式訓練與通訊效能 | 理解 rank、rendezvous 與梯度同步；實作 CPU／Gloo DDP，分析 1→2 workers scaling，進行單 GPU NCCL 測試 | torchrun、PyTorch DDP、Gloo、RANK／WORLD_SIZE、AllReduce、NCCL、nccl-tests、Speedup／Scaling Efficiency |
-| [Week17](docs/week17/) | HPC 分散式運算與排程 | 實作 MPI 通訊與單節點 OSU 測試、Slurm CPU 多節點 MPI、Ray tasks／actors；比較排程層次，理解 RDMA 通訊架構與硬體需求 | Open MPI、OSU Micro-Benchmarks、Slurm、MUNGE、Ray／KubeRay、RayJob；RDMA／RoCE／InfiniBand 概念 |
-| [Week18](docs/week18/) | 網路與分散式通訊排障 | 建立頻寬、延遲、丟包與 MTU 基線；從封包追查連線故障，逐層檢查 Kubernetes 網路、NCCL Socket fallback 與 GPU／NIC／NUMA locality | ip／ss、ping、iperf3、tcpdump、iptables、ethtool、DNS／EndpointSlice、NCCL Debug、PCIe／NUMA |
-| [Week19](docs/week19/) | GPU 共享與工作准入 | 比較 GPU 共享模式，實驗 time-slicing、quota、priority／preemption；整合 JobSet MPI，驗證單 GPU node 的 TAS placement | Time-Slicing、MPS／MIG 概念、Kueue、ResourceFlavor、ClusterQueue／LocalQueue、PriorityClass、JobSet、TAS |
-| [Week20](docs/week20/) | 安全、故障恢復與技術選型 | 實作最小權限與 Pod hardening、NetworkPolicy 設計／schema 驗證及隔離 Calico 封包驗收；分析 JobSet recovery、Ray retry、Slurm node failure，整理跨層排障與架構選型 | RBAC／ServiceAccount、SecurityContext、Image／Secret Security、NetworkPolicy、FailurePolicy、Runbook；OpenStack／HTCondor／LSF／DLRover 概念 |
+| [Week1](docs/week1/README.md) | Linux：先理解服務如何執行 | 程序與 PID、CPU 排程、Context switch、CPU utilization等；本週在自己的 Linux 學習環境做唯讀觀察，不聲稱主叢集當下健康。 | Linux、Process／PID、Scheduler、Context Switch、top、ps、free、iostat |
+| [Week2](docs/week2/README.md) | Python：讀懂平台程式的最小基礎 | Python 變數與資料型別、函式與參數、return 與例外、list 與迴圈等；本週先閱讀與執行純 Python 小例子；不要直接啟動依賴雲端的 worker。 | Python、Function、return、List、Dictionary、subprocess、stdout |
+| [Week3](docs/week3/README.md) | Docker：把程式與執行环境分開 | 為何容器化、確認 Docker 執行環境、Image 與 container、Dockerfile 與 build context等；本週以檢查與離線讀設定為主；不要求安裝另一個 Docker daemon 或啟動正式服務。 | Docker Engine、Dockerfile、Image、Container、Docker Compose、Namespace |
+| [Week4](docs/week4/README.md) | API：提交工作不等於同步執行 | 平台 API 設計、REST 與端點契約、Job identity、Memory queue 的限制等；現行 GKE 主線；本機先用 mock 測試學習，不需要先拿雲端權限。 | FastAPI、Uvicorn、REST API、Pydantic、OpenAPI、Producer／Consumer、Docker Compose |
+| [Week5](docs/week5/README.md) | 持久化與可恢復 worker | Redis key、record 與 queue、Redis 持久化、現行 worker 狀態機、卡住與重啟接續等；主 overlay 啟用獨立 api-worker；手動 /worker/* 返回 409。 | Redis、RDB／AOF、Processing Queue、Retry、Dead Letter Queue、PostgreSQL、SQLAlchemy ORM |
+| [Week6](docs/week6/README.md) | Kubernetes：從 Pod 到服務 | Kubernetes 控制迴圈、Pod 的範圍、Deployment 與副本、Service 與 selector等；K3s 是獨立基礎練習選項，不是本次主環境；雲端修改只依 runbook。 | Kubernetes、K3s、Pod、Deployment、ReplicaSet、Service、Namespace、StatefulSet、PVC |
+| [Week7](docs/week7/README.md) | Kubernetes：設定、資源與對外入口 | ConfigMap 與環境變數、Secret 與身份、Requests、limits 與 QoS、Liveness 與 readiness等；學習現行 chart；歷史 Traefik／NodePort 位址不當作可用入口。 | ConfigMap、Secret、Requests／Limits、QoS、Probes、NodePort、Ingress／Traefik、HPA、k6 |
+| [Week8](docs/week8/README.md) | Helm、Kustomize、GitOps 的責任分工 | GitOps 的期望狀態、Helm 的 values 與模板、平台 Chart 拆分、Helm 條件與共用命名等；主線是 Helm／Kustomize 渲染與 deploy 工具；Argo CD 為獨立 GitOps 設定教材。 | GitOps、Argo CD、Helm、Values／Templates、Release、Kustomize Base／Overlay、Reconciliation |
+| [Week9](docs/week9/README.md) | Terraform：資源身分與建置生命週期 | Terraform 的作用、HCL 與輸入驗證、State、import 與 lifecycle、Outputs 與資源引用等；本週只讀設定與既有證據；雲端 apply／destroy 須依 runbook 明確確認目標，GPU quota 固定一張。 | Terraform、HCL、Provider、Plan／Apply、State Migration、Module／Output、GCP VPC、GKE |
+| [Week10](docs/week10/README.md) | CI 與測試：不同檢查證明不同事情 | CI／CD 基礎、GitHub Actions workflow、Ruff 與程式品質、pytest 與斷言等；只跑本機測試／離線讀 CI；不觸發 push、映像發佈或 Argo 同步。 | GitHub Actions、Ruff、Pytest、TestClient、Fixture／Monkeypatch、Docker Build、Artifact Registry、Argo CD |
+| [Week11](docs/week11/README.md) | Observability：指標的來源與意義 | Prometheus 與資源分工、Scrape target 與 pull model、FastAPI application metrics、Node Exporter 與 dashboard等；監控 manifests 和歷史 dashboard 保留為獨立路徑；不宣稱即時 target 健康。 | Prometheus、Scrape Job／Target、FastAPI Instrumentator、Node Exporter、Grafana、Kubernetes Service Discovery、RBAC |
+| [Week12](docs/week12/README.md) | Linux 效能工具：以假說選工具 | CPU 分析、Memory 分析、Disk 分析、歷史監控與時間對齊等；歷史 Linux baseline 不是現行 MPI job 的自動 profiling；新硬體需重新建立基線。 | top、mpstat、pidstat、vmstat、iostat、sar／sysstat、fio、sysbench、perf、strace |
+| [Week13](docs/week13/README.md) | Benchmark：從負載定義到可重算結果 | FastAPI benchmark、Redis benchmark、PostgreSQL benchmark、DB concurrency等；Day7 的子章按 7-1 到 7-7 閱讀，最後讀 day7-benchmark-report；不新增負載或覆寫舊結果。 | ApacheBench、redis-benchmark、pgbench、stress-ng、fio、iperf3、kubectl top、Shell、tee／pipefail |
+| [Week14](docs/week14/README.md) | GPU：硬體、runtime 與排程分層 | GPU scheduling、GPU 監控架構、GKE GPU pool、DCGM 指標整合等；現存 Week14 從 Day2 開始，維持原檔案命名；不捏造不存在的 Day1 實驗。 | NVIDIA Device Plugin、nvidia.com/gpu、Taints／Tolerations、CUDA、nvidia-smi、DCGM Exporter、Prometheus、Grafana |
+| [Week15](docs/week15/README.md) | 模型 runtime 與現行單卡訓練 | PyTorch GPU runtime、現行 causal LM 訓練、vLLM inference、Runtime abstraction等；單 L4／小模型可重現實驗；無 pretrained 品質、多 GPU 或 RDMA 結論。 | PyTorch、DataLoader、CUDA、vLLM、Runtime Abstraction、Continuous Batching、KV／Prefix Cache、TTFT／TPOT／ITL |
+| [Week16](docs/week16/README.md) | 分散式訓練：process、device 與通訊 | 多 GPU 基本概念與單卡限制、CPU／Gloo DDP、NCCL collective、NCCL benchmark 邊界等；現有 CPU／Gloo、單 rank NCCL 與單 GPU 訓練分開保存；未驗證多 GPU scaling。 | torchrun、PyTorch DDP、Gloo、RANK／WORLD_SIZE、AllReduce、NCCL、nccl-tests、Speedup／Scaling Efficiency |
+| [Week17](docs/week17/README.md) | MPI、Slurm、Ray：分散式工作不同層 | MPI rank 與 launcher、MPI 效能測試、HPC communication stack、Slurm 多節點 CPU 案例等；Slurm／Ray 是獨立實驗教材與已保存歷史案例，不當作目前可用服務。 | Open MPI、OSU Micro-Benchmarks、Slurm、MUNGE、Ray／KubeRay、RayJob；RDMA／RoCE／InfiniBand 概念 |
+| [Week18](docs/week18/README.md) | 網路排障：由近到遠建立證據 | Linux 網路 baseline、Bandwidth、latency、MTU、封包級排障、Kubernetes 網路等；本週可用 CPU 學主機網路；不把 CPU 測試或 Socket fallback 當 RDMA 硬體實測。 | ip／ss、ping、iperf3、tcpdump、iptables、ethtool、DNS／EndpointSlice、NCCL Debug、PCIe／NUMA |
+| [Week19](docs/week19/README.md) | 准入與工作群組：Kueue／JobSet | GPU sharing models、Kueue admission、Quota 與等待、Priority 與 preemption等；單實體 L4，CPU MPI rank smoke；Kueue quota 與 time-sharing share 都不是實體卡數。 | Time-Slicing、MPS／MIG 概念、Kueue、ResourceFlavor、ClusterQueue／LocalQueue、PriorityClass、JobSet、TAS |
+| [Week20](docs/week20/README.md) | 安全、恢復與架構取捨 | RBAC 與最小權限、Pod、image 與 Secret 安全、NetworkPolicy 與隔離、恢復與 HA 邊界等；保留所有歷史成功與失敗；不宣稱 node failover、Redis 全失恢復或跨資料庫原子交易。 | RBAC／ServiceAccount、SecurityContext、Image／Secret Security、NetworkPolicy、FailurePolicy、Runbook；OpenStack／HTCondor／LSF／DLRover 概念 |
 
 
-這些學習紀錄保留各自日期、環境、成功與失敗輸出；新操作以本文連結的 runbook 為準。[一週補強紀錄](docs/career/one-week-sprint.md) 保存本次整合過程。
+舊版快照保留各自日期、環境、成功與失敗輸出；上表連到現行教材，實際操作以 runbook 為準。[一週補強紀錄](docs/career/one-week-sprint.md) 保存平台整合過程。

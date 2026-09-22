@@ -1,480 +1,57 @@
-# Week6 Day4 - Service Foundation
+<!-- current-curriculum: 2026-09-22 -->
+# Week6 Day4 — Service 與 selector
 
-## 對應檔案
+[上一課](<Day3_Deployment_Foundation.md>) · [本週目錄](README.md) · [下一課](<Day5_K3s_Foundation.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [k8s/api-service.yaml](../../k8s/api-service.yaml)
-- [k8s/redis-service.yaml](../../k8s/redis-service.yaml)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Service 與 selector」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日平台增加什麼
+## 概念解說
 
-今天建立 Kubernetes 最重要的網路元件：
+Service 依 labels 選端點，targetPort 指向容器服務；service name 的 DNS 解析需在適當 namespace。selector 不匹配時，Service 存在仍可能沒有可用 endpoints。
 
-```text
-Service
+## 在現在的專案中
+
+K3s 是獨立基礎練習選項，不是本次主環境；雲端修改只依 runbook。
+
+本課對照：[helm/api/templates/service.yaml](<../../helm/api/templates/service.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
+
+```yaml
+  selector:
+    {{- include "api.selectorLabels" . | nindent 4 }}
+
+  # 連接埠設定清單；容器宣告埠號本身不會自動對外公開。
+  ports:
+    - port: {{ .Values.service.port }}
+      # Service 將流量轉送至 Pod 的目標埠號或命名埠。
+      targetPort: {{ .Values.service.targetPort }}
+      {{- if eq .Values.service.type "NodePort" }}
+      # 經節點 IP 開放的 Service 埠號，適用 NodePort／部分 LoadBalancer 配置。
+      nodePort: {{ .Values.service.nodePort }}
+      {{- end }}
 ```
 
-平台知識鏈從：
+## 閱讀與練習
 
-```text
-Container
-    ↓
-Pod
-    ↓
-ReplicaSet
-    ↓
-Deployment
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 比較 API Service selector 和 Deployment Pod labels，追到 containerPort。不要把 Service 建立成功當成程式正在監聽的證明。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
+
+```bash
+sed -n '20,31p' 'helm/api/templates/service.yaml'
 ```
 
-演進成：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```text
-Container
-    ↓
-Pod
-    ↓
-ReplicaSet
-    ↓
-Deployment
-    ↓
-Service
-```
+## 怎樣判斷自己讀懂了
 
-Service 負責讓 Pod 可以被穩定存取，而不需要依賴 Pod IP。
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/cpu-bootstrap-acceptance-20260921.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
----
+## 舊版與新版本的關係
 
-# Platform Problem
-
-Deployment 已經可以建立多個 Pod。
-
-例如：
-
-```text
-api Deployment
-
-↓
-
-api Pod A
-api Pod B
-api Pod C
-```
-
-每個 Pod 都有自己的 IP：
-
-```text
-api-a    10.42.0.10
-
-api-b    10.42.1.25
-
-api-c    10.42.3.41
-```
-
-但是：
-
-Pod 並不是永久存在。
-
-如果：
-
-```text
-api-b Crash
-```
-
-Deployment：
-
-```text
-建立新的 Pod
-```
-
-新的 Pod：
-
-```text
-api-d
-
-IP
-
-10.42.5.12
-```
-
-原本：
-
-```text
-10.42.1.25
-```
-
-已經不存在。
-
-如果 Client 都直接連 Pod IP：
-
-平台會持續中斷。
-
----
-
-# Kubernetes 如何解決？
-
-Kubernetes 增加：
-
-```text
-Service
-```
-
-架構：
-
-```text
-Client
-    │
-    ▼
-Service
-    │
-    ├── api Pod A
-    ├── api Pod B
-    └── api Pod C
-```
-
-Client 永遠只需要知道：
-
-```text
-api-service
-```
-
-不用知道：
-
-* Pod Name
-* Pod IP
-
----
-
-# Service 的責任
-
-Service 不建立 Pod。
-
-Service 不管理 Deployment。
-
-Service 的責任：
-
-```text
-Stable Endpoint
-
-+
-
-Load Balancing
-```
-
----
-
-# Stable Endpoint
-
-Service 提供固定入口：
-
-```text
-api-service
-```
-
-即使：
-
-```text
-api Pod Crash
-```
-
-Service 名稱仍然不變。
-
-Client 永遠透過：
-
-```text
-api-service
-```
-
-存取 API。
-
----
-
-# Load Balancing
-
-假設：
-
-```text
-api Pod A
-
-api Pod B
-
-api Pod C
-```
-
-Client 發送：
-
-```text
-POST /benchmark
-```
-
-Service：
-
-自動分配：
-
-```text
-Request 1
-
-↓
-
-Pod A
-
-Request 2
-
-↓
-
-Pod B
-
-Request 3
-
-↓
-
-Pod C
-```
-
-Client 不需要知道 Pod 數量與位置。
-
----
-
-# Service Discovery
-
-Kubernetes 每個 Service 都會有固定 DNS。
-
-例如：
-
-```text
-redis-service
-
-postgres-service
-
-api-service
-```
-
-Pod 與 Pod 之間：
-
-透過：
-
-```text
-Service Name
-```
-
-即可互相通訊。
-
-不用使用：
-
-* Pod Name
-* Pod IP
-
----
-
-# Deployment 與 Service
-
-Deployment：
-
-負責：
-
-```text
-Pod 數量
-```
-
-Service：
-
-負責：
-
-```text
-Pod 存取
-```
-
-架構：
-
-```text
-Deployment
-      │
-      ▼
-Pods
-      ▲
-      │
-Service
-```
-
-兩者互相合作，但責任不同。
-
----
-
-# Platform Evolution
-
-目前平台：
-
-```text
-Docker Compose
-
-api
-
-redis
-
-postgres
-```
-
-Docker Compose：
-
-透過：
-
-```text
-Compose Network
-```
-
-互相連線。
-
-例如：
-
-```text
-redis:6379
-```
-
-Kubernetes：
-
-變成：
-
-```text
-api-service
-
-redis-service
-
-postgres-service
-```
-
-所有服務：
-
-永遠透過：
-
-```text
-Service
-```
-
-互相通訊。
-
----
-
-# 今日知識鏈
-
-```text
-Container
-      │
-      ▼
-Pod
-      │
-      ▼
-ReplicaSet
-      │
-      ▼
-Deployment
-      │
-      ▼
-Service
-```
-
-至此完成 Kubernetes 最核心的五個基礎元件。
-
----
-
-# 今日重點
-
-Service 提供：
-
-* Stable Endpoint
-* Load Balancing
-* Service Discovery
-
-Deployment：
-
-負責維持：
-
-```text
-Pod
-```
-
-Service：
-
-負責提供：
-
-```text
-Pod 存取
-```
-
-Pod IP 不應該直接提供給 Client 使用。
-
----
-
-# Interview Q&A
-
-## Q1：為什麼不能直接使用 Pod IP？
-
-Pod 是短生命週期資源。
-
-Pod 重建後，IP 很可能改變。
-
-因此應透過 Service 提供固定入口，避免 Client 依賴會變動的 Pod IP。
-
----
-
-## Q2：Deployment 與 Service 有什麼差別？
-
-Deployment 管理 Pod 的生命週期，例如：
-
-* 建立
-* 擴展
-* 更新
-* 自動修復
-
-Service 管理 Pod 的存取方式，例如：
-
-* 固定 DNS
-* 負載平衡
-* Service Discovery
-
-兩者責任不同，但共同提供高可用服務。
-
----
-
-# 今日成果
-
-完成 Kubernetes 第一階段核心模型：
-
-```text
-Deployment
-      │
-ReplicaSet
-      │
-Pods
-      ▲
-      │
-Service
-```
-
-理解：
-
-* Deployment 維持 Pod 數量。
-* ReplicaSet 建立 Pod。
-* Service 提供固定入口與負載平衡。
-* Client 永遠連 Service，不直接連 Pod。
-
----
-
-# 下一步
-
-Week6 Day5：
-
-K3s Foundation
-
-開始建立自己的 Kubernetes 環境，學習：
-
-* K3s Architecture
-* kubectl
-* kubeconfig
-* Node
-* Namespace
-* 第一個 Deployment 與 Service 實作
-
-並開始將目前的 HPC AI Benchmark Platform 從 Docker Compose 遷移到 Kubernetes。
-
+[改寫前完整教材快照](<../history/20260922-before-current/week6/Day4_Service_Foundation.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

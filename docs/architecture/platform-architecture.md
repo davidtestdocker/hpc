@@ -4,11 +4,13 @@
 
 ## Platform Positioning
 
+若尚未熟悉 Linux、API、Kubernetes 等名詞，先依[基礎導讀](../learning-guide.md)從 Week1 逐週學，再回到本頁串起元件；本頁不是入門教材。
+
 HPC AI Performance Engineering Platform 是以工作提交、資源 admission、distributed execution 與跨層排障為核心的工程作品。主線展示 API 如何將 MPI 工作送入 Kubernetes／Kueue／JobSet；平行的 performance experiments 與 failure demos 展示資源診斷、效能分析及 recovery 能力。
 
 作品對應 HPC AI Performance Engineer、GPU Platform Engineer、AI Infrastructure Engineer 與 Platform Engineer 的工作範疇。目前可展示範圍以 repo 實作與已保存 evidence 為準，尚未形成完整 benchmark closed-loop system。
 
-閱讀入口：[MPI E2E demo](../demo/end-to-end-mpi-jobset-demo.md)、[展示腳本](../demo/platform-demo-script.md)、[Evidence Index](../evidence/README.md)。本文件描述保存的成功環境與程式邊界，不代表即時 cluster 健康檢查。
+閱讀入口：[現行自動 worker](../runbooks/automatic-worker.md)、[9/22 展示講稿](../demo/interview-demo-20260922.md)、[Evidence Index](../evidence/README.md)。舊手動 MPI demo 保留為歷史紀錄。本文件描述保存的成功環境與程式邊界，不代表即時 cluster 健康檢查。
 
 ## Main Platform Flow
 

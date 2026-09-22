@@ -1,424 +1,69 @@
-# Week13 Day7-4 - Benchmark Framework Integration
+<!-- current-curriculum: 2026-09-22 -->
+# Week13 Day7-4 — Benchmark framework 子章
 
-## 對應檔案
+[上一課](<day7-3-network-benchmark.md>) · [本週目錄](README.md) · [下一課](<day7-5-benchmark-framework-v2.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [benchmark/cpu/run_stress_ng.sh](../../benchmark/cpu/run_stress_ng.sh)：CPU 壓測
-- [benchmark/network/run_iperf3.sh](../../benchmark/network/run_iperf3.sh)：網路吞吐測試
-- [benchmark/postgres/run_pgbench.sh](../../benchmark/postgres/run_pgbench.sh)：PostgreSQL 壓測
-- [benchmark/run_all.sh](../../benchmark/run_all.sh)：benchmark 整合入口
-- [benchmark/storage/run_fio.sh](../../benchmark/storage/run_fio.sh)：儲存 I/O 壓測
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Benchmark framework 子章」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今天平台增加了什麼？
+## 概念解說
 
-本次完成 HPC AI Benchmark Framework 第一版。
+共同 runner 統一參數和保存位置，但各工具仍有不同成功契約。shell pipeline 若只看 tee 的 exit code，可能掩蓋前面工具失敗；pipefail 可避免這種誤判。
 
-原本：
+## 在現在的專案中
 
-每個 Benchmark 都需要手動執行。
+Day7 的子章按 7-1 到 7-7 閱讀，最後讀 day7-benchmark-report；不新增負載或覆寫舊結果。
 
-例如：
-
-```text
-stress-ng
-
-fio
-
-pgbench
-
-iperf3
-```
-
-現在：
-
-```text
-run_all.sh
-
-↓
-
-CPU Benchmark
-
-↓
-
-Storage Benchmark
-
-↓
-
-PostgreSQL Benchmark
-
-↓
-
-Network Benchmark
-```
-
-透過一個入口即可完成所有 Benchmark。
-
----
-
-# Architecture
-
-```text
-               Benchmark Runner
-
-                    │
-
-               run_all.sh
-
-                    │
-
-    ┌────────┬────────┬────────┬────────┐
-
-    │        │        │        │
-
- CPU      Storage  PostgreSQL Network
-
-    │        │        │        │
-
-stress-ng   fio    pgbench   iperf3
-```
-
-Framework：
-
-負責：
-
-- 呼叫各 Benchmark
-- 控制 Benchmark 順序
-- 建立統一入口
-
----
-
-# Benchmark Directory
-
-```text
-benchmark/
-
-├── cpu/
-│   └── run_stress_ng.sh
-│
-├── storage/
-│   └── run_fio.sh
-│
-├── postgres/
-│   └── run_pgbench.sh
-│
-├── network/
-│   └── run_iperf3.sh
-│
-├── k8s/
-│
-└── run_all.sh
-```
-
-目前所有 Benchmark
-
-皆以 Module 管理。
-
----
-
-# Benchmark Runner
-
-Benchmark Pod：
-
-```text
-benchmark
-```
-
-用途：
-
-```text
-Benchmark Runner
-```
-
-負責：
-
-- CPU Benchmark
-- Storage Benchmark
-- PostgreSQL Benchmark
-- Network Benchmark
-
-所有 Benchmark
-
-皆於同一個 Pod 執行。
-
----
-
-# Benchmark Flow
-
-```text
-run_all.sh
-
-↓
-
-CPU Benchmark
-
-↓
-
-Storage Benchmark
-
-↓
-
-PostgreSQL Benchmark
-
-↓
-
-Network Benchmark
-
-↓
-
-Finish
-```
-
-Framework
-
-負責：
-
-依照固定順序執行所有 Benchmark。
-
----
-
-# Why Benchmark Runner?
-
-如果每次：
-
-```text
-kubectl exec
-
-↓
-
-執行一個 Tool
-
-↓
-
-離開
-
-↓
-
-再進 Pod
-
-↓
-
-再執行下一個 Tool
-```
-
-效率很差。
-
-建立 Benchmark Runner 後：
-
-所有 Benchmark
-
-統一於：
-
-```text
-benchmark Pod
-```
-
-完成。
-
----
-
-# Benchmark Image
-
-目前：
-
-使用：
-
-```text
-debian:12
-```
-
-第一次建立：
-
-需要：
-
-```text
-apt install
-
-stress-ng
-
-fio
-
-iperf3
-
-postgresql-client
-```
-
-原因：
-
-Container
-
-屬於：
-
-```text
-Ephemeral
-```
-
-Pod 重建：
-
-所有套件消失。
-
----
-
-未來 Production：
-
-將建立：
-
-```text
-benchmark-runner Image
-```
-
-預先安裝：
-
-- stress-ng
-- fio
-- iperf3
-- pgbench
-
-避免：
-
-每次重新安裝。
-
----
-
-# run_all.sh
-
-目前：
+本課對照：[benchmark/run_all.sh](<../../benchmark/run_all.sh>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```bash
-./run_all.sh
+run_benchmark() {
+    NAME=$1
+    COMMAND=$2
+    LOG_FILE=$3
+
+    echo ""
+    echo "======================================"
+    echo "${NAME}"
+    echo "======================================"
+
+    # eval 由 Shell 再解析命令字串；2>&1 合併標準錯誤，tee 同時顯示與寫入 log。
+    # if 根據管線退出狀態判斷 PASS／FAIL；pipefail 可避免 tee 成功掩蓋 benchmark 失敗。
+    if eval "${COMMAND}" 2>&1 | tee "${RESULT_DIR}/${LOG_FILE}"; then
+        echo "[PASS] ${NAME}"
+    else
+        echo "[FAIL] ${NAME}"
+        echo ""
+        echo "Benchmark stopped because ${NAME} failed."
+        exit 1
+    fi
+}
+
+echo "======================================"
+echo " HPC AI Benchmark Framework"
 ```
 
-即可依序執行：
+## 閱讀與練習
 
-- CPU
-- Storage
-- PostgreSQL
-- Network
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 找 run_all.sh 的 set -euo pipefail 與 run_benchmark，描述工具失敗時如何停止；留意脚本相對路徑不是從任意 cwd 都可用。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
-建立統一 Benchmark Entry Point。
-
----
-
-# Observation
-
-完成：
-
-- Benchmark Runner Pod
-- Benchmark Framework
-- 統一 Benchmark Script
-- Modular Benchmark Design
-
-目前 Framework
-
-已具備：
-
-CPU
-
-Storage
-
-Database
-
-Network
-
-四種 Benchmark。
-
----
-
-# HPC AI Performance Insight
-
-大型 HPC AI Platform
-
-通常不會：
-
-人工逐一執行 Benchmark。
-
-而會：
-
-```text
-Framework
-
-↓
-
-Scheduler
-
-↓
-
-Benchmark
-
-↓
-
-Result
-
-↓
-
-Report
+```bash
+sed -n '14,37p' 'benchmark/run_all.sh'
 ```
 
-目前平台：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-已建立：
+## 怎樣判斷自己讀懂了
 
-Framework 雛形。
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../../benchmark/results/causal-lm-20260922/evidence.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
----
+## 舊版與新版本的關係
 
-# Interview Questions
-
-## Q1
-
-為什麼需要 Benchmark Framework？
-
-Answer：
-
-避免人工逐一執行 Benchmark。
-
-建立統一入口，
-
-提高自動化程度。
-
----
-
-## Q2
-
-為什麼使用 Benchmark Runner Pod？
-
-Answer：
-
-所有 Benchmark Tool
-
-集中於同一個 Runtime。
-
-避免：
-
-不同 Pod
-
-造成環境差異。
-
----
-
-# Completed
-
-Week13 Day7-4 完成：
-
-- 建立 Benchmark Runner
-- 建立統一 Benchmark Framework
-- 建立 run_all.sh
-- 完成 CPU / Storage / PostgreSQL / Network 整合
-- 建立 Modular Benchmark Architecture
-
----
-
-# Next
-
-Week13 Day7-5
-
-Benchmark Framework v2
-
-新增：
-
-- PASS / FAIL
-- Summary
-- Exit Code
-- Fail Fast
+[改寫前完整教材快照](<../history/20260922-before-current/week13/day7-4-benchmark-framework.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

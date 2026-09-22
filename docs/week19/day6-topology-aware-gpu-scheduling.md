@@ -1,369 +1,49 @@
-# Week19 Day6 — Topology-Aware GPU Scheduling
+<!-- current-curriculum: 2026-09-22 -->
+# Week19 Day6 — Topology-aware placement
 
-## 對應檔案
+[上一課](<day5-gang-jobset-mpi.md>) · [本週目錄](README.md) · [下一課](<day7-gpu-scheduling-platform-integration.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [k8s/gpu-scheduling/clusterqueue.yaml](../../k8s/gpu-scheduling/clusterqueue.yaml)
-- [k8s/gpu-scheduling/localqueue.yaml](../../k8s/gpu-scheduling/localqueue.yaml)
-- [k8s/gpu-scheduling/resourceflavor.yaml](../../k8s/gpu-scheduling/resourceflavor.yaml)
-- [k8s/gpu-scheduling/topology.yaml](../../k8s/gpu-scheduling/topology.yaml)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Topology-aware placement」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日完成
+## 概念解說
 
-完成 Kueue Topology-Aware Scheduling（TAS）：
+Topology 描述層級，ResourceFlavor 和 PodSet 要求參與准入／placement。歷史只驗證單 GPU node 的 placement，未完成跨 node 選擇和對照性能。
 
-- 建立真實 GKE topology
-- 建立帶 topology 的 GPU ResourceFlavor
-- ClusterQueue 改用 TAS flavor
-- workload 指定 hostname-level topology
-- 驗證 Kueue topologyAssignment
-- 驗證兩個 GPU Pods 被排到同一 hostname domain
+## 在現在的專案中
 
----
+單實體 L4，CPU MPI rank smoke；Kueue quota 與 time-sharing share 都不是實體卡數。
 
-## 1. Topology / Topology Domain
+本課對照：[k8s/gpu-scheduling/topology.yaml](<../../k8s/gpu-scheduling/topology.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
-Topology：
+```yaml
+  levels:
+    - nodeLabel: topology.kubernetes.io/region
+    - nodeLabel: topology.kubernetes.io/zone
+    - nodeLabel: kubernetes.io/hostname
+```
 
-    描述 cluster 中資源的位置階層
+## 閱讀與練習
 
-本次：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 讀 topology.yaml 的 levels 與 flavor 的 nodeLabels，說明 hostname 層級代表什麼；不要用 rank 數當不同 hostname 數。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
-    region
-    ↓
-    zone
-    ↓
-    hostname
+```bash
+sed -n '13,16p' 'k8s/gpu-scheduling/topology.yaml'
+```
 
-真實 GKE node：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-    region:
-    asia-southeast1
+## 怎樣判斷自己讀懂了
 
-    zone:
-    asia-southeast1-a
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/automatic-worker-20260922.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-    hostname:
-    gke-hpc-gpu-sg-gpu-pool-9ad99345-j95p
+## 舊版與新版本的關係
 
-Topology Domain：
-
-    某一 topology level 的實際分組值
-
-例如：
-
-    level = zone
-    domain = asia-southeast1-a
-
-    level = hostname
-    domain = gke-hpc-gpu-sg-gpu-pool-9ad99345-j95p
-
----
-
-## 2. 為什麼 GPU Scheduling 需要 Topology
-
-Distributed GPU workload 不應只看：
-
-    哪裡還有 GPU
-
-還要考慮：
-
-    GPU / Node 彼此距離
-
-通常：
-
-    same node
-    → communication cost 較低
-
-    same rack / zone
-    → 次之
-
-    cross-zone
-    → latency / network cost 更高
-
-因此 topology-aware scheduling 可以降低：
-
-    MPI / NCCL communication cost
-
----
-
-## 3. 建立 Kueue Topology
-
-建立：
-
-    gke-gpu-topology
-
-內容：
-
-    topology.kubernetes.io/region
-    topology.kubernetes.io/zone
-    kubernetes.io/hostname
-
-代表：
-
-    region
-    ↓
-    zone
-    ↓
-    node
-
----
-
-## 4. ResourceFlavor
-
-ResourceFlavor 可以理解成：
-
-    Kueue 的資源種類描述
-
-原本：
-
-    l4-timesharing
-
-表示：
-
-    NVIDIA L4
-    + GKE Time-Sharing
-
-新增：
-
-    l4-timesharing-tas
-
-除了：
-
-    NVIDIA L4
-    + Time-Sharing
-
-另外加入：
-
-    topologyName: gke-gpu-topology
-
-所以現在：
-
-    ResourceFlavor
-    ↓
-    L4 Time-Sharing GPU
-    ↓
-    Topology-Aware
-
----
-
-## 5. ClusterQueue 改用 TAS Flavor
-
-ClusterQueue：
-
-    gpu-cluster-queue
-
-原本：
-
-    flavor:
-    l4-timesharing
-
-修改成：
-
-    flavor:
-    l4-timesharing-tas
-
-GPU quota 維持：
-
-    nvidia.com/gpu = 4
-
-驗證：
-
-    Active=True
-
----
-
-## 6. TAS Workload
-
-建立：
-
-    gpu-tas-test
-
-設定：
-
-    parallelism: 2
-    completions: 2
-
-每 Pod：
-
-    nvidia.com/gpu: 1
-
-並加入：
-
-    kueue.x-k8s.io/podset-required-topology:
-    kubernetes.io/hostname
-
-意思：
-
-    這個 PodSet 的 2 個 Pods
-    必須被放在同一個 hostname topology domain
-
----
-
-## 7. Kueue Topology Request
-
-Workload 產生：
-
-    topologyRequest:
-      required: kubernetes.io/hostname
-
-證明 annotation 已被 Kueue 轉換成：
-
-    hostname-level topology requirement
-
----
-
-## 8. Topology Assignment
-
-Kueue admission 結果：
-
-    flavor:
-    l4-timesharing-tas
-
-    resourceUsage:
-    nvidia.com/gpu: 2
-
-並產生：
-
-    topologyAssignment
-
-Level：
-
-    kubernetes.io/hostname
-
-Domain：
-
-    gke-hpc-gpu-sg-gpu-pool-9ad99345-j95p
-
-Pod count：
-
-    2
-
-代表：
-
-    Kueue 在 admission 階段
-    已指定兩個 Pods 必須使用同一 hostname domain
-
----
-
-## 9. 實際 Pod Placement
-
-實際結果：
-
-    gpu-tas-test-6rbzc
-    → gke-hpc-gpu-sg-gpu-pool-9ad99345-j95p
-
-    gpu-tas-test-gl29b
-    → gke-hpc-gpu-sg-gpu-pool-9ad99345-j95p
-
-因此：
-
-    topology request
-    ↓
-    Kueue topologyAssignment
-    ↓
-    Kubernetes scheduler placement
-    ↓
-    same hostname domain
-
-整條流程成立。
-
----
-
-## 10. 完整架構
-
-    GPU Workload
-        ↓
-    Kueue Workload
-        ↓
-    ResourceFlavor
-    l4-timesharing-tas
-        ↓
-    Topology
-    region
-      ↓
-    zone
-      ↓
-    hostname
-        ↓
-    required topology:
-    hostname
-        ↓
-    topologyAssignment
-        ↓
-    same-node placement
-
----
-
-## 11. Day5 vs Day6
-
-Day5：
-
-    Gang / All-or-Nothing Admission
-
-回答：
-
-    「整組 workload 能不能一起進場？」
-
-Day6：
-
-    Topology-Aware Scheduling
-
-回答：
-
-    「進場後這組資源應該放在哪個 topology domain？」
-
-兩者解決不同問題。
-
----
-
-## 12. 驗證限制
-
-目前 cluster 只有：
-
-    1 個實體 GPU node
-    1 × NVIDIA L4
-    GKE Time-Sharing
-
-因此本次真實驗證：
-
-    Topology API
-    ✓
-
-    ResourceFlavor topology binding
-    ✓
-
-    hostname topology requirement
-    ✓
-
-    topologyAssignment
-    ✓
-
-    same-hostname Pod placement
-    ✓
-
-尚未真實驗證：
-
-    multi-node topology selection
-    cross-zone placement
-    rack-aware placement
-    multi-node GPU communication performance
-
-另外兩個測試 Pod 最後觀察時仍為：
-
-    ContainerCreating
-
-但 node placement 已完成，因此不影響本次 TAS placement 驗證；container runtime 問題未進一步排查。
-
----
-
-## Interview Review
-
-**Q1：Topology-Aware Scheduling 解決什麼問題？**  
-A：讓 scheduler 不只看資源是否存在，也考慮 node / zone 等位置關係，讓 distributed workload 優先使用彼此接近的資源，降低 MPI/NCCL communication cost。
-
-**Q2：Kueue 的 topologyAssignment 代表什麼？**  
-A：代表 Kueue 在 admission 階段已替 PodSet 選定符合要求的 topology domain，例如指定 2 個 GPU Pods 必須位於同一個 hostname domain。
+[改寫前完整教材快照](<../history/20260922-before-current/week19/day6-topology-aware-gpu-scheduling.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

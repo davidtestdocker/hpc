@@ -1,418 +1,69 @@
-# Week16 Day3 — NCCL Fundamentals
+<!-- current-curriculum: 2026-09-22 -->
+# Week16 Day3 — NCCL collective
 
-## 對應檔案
+[上一課](<day2-pytorch-ddp.md>) · [本週目錄](README.md) · [下一課](<day4-nccl-communication-benchmark.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-下方 NCCL 原始結果為單 GPU／單 rank 紀錄，供對照概念，並非多 GPU 效能證據。
+## 先備知識與本課目標
 
-- [benchmark/results/week16-day4-nccl-single-gpu.txt](../../benchmark/results/week16-day4-nccl-single-gpu.txt)：單 GPU NCCL 原始結果
-- [helm/pytorch-runtime/templates/nccl-benchmark-job.yaml](../../helm/pytorch-runtime/templates/nccl-benchmark-job.yaml)
-- [helm/pytorch-runtime/values.yaml](../../helm/pytorch-runtime/values.yaml)
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「NCCL collective」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
----
+## 概念解說
 
-## 今日重點
+AllReduce 結合各 rank 資料並分發結果，通訊可能走不同 transport。初始化日志能說明 transport 選擇，但一個 rank 沒有真正跨節點交換可量。
 
-NCCL（NVIDIA Collective Communications Library）是 NVIDIA 的 GPU collective communication library。
+## 在現在的專案中
 
-PyTorch DDP 在 GPU 環境中，常透過 NCCL 做多 GPU gradient synchronization。
+現有 CPU／Gloo、單 rank NCCL 與單 GPU 訓練分開保存；未驗證多 GPU scaling。
 
----
+本課對照：[docs/demo/nccl-transport-fallback-demo.md](<../demo/nccl-transport-fallback-demo.md>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
-## 1. 常見 Collective
+````text
+從保存的 NCCL raw log 說明 transport discovery、IB 初始化失敗與 Socket fallback 的判讀。來源為 [原始單 GPU log](../../benchmark/results/week16-day4-nccl-single-gpu.txt) 與 [transport 排障紀錄](../history/20260922-before-current/week18/day5-nccl-transport-debugging.md.txt)；本輪未執行 NCCL test。
 
-### AllReduce
+## NCCL Transport Discovery
 
-每個 Rank 都有資料，做 Reduce 後，每個 Rank 都拿到完整結果。
+歷史環境為 **1 GPU（NVIDIA L4）、1 rank、1 node，沒有 RDMA hardware**。紀錄中的 `NCCL_NET_PLUGIN=spcx` 使 NCCL 嘗試載入 Spectrum-X plugin；plugin library 可載入，但底層沒有可用 IB／RDMA device。
 
-```text
-Rank0: 1
-Rank1: 3
+面試展示時先開 raw log，依序查看 plugin discovery、NET/IB、NET/Socket、communicator initialization，再確認 rank／node 數量。這些輸出描述 backend selection，不能單憑它們判斷跨機傳輸效能。
 
-AllReduce SUM
+## Observed Log
 
-Rank0: 4
-Rank1: 4
-```
-
-DDP 最重要的用途：
+以下逐行摘自 raw log，省略其他中間行，沒有改寫訊息：
 
 ```text
-Gradient Synchronization
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO NET/Plugin: Loaded net plugin SPCX (v12)
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO NET/IB : No device found.
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Failed to initialize NET plugin SPCX
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Failed to initialize NET plugin IB
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO NET/Socket : Using [0]eth0:10.56.0.6<0>
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Initialized NET plugin Socket
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Assigned NET plugin Socket to comm
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO Using network Socket
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO comm 0x59e6b47a3b40 rank 0 nRanks 1 nNodes 1 localRanks 1 localRank 0 MNNVL 0
+nccl-benchmark-csgjr:1:1 [0] NCCL INFO ncclCommInitRankConfig comm 0x59e6b47a3b40 rank 0 nranks 1 cudaDev 0 nvmlDev 0 busId 30 commId 0xa3c39faff10c2201 - Init COMPLETE
 ```
+````
 
-### AllGather
+## 閱讀與練習
 
-每個 Rank 把自己的資料分享給所有 Rank。
-
-```text
-Rank0: A
-Rank1: B
-
-→
-
-Rank0: A,B
-Rank1: A,B
-```
-
-### ReduceScatter
-
-先 Reduce，再把結果切開分給不同 Rank。
-
-### Broadcast
-
-由一個 Rank 把資料傳給所有其他 Rank。
-
----
-
-## 2. nccl-tests
-
-`nccl-tests` 是測試 NCCL correctness 與 communication performance 的常用工具。
-
-最重要：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 讀 NCCL fallback 案例的 IB 不可用與 Socket 選擇，區分錯誤訊息、fallback、Init COMPLETE；不要把 fallback 自動說成整個工作失敗。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-all_reduce_perf
+sed -n '5,28p' 'docs/demo/nccl-transport-fallback-demo.md'
 ```
 
-常見參數：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```text
--b = 起始 message size
--e = 最大 message size
--f = 每次 message size 放大倍率
--g = 每個 process 使用的 GPU 數
-```
+## 怎樣判斷自己讀懂了
 
-範例：
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/README.md>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-```bash
-./build/all_reduce_perf \
-  -b 8K \
-  -e 256M \
-  -f 2 \
-  -g 2
-```
+## 舊版與新版本的關係
 
-代表：
-
-```text
-從 8 KB 開始
-每次放大 2 倍
-測到 256 MB
-使用 2 GPU
-```
-
----
-
-## 3. Small Message / Large Message
-
-Message size 就是這次 collective 要傳輸的資料量。
-
-### Small Message
-
-例如：
-
-```text
-8 KB
-32 KB
-```
-
-固定 communication overhead 佔比較高。
-
-主要觀察：
-
-```text
-Latency
-```
-
-### Large Message
-
-例如：
-
-```text
-64 MB
-256 MB
-```
-
-資料搬運成本佔比較高。
-
-主要觀察：
-
-```text
-Bandwidth
-```
-
-通常：
-
-```text
-Message Size ↑
-→ Bandwidth ↑
-→ 最後進入 Plateau
-```
-
-Plateau 代表 communication bandwidth 已逐漸接近上限。
-
----
-
-## 4. algBw / busBw
-
-### algBw
-
-Algorithm Bandwidth。
-
-代表：
-
-```text
-從 Collective Operation 的角度
-看這次資料處理得有多快
-```
-
-可理解成：
-
-```text
-應用 / Collective 視角
-```
-
-### busBw
-
-Bus Bandwidth。
-
-代表：
-
-```text
-把 Collective 實際 communication pattern 考慮進去後
-換算底層 communication fabric 的 bandwidth
-```
-
-可理解成：
-
-```text
-底層 Interconnect 視角
-```
-
-簡化記法：
-
-```text
-algBw
-→ Collective 有多快
-
-busBw
-→ 底層 Communication Path 跑得多快
-```
-
----
-
-## 5. NCCL Debug
-
-開啟 NCCL INFO log：
-
-```bash
-export NCCL_DEBUG=INFO
-```
-
-主要用來看：
-
-```text
-NCCL 是否初始化成功
-Rank 是否成功連線
-選了哪張 NIC
-使用什麼 Transport
-```
-
-更詳細：
-
-```bash
-export NCCL_DEBUG=TRACE
-```
-
-一般 troubleshooting 先用 `INFO`。
-
----
-
-## 6. NCCL_SOCKET_IFNAME
-
-指定 NCCL 使用哪張 Network Interface：
-
-```bash
-export NCCL_SOCKET_IFNAME=eth0
-```
-
-例如主機可能有：
-
-```text
-eth0
-eth1
-docker0
-cni0
-lo
-```
-
-如果 NCCL 選錯 NIC，可能造成：
-
-```text
-Multi-node communication 失敗
-或
-Bandwidth 很差
-```
-
----
-
-## 7. NCCL Transport
-
-### Intra-node
-
-同一台機器 GPU 之間：
-
-```text
-GPU
-↕
-PCIe / NVLink
-↕
-GPU
-```
-
-### Inter-node
-
-跨不同 Node：
-
-```text
-GPU
-↓
-PCIe
-↓
-NIC
-↓
-Socket / RDMA
-↓
-NIC
-↓
-PCIe
-↓
-GPU
-```
-
-NCCL 是 communication library。
-
-底層真正搬資料的可能是：
-
-```text
-PCIe
-NVLink
-Socket
-RDMA
-```
-
----
-
-## 8. Troubleshooting Flow
-
-遇到：
-
-```text
-DDP 很慢
-Multi-GPU Scaling 很差
-```
-
-先：
-
-```text
-nccl-tests
-↓
-看 time / algBw / busBw
-↓
-比較 Small / Large Message
-↓
-比較 Single-node / Multi-node
-↓
-NCCL_DEBUG=INFO
-↓
-確認 NIC / Transport / Rank
-↓
-必要時調整 NCCL_SOCKET_IFNAME
-↓
-重新 Benchmark
-```
-
-如果：
-
-```text
-Single-node 快
-Multi-node 很慢
-```
-
-優先懷疑：
-
-```text
-NIC
-Network
-Socket / RDMA
-NCCL Interface Selection
-Inter-node Topology
-```
-
----
-
-## 9. 本日環境限制
-
-目前環境確認：
-
-```text
-PyTorch: 2.12.0+cu126
-CUDA Runtime: 12.6
-NCCL: 2.29.3
-NCCL available: True
-```
-
-目前只有 1 張 NVIDIA L4。
-
-因此：
-
-```text
-尚未取得真實 Multi-GPU NCCL Benchmark 數據
-```
-
-模擬數據只能拿來學習判讀，不可當成真實測量結果。
-
----
-
-## Quick Review
-
-```text
-NCCL
-→ GPU Collective Communication
-
-AllReduce
-→ DDP Gradient Synchronization 最重要
-
-Small Message
-→ Latency / Fixed Overhead
-
-Large Message
-→ Bandwidth
-
-algBw
-→ Collective 視角
-
-busBw
-→ Communication Fabric 視角
-
-NCCL_DEBUG=INFO
-→ 查 NCCL 通訊決策
-
-NCCL_SOCKET_IFNAME
-→ 指定 Network Interface
-```
-
----
-
-## Interview Review
-
-### Q1：為什麼 nccl-tests 要測不同 Message Size？
-
-小 Message 主要反映 latency 與固定 communication overhead；大 Message 主要反映 bandwidth 能力。
-
-### Q2：如果 Single-node NCCL 正常，但 Multi-node 很慢，你會先查什麼？
-
-先查 NCCL_DEBUG log、NIC 選擇、Network、Transport 與 Inter-node communication path。
+[改寫前完整教材快照](<../history/20260922-before-current/week16/day3-nccl-fundamentals.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

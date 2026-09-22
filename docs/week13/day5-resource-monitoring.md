@@ -1,374 +1,69 @@
-# Week13 Day5 - Benchmark Resource Monitoring
+<!-- current-curriculum: 2026-09-22 -->
+# Week13 Day5 — 資源監控與量測區段
 
-## 對應檔案
+[上一課](<Day4-PostgreSQL-Concurrency-Benchmark.md>) · [本週目錄](README.md) · [下一課](<day6-benchmark-automation.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [benchmark/k8s/benchmark-runner.yaml](../../benchmark/k8s/benchmark-runner.yaml)
-- [benchmark/postgres/run_pgbench.sh](../../benchmark/postgres/run_pgbench.sh)：PostgreSQL 壓測
-- [k8s/postgres-statefulset.yaml](../../k8s/postgres-statefulset.yaml)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「資源監控與量測區段」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今天平台增加了什麼？
+## 概念解說
 
-今天將 Benchmark 與 Kubernetes Resource Monitoring 整合。
+監控可協助解釋變化，但全程平均可能混入初始化、暖機與 export。9/22 telemetry 包含多階段，不能當成各 batch 的精確 GPU 使用率。
 
-前幾天主要觀察：
+## 在現在的專案中
 
-- TPS
-- Throughput
-- Latency
+Day7 的子章按 7-1 到 7-7 閱讀，最後讀 day7-benchmark-report；不新增負載或覆寫舊結果。
 
-但單純看 Benchmark 數據無法判斷瓶頸來源。
+本課對照：[benchmark/gpu/causal_lm_benchmark.py](<../../benchmark/gpu/causal_lm_benchmark.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
-因此今天加入 Kubernetes Metrics：
+```python
+    """背景約每秒收集一次 nvidia-smi；記錄時間以區分暖機、計時與 profiler 階段。"""
+    while not stop.is_set():
+        try:
+            sample = subprocess.check_output([
+                'nvidia-smi', '--query-gpu=timestamp,uuid,utilization.gpu,memory.used,power.draw,temperature.gpu',
+                '--format=csv,noheader,nounits',
+            ], text=True, timeout=5).strip()
+            rows.append({'unix_time': time.time(), 'sample': sample})
+        except (OSError, subprocess.SubprocessError) as exc:
+            rows.append({'error': str(exc)})
+        stop.wait(1)
 
-- Pod CPU Usage
-- Pod Memory Usage
-- Node CPU Usage
-- Node Memory Usage
 
-建立：
-
-Benchmark → Resource → Bottleneck Analysis
-
-的效能分析流程。
-
----
-
-# 實驗環境
-
-## Kubernetes
-
-Platform:
-
-GKE
-
-Namespace:
-
-```
-hpc-platform-dev
+def main():
+    """完成六次非 profiler 量測、兩組 CUDA trace，最後保存 JSON 與遙測。"""
+    if not torch.cuda.is_available() or not torch.cuda.is_bf16_supported():
+        raise RuntimeError('BF16 CUDA device required')
+    output = Path(os.getenv('OUTPUT_DIR', '/results'))
+    output.mkdir(parents=True, exist_ok=True)
+    source = Path(os.getenv('CORPUS_PATH', '/benchmark/corpus.txt')).read_bytes()
+    if len(source) <= SEQ:
+        raise ValueError('Corpus too short')
+    # 每個 UTF-8 byte 是一個 token；此處 tokens/s 不能與 BPE tokenizer 的數字直接比較。
+    corpus = torch.tensor(list(source), dtype=torch.long)
 ```
 
----
+## 閱讀與練習
 
-## Benchmark Target
-
-PostgreSQL:
-
-```
-postgres-service:5432
-```
-
-Database:
-
-```
-pgbench
-```
-
-User:
-
-```
-hpc
-```
-
----
-
-# Monitoring Tools
-
-使用 Kubernetes Metrics API：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 在訓練程式找 telemetry thread 與 timed steps 的範圍，說明哪些資料支持趨勢、哪些不能直接歸因到某個 batch。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-kubectl top pods -n hpc-platform-dev
-
-kubectl top nodes
+sed -n '90,113p' 'benchmark/gpu/causal_lm_benchmark.py'
 ```
 
-觀察：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-- Container CPU
-- Container Memory
-- Node Resource Usage
+## 怎樣判斷自己讀懂了
 
----
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../../benchmark/results/causal-lm-20260922/evidence.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-# Benchmark Command
+## 舊版與新版本的關係
 
-使用 pgbench 進行 PostgreSQL 壓力測試：
-
-```bash
-pgbench \
--h postgres-service \
--U hpc \
--d pgbench \
--c 100 \
--j 8 \
--t 1000
-```
-
-參數：
-
-| 參數 | 說明 |
-|-|-|
-| -c 100 | 建立 100 個 concurrent clients |
-| -j 8 | 使用 8 個 worker threads |
-| -t 1000 | 每個 client 執行 1000 transactions |
-
-總交易量：
-
-```
-100 clients × 1000 transactions
-
-= 100,000 transactions
-```
-
----
-
-# Benchmark Result
-
-## pgbench Output
-
-```
-number of clients: 100
-
-number of threads: 8
-
-number of transactions actually processed:
-100000/100000
-
-failed transactions:
-0
-
-latency average:
-665.155 ms
-
-tps:
-150.340909
-```
-
----
-
-# Resource Observation
-
-## PostgreSQL Pod
-
-壓測前：
-
-```
-CPU:
-1m
-
-Memory:
-59Mi
-```
-
-壓測期間：
-
-```
-CPU:
-603m
-
-Memory:
-238Mi
-```
-
----
-
-## Node Resource
-
-Primary Node：
-
-壓測前：
-
-```
-CPU:
-12%
-
-Memory:
-43%
-```
-
-壓測期間：
-
-```
-CPU:
-67%
-
-Memory:
-45%
-```
-
----
-
-# Result Analysis
-
-## 1. PostgreSQL CPU 明顯增加
-
-CPU:
-
-```
-1m
-
-↓
-
-603m
-```
-
-代表 PostgreSQL 確實承受 Benchmark workload。
-
-資料庫不是 idle 狀態。
-
----
-
-## 2. Memory 不是主要瓶頸
-
-PostgreSQL:
-
-```
-59Mi
-
-↓
-
-238Mi
-```
-
-雖然增加，但 Node Memory：
-
-```
-43%
-
-↓
-
-45%
-```
-
-沒有明顯上升。
-
-因此目前沒有 Memory Pressure。
-
----
-
-## 3. Node CPU 尚未飽和
-
-Node CPU：
-
-```
-67%
-```
-
-仍未達：
-
-```
-90~100%
-```
-
-因此目前不是 GKE Node CPU 不足。
-
----
-
-# Bottleneck Analysis
-
-根據 Day4 Concurrency Benchmark：
-
-| Client | TPS | Latency |
-|-|-|-|
-|10|204|48ms|
-|20|189|105ms|
-|50|165|303ms|
-|100|150|665ms|
-
-可以看到：
-
-Client 增加後：
-
-- TPS 沒有提升
-- Latency 大幅增加
-
-結合 Resource Metrics：
-
-目前較可能瓶頸：
-
-- PostgreSQL transaction synchronization
-- Lock contention
-- WAL commit latency
-- Database internal contention
-
-而非：
-
-- Kubernetes Node CPU
-- Memory Capacity
-
----
-
-# Performance Engineering Insight
-
-Benchmark 不只是取得 TPS。
-
-完整分析流程：
-
-```
-Generate Load
-
-↓
-
-Measure Performance
-
-↓
-
-Observe Resource Usage
-
-↓
-
-Identify Bottleneck
-
-↓
-
-Optimize
-```
-
-需要同時觀察：
-
-- Application Metrics
-- Database Metrics
-- Kubernetes Resource Metrics
-
-才能判斷真正瓶頸位置。
-
----
-
-# Interview Questions
-
-## Q1
-
-為什麼 Benchmark 時不能只看 TPS？
-
-Answer:
-
-TPS 只代表吞吐量，無法表示系統是否接近飽和。
-需要搭配 Latency、CPU、Memory 等資訊，才能判斷瓶頸來源。
-
----
-
-## Q2
-
-如何判斷 CPU 是不是效能瓶頸？
-
-Answer:
-
-如果壓測期間 CPU 長時間接近 90~100%，且 TPS 不再提升、Latency 增加，通常代表 CPU 可能是瓶頸。
-如果 CPU 未滿載但 TPS 下降，則需要檢查 Lock、IO、Database synchronization 等因素。
-
----
-
-# Conclusion
-
-本日完成 Benchmark 與 Kubernetes Resource Monitoring 整合。
-
-目前平台已具備：
-
-- Benchmark execution
-- Resource observation
-- Performance bottleneck analysis
-
-下一步將進入 Resource Configuration 與 Benchmark Automation。
+[改寫前完整教材快照](<../history/20260922-before-current/week13/day5-resource-monitoring.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

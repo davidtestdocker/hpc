@@ -1,3 +1,5 @@
+# 輸出供後續取得 credentials／bootstrap 使用；有輸出不代表 Pod 或工作已健康。
+# pool 名稱不能當成實際 node 數量或 GPU readiness 證據。
 output "cluster_name" {
   description = "Managed GKE cluster name"
   value       = google_container_cluster.this.name

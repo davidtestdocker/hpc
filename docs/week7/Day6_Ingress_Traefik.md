@@ -1,464 +1,69 @@
-# Week7 Day6 - Ingress and Traefik
+<!-- current-curriculum: 2026-09-22 -->
+# Week7 Day6 — Ingress 與 Controller
 
-## 對應檔案
+[上一課](<Day5_Service_Types_NodePort.md>) · [本週目錄](README.md) · [下一課](<Day7_Horizontal_Pod_Autoscaler.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [k8s/api-ingress.yaml](../../k8s/api-ingress.yaml)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Ingress 與 Controller」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日平台增加什麼
+## 概念解說
 
-今天平台完成 Kubernetes Ingress。
+Ingress 是路由宣告，需要 controller 處理；host rule、TLS、DNS 是不同設定。歷史 Traefik 範例存在，不代表目前 GKE 主平台有可公開存取的同名網域。
 
-使用 K3s 內建 Traefik 作為 Ingress Controller，讓 API 可以透過 HTTP 網址存取，而不是直接使用 NodePort。
+## 在現在的專案中
 
-平台正式建立：
+學習現行 chart；歷史 Traefik／NodePort 位址不當作可用入口。
 
-* Traefik Ingress Controller
-* Ingress Resource
-* Path Routing
-* Host Routing
-
----
-
-# Platform Problem
-
-前一天平台使用：
-
-```text
-NodeIP:30080
-```
-
-例如：
-
-```text
-http://10.140.0.2:30080
-```
-
-雖然可以正常提供服務，但如果平台增加：
-
-* API
-* Grafana
-* Prometheus
-* Argo CD
-
-就會變成：
-
-```text
-30080
-30081
-30082
-30083
-```
-
-需要記住大量 Port。
-
-正式環境通常不會這樣設計。
-
----
-
-# 今日知識鏈
-
-```text
-Client
-    │
-DNS
-    │
-api.hpc.local
-    │
-Traefik
-    │
-Ingress
-    │
-ClusterIP Service
-    │
-API Pod
-```
-
-Ingress 專門負責 HTTP / HTTPS 的流量轉送。
-
----
-
-# Traefik Ingress Controller
-
-K3s 安裝完成後，已自動部署：
-
-```bash
-kubectl get svc -n kube-system
-```
-
-結果：
-
-```text
-traefik
-
-TYPE:
-LoadBalancer
-
-EXTERNAL-IP:
-10.140.0.2
-
-PORTS:
-80
-443
-```
-
-Traefik 負責接收所有 HTTP / HTTPS 流量。
-
----
-
-# Ingress Resource
-
-建立：
-
-```text
-k8s/api-ingress.yaml
-```
-
-內容：
+本課對照：[helm/api/templates/ingress.yaml](<../../helm/api/templates/ingress.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```yaml
+{{- if .Values.ingress.enabled }}
+
+# 資源所屬 API 群組與版本；Helm Chart 中則是 Chart 格式版本。
 apiVersion: networking.k8s.io/v1
+# 資源種類，決定由哪個 Kubernetes 控制器或工具處理。
 kind: Ingress
 
+# 資源識別資訊；name 與 namespace 決定命名空間內的身分。
 metadata:
-  name: api-ingress
-  namespace: hpc-platform
+  name: {{ include "api.fullname" . }}-ingress
+  # 資源所屬命名空間；叢集層級資源不使用此欄位。
+  namespace: {{ .Release.Namespace }}
 
+# 期望狀態；控制器據此建立或調整實際資源。
 spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+
+  # 規則清單；RBAC 中定義 API 存取權限，Ingress 中定義路由。
   rules:
-    - host: api.hpc.local
-
+    - host: {{ .Values.ingress.host | quote }}
       http:
-
         paths:
-
-          - path: /
-
-            pathType: Prefix
-
-            backend:
-
-              service:
-
-                name: api-service
-
-                port:
-
-                  number: 8000
 ```
 
-部署：
+## 閱讀與練習
+
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 讀 Ingress 的 host／backend，再找 values 的 enabled。把「模板存在」「已渲染」「controller 生效」「流量成功」分成四項。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-kubectl apply -f k8s/api-ingress.yaml
+sed -n '4,27p' 'helm/api/templates/ingress.yaml'
 ```
 
----
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-# Path Routing
+## 怎樣判斷自己讀懂了
 
-最初測試：
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/platform-after-training-20260922.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-```text
-/health
+## 舊版與新版本的關係
 
-/benchmark
-```
-
-分別導向：
-
-```text
-api-service
-```
-
-最後修改為：
-
-```text
-path: /
-```
-
-代表：
-
-所有 API：
-
-```text
-/
-
-↓
-
-api-service
-```
-
-因此：
-
-```text
-/health
-
-/health/redis
-
-/jobs
-
-/docs
-
-/openapi.json
-```
-
-全部都交給 FastAPI。
-
-這也是企業最常見的設定。
-
----
-
-# Host Routing
-
-新增：
-
-```yaml
-host:
-api.hpc.local
-```
-
-代表：
-
-只有：
-
-```text
-api.hpc.local
-```
-
-才符合此規則。
-
-本機：
-
-修改：
-
-```text
-/etc/hosts
-```
-
-加入：
-
-```text
-10.140.0.2 api.hpc.local
-```
-
-即可模擬正式 DNS。
-
----
-
-# 驗證
-
-測試：
-
-```bash
-curl http://api.hpc.local/health
-```
-
-結果：
-
-```json
-{
-  "status": "healthy"
-}
-```
-
-另外驗證：
-
-```bash
-curl http://10.140.0.2/health
-curl http://10.140.0.2/health/redis
-curl http://10.140.0.2/jobs
-curl http://10.140.0.2/docs
-```
-
-全部成功。
-
-代表：
-
-Traefik
-
-↓
-
-Ingress
-
-↓
-
-Service
-
-↓
-
-Pod
-
-完整打通。
-
----
-
-# Ingress 與 NodePort 差異
-
-## NodePort
-
-```text
-Client
-    │
-NodeIP:30080
-    │
-Service
-    │
-Pod
-```
-
-需要知道：
-
-* Node IP
-* Port
-
----
-
-## Ingress
-
-```text
-Client
-    │
-api.hpc.local
-    │
-Traefik
-    │
-Ingress
-    │
-Service
-    │
-Pod
-```
-
-使用 Domain Name，而不是記住 Port。
-
----
-
-# 為什麼企業偏好 Ingress？
-
-正式環境通常包含多個服務：
-
-```text
-api.company.com
-grafana.company.com
-argocd.company.com
-prometheus.company.com
-```
-
-全部共用：
-
-```text
-80
-443
-```
-
-Ingress 根據：
-
-* Host
-* Path
-
-將流量導向不同 Service。
-
----
-
-# 平台架構
-
-```text
-Client
-    │
-api.hpc.local
-    │
-Traefik (Ingress Controller)
-    │
-Ingress
-    │
-api-service
-    │
-API Pod
-    │
-Redis
-    │
-PostgreSQL
-```
-
----
-
-# 今日重點
-
-* Ingress 建立於 Service 之上。
-* Traefik 是 Ingress Controller。
-* Path Routing 可依 URL 路徑轉送流量。
-* Host Routing 可依 Domain Name 轉送流量。
-* 正式環境通常使用 Ingress，而不是大量 NodePort。
-
----
-
-# Interview Q&A
-
-## Q1：Ingress 可以直接連 Pod 嗎？
-
-不能。
-
-Ingress 一律導向 Service，再由 Service 導向 Pod。
-
----
-
-## Q2：Traefik 和 Ingress 是同一個東西嗎？
-
-不是。
-
-Traefik 是 Ingress Controller。
-
-Ingress 是 Kubernetes Resource，描述流量規則。
-
-Traefik 會讀取 Ingress 規則並實際轉送流量。
-
----
-
-## Q3：為什麼企業偏好 Host Routing？
-
-因為不同服務可共用 80 / 443 Port。
-
-例如：
-
-* api.company.com
-* grafana.company.com
-* argocd.company.com
-
-不需要記住不同的 NodePort。
-
----
-
-# 今日成果
-
-平台正式完成 HTTP 流量入口：
-
-```text
-Client
-    │
-DNS
-    │
-Traefik
-    │
-Ingress
-    │
-ClusterIP Service
-    │
-API Pod
-```
-
-這是 Kubernetes 生產環境最典型的 HTTP 流量架構。
-
----
-
-# 下一步
-
-Week7 Day7：
-
-Horizontal Pod Autoscaler（HPA）
-
-使用 metrics-server 與 k6 壓力測試，讓 API Pod 根據 CPU 使用率自動擴容。
-
+[改寫前完整教材快照](<../history/20260922-before-current/week7/Day6_Ingress_Traefik.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

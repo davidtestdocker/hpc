@@ -1,325 +1,69 @@
-# Week6 Day5 - K3s Foundation
+<!-- current-curriculum: 2026-09-22 -->
+# Week6 Day5 — K3s 與 GKE 邊界
 
-## 對應檔案
+[上一課](<Day4_Service_Foundation.md>) · [本週目錄](README.md) · [下一課](<Day6_Deploy_API_and_Redis.md>) · [全程導讀](../learning-guide.md)
 
-本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-延伸對照文件：[Day6_Deploy_API_and_Redis](Day6_Deploy_API_and_Redis.md)。
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「K3s 與 GKE 邊界」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日平台增加什麼
+## 概念解說
 
-今天平台正式新增：
+K3s 可用於學習 Kubernetes 基本物件，但 GKE 的 node labels、GPU 整合、儲存類別與雲端認證不可原樣搬過去。把主 overlay 套進不同叢集前需重新確認依賴。
 
-```text
-Kubernetes Runtime
+## 在現在的專案中
+
+K3s 是獨立基礎練習選項，不是本次主環境；雲端修改只依 runbook。
+
+本課對照：[scripts/platform.py](<../../scripts/platform.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
+
+```python
+CONTEXT = "gke_project-4b82f780-0a12-4087-b94_asia-southeast1-a_hpc-gpu-sg"
+
+
+def command(args):
+    # 統一由 repo 根目錄執行外部工具，並以 timeout 避免認證或 API server 卡住。
+    try:
+        result = subprocess.run(
+            args, cwd=ROOT, capture_output=True, text=True, timeout=60, check=False
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise RuntimeError(f"{args[0]} unavailable or timed out") from exc
+    if result.returncode:
+        # Avoid putting credential-plugin stderr into saved evidence.
+        raise RuntimeError(f"command failed (exit {result.returncode}): {' '.join(args)}")
+    return result.stdout
+
+
+def render():
+    # 只渲染 Kustomize／Helm，不會套用任何資源到叢集。
+    return command([
+        "kubectl", "kustomize", "kustomize/overlays/gpu-sg-platform",
+        "--enable-helm", "--load-restrictor", "LoadRestrictionsNone",
+    ])
+
 ```
 
-也就是：
+## 閱讀與練習
 
-```text
-K3s Cluster
-```
-
-平台從：
-
-```text
-Docker Compose
-```
-
-開始演進到：
-
-```text
-Kubernetes Cluster
-```
-
----
-
-# Platform Problem
-
-目前平台使用 Docker Compose 管理：
-
-```text
-api
-redis
-postgres
-```
-
-Docker Compose 適合單機開發，但缺少：
-
-* Desired State
-* Self Healing
-* Pod Scheduling
-* Service Discovery
-* Kubernetes Resource Model
-
-因此需要建立 Kubernetes 環境，讓後續可以使用：
-
-* Pod
-* Deployment
-* Service
-* ConfigMap
-* Secret
-* Volume
-* PVC
-
----
-
-# 今日知識鏈
-
-```text
-Linux VM
-    ↓
-K3s
-    ↓
-Kubernetes Control Plane
-    ↓
-Node
-    ↓
-kubectl
-```
-
----
-
-# Hands-on
-
-## 1. 確認環境乾淨
-
-確認尚未安裝 K3s：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 閱讀 platform.py 的 context 與 prerequisite checks，列出本機 K3s 通常不會自帶的兩項；本課不提供取代主叢集的安裝流程。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-which k3s
-which kubectl
+sed -n '12,35p' 'scripts/platform.py'
 ```
 
-如果沒有輸出，代表環境尚未安裝 K3s。
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
----
+## 怎樣判斷自己讀懂了
 
-## 2. 安裝 K3s
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/cpu-bootstrap-acceptance-20260921.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-執行：
+## 舊版與新版本的關係
 
-```bash
-curl -sfL https://get.k3s.io | sh -
-```
-
-這個安裝流程會：
-
-* 下載 K3s binary
-* 建立 systemd service
-* 啟動 K3s server
-* 建立 kubeconfig
-* 提供 kubectl 操作能力
-
----
-
-## 3. 驗證 K3s Service
-
-檢查：
-
-```bash
-systemctl status k3s
-```
-
-確認：
-
-```text
-active (running)
-```
-
----
-
-## 4. 驗證 Kubernetes Node
-
-執行：
-
-```bash
-kubectl get nodes
-```
-
-結果：
-
-```text
-NAME       STATUS   ROLES           VERSION
-hpc-demo   Ready    control-plane   v1.36.2+k3s1
-```
-
-代表：
-
-* K3s 安裝成功
-* Kubernetes Control Plane 正常
-* kubeconfig 正常
-* kubectl 可以連線
-* Node 已 Ready
-
----
-
-## 5. 檢查 kube-system 元件
-
-執行：
-
-```bash
-kubectl get pods -A
-```
-
-確認以下元件正常：
-
-```text
-coredns                  Running
-local-path-provisioner   Running
-metrics-server           Running
-traefik                  Running
-svclb-traefik            Running
-```
-
----
-
-# K3s 內建元件
-
-## CoreDNS
-
-負責 Kubernetes 內部 DNS。
-
-例如未來 Pod 可以透過：
-
-```text
-redis-service
-postgres-service
-api-service
-```
-
-互相存取。
-
----
-
-## local-path-provisioner
-
-負責提供本機磁碟型 StorageClass。
-
-之後 Redis / PostgreSQL 的 PVC 會用到。
-
----
-
-## metrics-server
-
-提供 Kubernetes Metrics API。
-
-未來 HPA、資源監控會用到。
-
----
-
-## Traefik
-
-K3s 預設內建 Ingress Controller。
-
-後面學 Ingress 時會用到。
-
----
-
-## svclb-traefik
-
-K3s 內建 Service LoadBalancer 機制。
-
-讓 Traefik 能提供外部入口。
-
----
-
-# 平台架構
-
-```text
-Ubuntu VM
-    ↓
-K3s Server
-    ↓
-Kubernetes Control Plane
-    ↓
-Node: hpc-demo
-    ↓
-kube-system
-    ├── CoreDNS
-    ├── local-path-provisioner
-    ├── metrics-server
-    ├── Traefik
-    └── svclb-traefik
-```
-
----
-
-# 今日重點
-
-* K3s 是輕量 Kubernetes Distribution。
-* K3s 適合單機學習、Lab、Edge 與小型平台。
-* `kubectl get nodes` 是確認 Cluster 是否可用的第一步。
-* `kubectl get pods -A` 可以查看整個 Cluster 內所有 Namespace 的 Pod。
-* `kube-system` 是 Kubernetes 系統元件所在的 Namespace。
-* Node `Ready` 代表 Kubernetes 可以開始排程 Pod。
-
----
-
-# Interview Q&A
-
-## Q1：K3s 和 Kubernetes 是什麼關係？
-
-K3s 是一個輕量化的 Kubernetes Distribution。
-
-它保留 Kubernetes API 與核心功能，但將安裝與運維簡化，適合 Lab、Edge、單機環境與輕量平台。
-
----
-
-## Q2：為什麼要先確認 `kubectl get nodes`？
-
-因為 Node Ready 代表：
-
-* Kubernetes API Server 可用
-* kubeconfig 正確
-* kubectl 能連線
-* Control Plane 正常
-* Node 可接受 Pod Scheduling
-
-如果 Node 不是 Ready，後續 Deployment、Service、PVC 都可能無法正常運作。
-
----
-
-# 今日成果
-
-成功建立第一個 Kubernetes Cluster：
-
-```text
-hpc-demo
-    ↓
-K3s
-    ↓
-Ready Node
-```
-
-平台正式從：
-
-```text
-Docker Compose Platform
-```
-
-進入：
-
-```text
-Kubernetes Platform
-```
-
----
-
-# 下一步
-
-Week6 Day6：
-
-開始把目前的 HPC AI Benchmark Platform 從 Docker Compose 遷移到 Kubernetes。
-
-內容包括：
-
-* 建立 Namespace
-* 建立 API Deployment
-* 建立 API Service
-* 建立 Redis Deployment / Service
-* 建立 PostgreSQL Deployment / Service
-* 驗證 FastAPI 在 Kubernetes 中正常啟動
-
+[改寫前完整教材快照](<../history/20260922-before-current/week6/Day5_K3s_Foundation.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

@@ -1,590 +1,69 @@
-# Week11 Day1 - 建立 Prometheus 監控平台與 Observability Node Pool
+<!-- current-curriculum: 2026-09-22 -->
+# Week11 Day1 — Prometheus 與資源分工
 
-## 對應檔案
+[本週基礎](README.md) · [本週目錄](README.md) · [下一課](<Day2-Prometheus-ScrapeJob-Target與PullModel.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [helm/prometheus/Chart.yaml](../../helm/prometheus/Chart.yaml)
-- [helm/prometheus/templates/_helpers.tpl](../../helm/prometheus/templates/_helpers.tpl)
-- [helm/prometheus/templates/clusterrole.yaml](../../helm/prometheus/templates/clusterrole.yaml)
-- [helm/prometheus/templates/clusterrolebinding.yaml](../../helm/prometheus/templates/clusterrolebinding.yaml)
-- [helm/prometheus/templates/configmap.yaml](../../helm/prometheus/templates/configmap.yaml)
-- [helm/prometheus/templates/deployment.yaml](../../helm/prometheus/templates/deployment.yaml)
-- [helm/prometheus/templates/pvc.yaml](../../helm/prometheus/templates/pvc.yaml)
-- [helm/prometheus/templates/service.yaml](../../helm/prometheus/templates/service.yaml)
-- [helm/prometheus/templates/serviceaccount.yaml](../../helm/prometheus/templates/serviceaccount.yaml)
-- [helm/prometheus/values.yaml](../../helm/prometheus/values.yaml)
-- [kustomize/overlays/dev/deployment-patch.yaml](../../kustomize/overlays/dev/deployment-patch.yaml)
-- [kustomize/overlays/dev/kustomization.yaml](../../kustomize/overlays/dev/kustomization.yaml)
-- [terraform/modules/gke/main.tf](../../terraform/modules/gke/main.tf)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Prometheus 與資源分工」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
----
+## 概念解說
 
-# 今日目標
+監控本身消耗 CPU、RAM、儲存，與被測工作共用節點時可能互相影響。舊 observability-pool 屬不同環境設計；現行 system-pool 的存在不能證明舊監控都已搬過來。
 
-今天完成以下內容：
+## 在現在的專案中
 
-- 建立 Observability Node Pool
-- 理解 Node Pool、Node、Label、nodeSelector
-- 建立 Prometheus Helm Chart
-- 使用 Helm + Kustomize + ArgoCD 部署 Prometheus
-- 理解 ConfigMap、PVC、Volume Mount
-- 排除 Prometheus CrashLoopBackOff
-- 完成 GitOps 自動部署流程
+監控 manifests 和歷史 dashboard 保留為獨立路徑；不宣稱即時 target 健康。
 
----
-
-# 今日架構
-
-```text
-Terraform
-    │
-    ▼
-建立 Observability Node Pool
-    │
-    ▼
-Node Label
-workload=observability
-    │
-    ▼
-Helm Chart
-    │
-    ▼
-Kustomize
-    │
-    ▼
-ArgoCD
-    │
-    ▼
-Deployment
-    │
-    ▼
-Kubernetes Scheduler
-    │
-    ▼
-Observability Node
-    │
-    ▼
-Prometheus Pod
-```
-
----
-
-# 一、建立 Observability Node Pool
-
-## Terraform
-
-```hcl
-resource "google_container_node_pool" "observability" {
-
-  name     = "observability-pool"
-
-  cluster  = google_container_cluster.this.name
-
-  location = var.zone
-
-  node_count = 1
-
-  node_config {
-
-    machine_type = "e2-standard-2"
-
-    oauth_scopes = [
-      "https://www.googleapis.com/auth/cloud-platform"
-    ]
-
-    labels = {
-      workload = "observability"
-    }
-  }
-}
-```
-
----
-
-## 驗證
-
-```bash
-terraform validate
-terraform plan
-terraform apply
-```
-
-查看 Node
-
-```bash
-kubectl get nodes -L workload
-```
-
-結果
-
-```text
-NAME                                           WORKLOAD
-
-gke-hpc-dev-primary-pool-xxxx
-
-gke-hpc-dev-observability-pool-xxxx            observability
-```
-
-代表 Terraform 已建立新的 Node Pool，並替所有 Node 加上：
-
-```text
-workload=observability
-```
-
----
-
-# 二、Node Pool、Node 關係
-
-```text
-GKE Cluster
-
-├── Primary Node Pool
-│      └── Node (VM)
-│
-└── Observability Node Pool
-       └── Node (VM)
-```
-
-Node Pool：
-
-- 管理 Node
-- 決定 VM 規格
-- Auto Scaling
-- Labels
-- Upgrade Policy
-
-Node：
-
-- 真正執行 Pod 的 VM
-
----
-
-# 三、nodeSelector
-
-values.yaml
-
-```yaml
-nodeSelector:
-  workload: observability
-```
-
-deployment.yaml
-
-```yaml
-nodeSelector:
-  {{- toYaml .Values.nodeSelector | nindent 8 }}
-```
-
-Helm Render
-
-```yaml
-nodeSelector:
-  workload: observability
-```
-
-Scheduler 流程
-
-```text
-Deployment
-
-↓
-
-nodeSelector
-
-↓
-
-workload=observability
-
-↓
-
-Scheduler 尋找符合 Label 的 Node
-
-↓
-
-Prometheus Pod
-
-↓
-
-Observability Node
-```
-
----
-
-# 四、建立 Prometheus Helm Chart
-
-建立
-
-```text
-helm/prometheus
-```
-
-目錄
-
-```text
-prometheus
-
-├── Chart.yaml
-
-├── values.yaml
-
-└── templates
-
-    ├── configmap.yaml
-
-    ├── pvc.yaml
-
-    ├── deployment.yaml
-
-    └── service.yaml
-```
-
----
-
-# 五、ConfigMap
-
-Prometheus 設定檔
-
-```text
-prometheus.yml
-```
-
-建立 ConfigMap
-
-```yaml
-volumes:
-  - name: prometheus-config
-    configMap:
-      name: prometheus
-```
-
-掛載
-
-```yaml
-volumeMounts:
-  - name: prometheus-config
-    mountPath: /etc/prometheus
-```
-
-Prometheus 啟動
-
-```yaml
-args:
-  - --config.file=/etc/prometheus/prometheus.yml
-```
-
-流程
-
-```text
-ConfigMap
-
-↓
-
-prometheus.yml
-
-↓
-
-Volume
-
-↓
-
-/etc/prometheus
-
-↓
-
-Prometheus 程式讀取
-```
-
----
-
-# 六、PersistentVolumeClaim (PVC)
-
-建立 PVC
-
-```yaml
-persistentVolumeClaim:
-  claimName: prometheus
-```
-
-掛載
-
-```yaml
-volumeMounts:
-  - name: prometheus-data
-    mountPath: /prometheus
-```
-
-Prometheus
-
-```yaml
-args:
-  - --storage.tsdb.path=/prometheus
-```
-
-流程
-
-```text
-Prometheus
-
-↓
-
-寫入
-
-↓
-
-/prometheus
-
-↓
-
-PVC
-
-↓
-
-Google Persistent Disk
-```
-
-因此：
-
-Pod 被刪除
-
-↓
-
-資料仍存在
-
----
-
-# 七、Helm + Kustomize
-
-加入
-
-```yaml
-helmCharts:
-
-  - name: prometheus
-    releaseName: prometheus
-    namespace: hpc-platform-dev
-```
-
-Render
-
-```bash
-kubectl kustomize kustomize/overlays/dev \
-  --enable-helm \
-  --load-restrictor LoadRestrictionsNone
-```
-
-流程
-
-```text
-Helm
-
-↓
-
-Render YAML
-
-↓
-
-Kustomize
-
-↓
-
-ArgoCD
-```
-
----
-
-# 八、GitOps 流程
-
-```text
-git push
-
-↓
-
-GitHub
-
-↓
-
-GitHub Actions
-
-↓
-
-更新 Image Tag
-
-↓
-
-Push Repository
-
-↓
-
-ArgoCD 偵測新 Commit
-
-↓
-
-Kustomize + Helm
-
-↓
-
-Deployment 更新
-
-↓
-
-建立新 Pod
-```
-
----
-
-# 九、CrashLoopBackOff 排除
-
-錯誤
-
-```text
-permission denied
-
-open /prometheus/queries.active
-```
-
-原因
-
-PVC 已成功掛載
-
-但是
-
-Prometheus 沒有寫入權限
-
-解法
+本課對照：[helm/prometheus/templates/deployment.yaml](<../../helm/prometheus/templates/deployment.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```yaml
 spec:
-  securityContext:
-    fsGroup: 65534
+  # 期望副本數；設定為 0 表示不維持執行中的副本。
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  # 選取要關聯的物件；不同資源種類支援的 selector 格式不同。
+  selector:
+    # 以完全相等的標籤鍵值選取物件。
+    matchLabels:
+      {{- include "prometheus.selectorLabels" . | nindent 6 }}
+  # 子物件模板；控制器以此內容建立 Pod 或相關工作資源。
+  template:
+    metadata:
+      #只要configmap.yaml內容有變 sha256sum就會變，所以就會偵測到prometheus的deployment有變，就會建新的prometheus pod
+      # 附加設定或提示，由對應控制器解讀，不等同 selector 標籤。
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      labels:
+        {{- include "prometheus.selectorLabels" . | nindent 8 }}
+    spec:
+      # Pod 使用的 ServiceAccount；RBAC 依此身分授予 API 權限。
+      serviceAccountName: prometheus
+      #這個 Pod 掛載的 Volume（PVC）都套用這個權限設定
+      # 程序身分、權限與作業系統安全設定。
 ```
 
-流程
+## 閱讀與練習
 
-```text
-Prometheus
-
-↓
-
-寫入 /prometheus
-
-↓
-
-Permission Denied
-
-↓
-
-設定 fsGroup
-
-↓
-
-Kubernetes 修改 Volume 群組權限
-
-↓
-
-Prometheus 正常啟動
-```
-
----
-
-# 十、驗證
-
-Helm
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 從 Prometheus Deployment 找 storage、resources、nodeSelector，逐项核對實際宣告；不要把舊 node pool 名稱帶成當前部署結論。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-helm lint helm/prometheus
-
-helm template prometheus helm/prometheus
+sed -n '15,38p' 'helm/prometheus/templates/deployment.yaml'
 ```
 
-Kustomize
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```bash
-kubectl kustomize kustomize/overlays/dev \
-  --enable-helm \
-  --load-restrictor LoadRestrictionsNone
-```
+## 怎樣判斷自己讀懂了
 
-GitOps
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/README.md>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-```bash
-git add .
+## 舊版與新版本的關係
 
-git commit -m "feat: add prometheus"
-
-git pull --rebase origin master
-
-git push origin master
-```
-
-確認 Pod
-
-```bash
-kubectl get pods -o wide -n hpc-platform-dev
-```
-
-確認 PVC
-
-```bash
-kubectl get pvc -n hpc-platform-dev
-```
-
-確認 Node
-
-```bash
-kubectl get nodes -L workload
-```
-
-預期結果
-
-```text
-Prometheus
-
-Running
-
-Node
-
-gke-hpc-dev-observability-pool-xxxxx
-```
-
----
-
-# 今日重點整理
-
-- Node Pool 是一群 Node 的管理單位
-- Node 才是真正執行 Pod 的 VM
-- Scheduler 依 nodeSelector 找符合 Label 的 Node
-- ConfigMap 提供 prometheus.yml
-- Prometheus 啟動時讀取 /etc/prometheus/prometheus.yml
-- PVC 提供永久磁碟
-- Metrics 存放於 PVC，不會因 Pod 重建而消失
-- Helm Render 後交由 Kustomize
-- ArgoCD 偵測 Git Commit 後自動部署
-- fsGroup 可解決 PVC 權限問題
-
----
-
-# Interview QA
-
-## Q1：Node Pool 與 Node 有什麼差別？
-
-### Answer
-
-Node Pool 是一組具有相同設定的 Node，例如 VM 規格、Label、Auto Scaling 與升級策略；Node 則是真正執行 Pod 的虛擬機器（VM）。Scheduler 最終是將 Pod 排程到某一台 Node，而不是排到 Node Pool。
-
----
-
-## Q2：為什麼 Prometheus 已經成功掛載 PVC，仍然出現 permission denied？
-
-### Answer
-
-PVC 只代表永久磁碟已成功掛載，但不代表容器擁有寫入權限。Prometheus 以非 root 身分執行，因此需要設定：
-
-```yaml
-securityContext:
-  fsGroup: 65534
-```
-
-Kubernetes 會自動修改掛載 Volume 的群組權限，讓 Prometheus 能正常寫入 TSDB 資料。
+[改寫前完整教材快照](<../history/20260922-before-current/week11/Day1-建立Prometheus監控平台與Observability-Node-Pool.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

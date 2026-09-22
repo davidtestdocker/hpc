@@ -1,281 +1,50 @@
-# Week7 Day4 - Liveness Probe and Readiness Probe
+<!-- current-curriculum: 2026-09-22 -->
+# Week7 Day4 — Liveness 與 readiness
 
-## 對應檔案
+[上一課](<Day3_Resource_Requests_Limits_QoS.md>) · [本週目錄](README.md) · [下一課](<Day5_Service_Types_NodePort.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [api/main.py](../../api/main.py)：API、工作狀態與佇列處理
-- [k8s/api-deployment.yaml](../../k8s/api-deployment.yaml)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Liveness 與 readiness」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日平台增加什麼
+## 概念解說
 
-今天平台新增 Kubernetes Health Check。
+readiness 失敗會影響 Service 流量，liveness 失敗可能重啟容器；主 API /health 只回程序訊號，不能稱為完整相依檢查。外部 DB 慢不一定適合用重啟 API 解決。
 
-API Pod 開始具備：
+## 在現在的專案中
 
-* Readiness Probe
-* Liveness Probe
-* Self-healing
+學習現行 chart；歷史 Traefik／NodePort 位址不當作可用入口。
 
-平台開始具備自動健康檢查與自我修復能力。
-
----
-
-# Platform Problem
-
-Pod 處於 Running 並不代表應用程式已經可以提供服務。
-
-例如：
-
-```text
-FastAPI 啟動
-        │
-        ▼
-Redis 尚未連線
-        │
-        ▼
-Database 尚未初始化
-```
-
-若此時 Service 已開始轉送流量，就可能產生大量 500 Error。
-
-此外，如果應用程式發生 Deadlock、Infinite Loop 或其他無法正常工作的情況，Container 可能仍維持 Running 狀態，但已無法提供服務。
-
-因此 Kubernetes 提供兩種 Probe。
-
----
-
-# 今日知識鏈
-
-```text
-Container
-      │
-      ├── Readiness Probe
-      │         │
-      │         ▼
-      │    Service 是否送流量
-      │
-      └── Liveness Probe
-                │
-                ▼
-        Kubernetes 是否重新啟動 Container
-```
-
----
-
-# Readiness Probe
-
-用途：
-
-判斷 Pod 是否已準備好接收流量。
-
-本課程設定：
+本課對照：[helm/api/templates/deployment.yaml](<../../helm/api/templates/deployment.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```yaml
-readinessProbe:
-  httpGet:
-    path: /health/redis
-    port: 8000
-
-  initialDelaySeconds: 5
-  periodSeconds: 10
+        readinessProbe:
+{{- toYaml .Values.readinessProbe | nindent 10 }}
+        # 存活探針失敗達門檻時，kubelet 會重啟容器。
+        livenessProbe:
+{{- toYaml .Values.livenessProbe | nindent 10 }}
 ```
 
-說明：
+## 閱讀與練習
 
-* 啟動後等待 5 秒開始檢查
-* 每 10 秒檢查一次
-* 若檢查失敗，Pod 會被標記為 NotReady
-* Service 不再將流量導向此 Pod
-
-Readiness **不會重新啟動 Container**。
-
----
-
-# Liveness Probe
-
-用途：
-
-判斷 Container 是否仍正常運作。
-
-本課程設定：
-
-```yaml
-livenessProbe:
-  httpGet:
-    path: /health
-    port: 8000
-
-  initialDelaySeconds: 10
-  periodSeconds: 10
-```
-
-若 Liveness 檢查失敗：
-
-* Kubelet 終止 Container
-* Deployment 自動重新建立 Container
-
-這就是 Kubernetes Self-healing。
-
----
-
-# Hands-on
-
-## 新增 Readiness Probe
-
-API Deployment：
-
-```yaml
-readinessProbe:
-  httpGet:
-    path: /health/redis
-    port: 8000
-```
-
-驗證：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 找 API chart 的 probes 與 /health 程式，逐項指出實際檢查範圍。若 chart 未設某種 probe，就不要從課程概念推定已配置。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-kubectl describe pod -n hpc-platform -l app=api
+sed -n '65,69p' 'helm/api/templates/deployment.yaml'
 ```
 
-確認：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```text
-Readiness:
-http-get http://:8000/health/redis
-```
+## 怎樣判斷自己讀懂了
 
----
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/platform-after-training-20260922.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-## 新增 Liveness Probe
+## 舊版與新版本的關係
 
-API Deployment：
-
-```yaml
-livenessProbe:
-  httpGet:
-    path: /health
-    port: 8000
-```
-
-驗證：
-
-```bash
-kubectl describe pod -n hpc-platform -l app=api
-```
-
-確認：
-
-```text
-Liveness:
-http-get http://:8000/health
-```
-
----
-
-## Self-healing 實驗
-
-故意修改：
-
-```yaml
-path: /health-xxxx
-```
-
-重新部署後觀察：
-
-```bash
-kubectl get pods -n hpc-platform -w
-```
-
-結果：
-
-* Pod Restart
-* RESTARTS 增加
-* Events 顯示 Liveness probe failed
-
-恢復正確 Path 後：
-
-Pod 恢復正常。
-
----
-
-# Readiness 與 Liveness 差異
-
-| 項目               | Readiness       | Liveness          |
-| ---------------- | --------------- | ----------------- |
-| 目的               | 是否可以接流量         | 是否需要重啟            |
-| 檢查失敗             | Pod 標記 NotReady | Container Restart |
-| Service 是否送流量    | 否               | 否（Container 重啟期間） |
-| 是否重新啟動 Container | 否               | 是                 |
-
----
-
-# 今日重點
-
-* Running 不代表 Ready。
-* Readiness 控制流量。
-* Liveness 控制自我修復。
-* Kubernetes 可透過 Probe 自動維持服務健康。
-
----
-
-# Interview Q&A
-
-## Q1：Running 和 Ready 一樣嗎？
-
-不一樣。
-
-Running 表示 Container 已啟動。
-
-Ready 表示 Pod 已通過 Readiness Probe，可以接收流量。
-
----
-
-## Q2：Readiness 失敗會重啟 Pod 嗎？
-
-不會。
-
-Pod 只會退出 Service 的 Endpoints，不再接收流量。
-
----
-
-## Q3：Liveness 失敗會發生什麼？
-
-Kubelet 會終止 Container，Deployment 會重新建立並啟動新的 Container。
-
----
-
-# 今日成果
-
-API Pod 已具備：
-
-```text
-Deployment
-      │
-      ▼
-Pod
-      │
-      ├── ConfigMap
-      ├── Secret
-      ├── Requests
-      ├── Limits
-      ├── Readiness Probe
-      └── Liveness Probe
-```
-
-平台開始具備 Kubernetes 生產環境常見的 Health Check 與 Self-healing 能力。
-
----
-
-# 下一步
-
-Week7 Day5：
-
-* Service Types
-* ClusterIP
-* NodePort
-* LoadBalancer
-* 為什麼 Ingress 一定建立在 Service 之上
-
+[改寫前完整教材快照](<../history/20260922-before-current/week7/Day4_Liveness_and_Readiness_Probe.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

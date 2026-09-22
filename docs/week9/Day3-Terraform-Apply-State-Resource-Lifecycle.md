@@ -1,366 +1,69 @@
-# Week9 Day3 - Terraform Apply & State
+<!-- current-curriculum: 2026-09-22 -->
+# Week9 Day3 — State、import 與 lifecycle
 
-## 對應檔案
+[上一課](<Day2-Terraform-Language-Foundation.md>) · [本週目錄](README.md) · [下一課](<Day4-Terraform-Output-Resource-Reference.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [terraform/environments/dev/main.tf](../../terraform/environments/dev/main.tf)
-- [terraform/modules/compute/main.tf](../../terraform/modules/compute/main.tf)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「State、import 與 lifecycle」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日目標
+## 概念解說
 
-今天正式使用 Terraform 建立第一個 Google Cloud Infrastructure，理解 Terraform 如何透過 `plan`、`apply`、`state` 與 `destroy` 管理整個 Infrastructure Lifecycle，而不是只會撰寫 Terraform HCL。
+import 是納入既有資源身分，不是複製一份 cluster。ForceNew 欄位差異可能引發重建，ignore_changes 是有意忽略部分漂移，不能當全面安全保證。
 
----
+## 在現在的專案中
 
-# 今日成果
+本週只讀設定與既有證據；雲端 apply／destroy 須依 runbook 明確確認目標，GPU quota 固定一張。
 
-- 完成第一台由 Terraform 管理的 GCP VM
-- 理解 Terraform Resource Address
-- 理解 Terraform State 的用途
-- 理解 OAuth Scope 與 IAM Role 的差異
-- 修正 GCP Service Account 權限問題
-- 成功完成第一次 `terraform apply`
-- 理解 `terraform destroy` 的工作流程
-
----
-
-# Terraform Apply
-
-今天第一次成功執行：
-
-```bash
-terraform apply
-```
-
-Terraform 會依照下列流程建立 Infrastructure：
-
-```
-Terraform Code
-
-↓
-
-Terraform Plan
-
-↓
-
-Google Provider
-
-↓
-
-Google Cloud API
-
-↓
-
-Create Infrastructure
-
-↓
-
-Update terraform.tfstate
-```
-
-建立完成後：
-
-```
-Apply complete!
-
-Resources: 1 added
-0 changed
-0 destroyed
-```
-
-代表 Terraform 已成功管理第一個 Cloud Resource。
-
----
-
-# Terraform Resource Address
-
-建立 VM：
+本課對照：[terraform/environments/gpu-sg/main.tf](<../../terraform/environments/gpu-sg/main.tf>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```hcl
-resource "google_compute_instance" "api" {
-
+  lifecycle {
+    # 匯入時 API 會回報 initial_node_count=0；它只用於建立暫時的 default pool。
+    # 忽略這個 ForceNew 欄位可避免 Terraform 誤判整個現有叢集需要重建。
+    ignore_changes = [initial_node_count, min_master_version, remove_default_node_pool]
+  }
 }
+
+locals {
+  # 與現有 GKE Standard node pools 相同的最小 OAuth scopes。
+  node_oauth_scopes = [
+    "https://www.googleapis.com/auth/devstorage.read_only",
+    "https://www.googleapis.com/auth/logging.write",
+    "https://www.googleapis.com/auth/monitoring",
+    "https://www.googleapis.com/auth/service.management.readonly",
+    "https://www.googleapis.com/auth/servicecontrol",
+    "https://www.googleapis.com/auth/trace.append",
+  ]
+}
+
+resource "google_container_node_pool" "system" {
+  name     = "system-pool"
+  project  = var.project_id
+  location = var.zone
+  cluster  = google_container_cluster.this.name
 ```
 
-其中：
+## 閱讀與練習
 
-```
-google_compute_instance
-```
-
-代表 Resource Type。
-
-```
-api
-```
-
-代表 Terraform Logical Name。
-
-真正建立到 GCP 的 VM 名稱則是：
-
-```
-hpc-api-dev
-```
-
-Terraform 內部永遠透過：
-
-```
-google_compute_instance.api
-```
-
-識別這個 Resource。
-
----
-
-# Terraform State
-
-成功 Apply 後，Terraform 自動建立：
-
-```
-terraform.tfstate
-```
-
-State 用來記錄：
-
-- Terraform 管理哪些 Resource
-- Resource ID
-- Resource 屬性
-- Infrastructure 目前狀態
-
-透過：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 找 lifecycle 的 ignore_changes 與 deletion_protection；說明 plan 出現 replace 時應停下檢查，而不是直接 apply。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-terraform state list
+sed -n '63,86p' 'terraform/environments/gpu-sg/main.tf'
 ```
 
-確認目前管理：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```
-google_compute_instance.api
-```
+## 怎樣判斷自己讀懂了
 
-State 是 Terraform 最重要的核心。
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/cpu-bootstrap-acceptance-20260921.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-沒有 State，Terraform 就不知道哪些 Infrastructure 是自己建立的。
+## 舊版與新版本的關係
 
----
-
-# OAuth Scope 與 IAM
-
-今天實際遇到兩個 GCP 權限問題。
-
-第一個：
-
-```
-ACCESS_TOKEN_SCOPE_INSUFFICIENT
-```
-
-原因：
-
-VM 沒有：
-
-```
-cloud-platform
-```
-
-OAuth Scope。
-
-修改 VM Access Scope 後成功解決。
-
-第二個：
-
-```
-compute.instances.create
-```
-
-原因：
-
-Service Account 沒有 Compute Engine IAM Role。
-
-最後新增：
-
-- Compute Instance Admin (v1)
-- Service Account User
-
-Terraform 成功建立 VM。
-
-也理解：
-
-OAuth Scope 與 IAM Role 是兩層不同的權限控制。
-
----
-
-# Terraform Destroy
-
-今天執行：
-
-```bash
-terraform destroy
-```
-
-Terraform 並沒有直接刪除 VM。
-
-而是：
-
-先產生 Destroy Plan：
-
-```
-Plan:
-
-0 to add
-
-0 to change
-
-1 to destroy
-```
-
-等待輸入：
-
-```
-yes
-```
-
-才會真正刪除 Infrastructure。
-
-今天使用：
-
-```
-Ctrl + C
-```
-
-取消，因此 VM 仍保留。
-
----
-
-# 今日重點
-
-Terraform 真正管理的是：
-
-```
-Terraform Code
-
-↓
-
-Terraform State
-
-↓
-
-Google Cloud
-```
-
-Terraform 並不是直接管理 Cloud。
-
-所有變更都必須透過 State 計算差異後，再決定建立、修改或刪除 Infrastructure。
-
-因此：
-
-Terraform 管理的 Resource 不應直接透過 GCP Console 修改。
-
-正確流程應為：
-
-```
-修改 Terraform Code
-
-↓
-
-terraform fmt
-
-↓
-
-terraform validate
-
-↓
-
-terraform plan
-
-↓
-
-terraform apply
-```
-
----
-
-# 驗證
-
-成功建立 VM：
-
-```
-hpc-api-dev
-```
-
-Terraform：
-
-```bash
-terraform state list
-```
-
-結果：
-
-```
-google_compute_instance.api
-```
-
-成功產生：
-
-```
-terraform.tfstate
-
-terraform.tfstate.backup
-```
-
-Terraform 已正式開始管理此 Infrastructure。
-
----
-
-# Interview Q&A
-
-## Q1：Terraform 的 Resource Address 是什麼？
-
-Resource Address 是 Terraform 用來唯一識別 Resource 的名稱，由 Resource Type 與 Logical Name 組成，例如：
-
-```
-google_compute_instance.api
-```
-
-Terraform 會透過 Resource Address 管理、修改與刪除 Infrastructure，而不是依照 GCP 上的 VM 名稱。
-
----
-
-## Q2：terraform plan 與 terraform apply 有什麼差別？
-
-`terraform plan` 只會比較 Terraform Code、State 與實際 Infrastructure 的差異，產生預計變更內容，不會修改任何資源。
-
-`terraform apply` 則會依照 Plan 呼叫 Cloud API，真正建立、修改或刪除 Infrastructure，並更新 terraform.tfstate。
-
----
-
-## Q3：Terraform 管理的 VM 要修改規格時，正確流程是什麼？
-
-不應直接到 GCP Console 修改，而是修改 Terraform HCL，依序執行：
-
-```
-terraform fmt
-
-↓
-
-terraform validate
-
-↓
-
-terraform plan
-
-↓
-
-terraform apply
-```
-
-Production 環境通常還會經過 Git、Pull Request、Code Review 與 CI/CD，確保所有 Infrastructure 變更都可追蹤、可回溯。
-
----
-
-# 下一步
-
-下一章將學習 Terraform Output 與 State 的進階使用方式，開始讓不同 Resource 之間互相引用，並逐步建立符合企業實務的 Terraform Project Structure。
+[改寫前完整教材快照](<../history/20260922-before-current/week9/Day3-Terraform-Apply-State-Resource-Lifecycle.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

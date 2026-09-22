@@ -1,3 +1,5 @@
+# JSON Patch：為被 kustomization 選中的 API／Redis／PostgreSQL 指定 system-pool。
+# worker 的 nodeSelector 在 Helm values 中另行設定；此 patch 不會將 MPI 移到 system-pool。
 - op: add
   path: /spec/template/spec/nodeSelector
   value:

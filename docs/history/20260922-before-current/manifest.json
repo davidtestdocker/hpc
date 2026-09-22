@@ -1,0 +1,882 @@
+{
+  "snapshot_date": "2026-09-22",
+  "meaning": "Pre-rewrite working-tree snapshot; includes earlier version notices; not the dates of all experiments",
+  "files": [
+    {
+      "source": "docs/week1/day1-linux-process.md",
+      "archive": "docs/history/20260922-before-current/week1/day1-linux-process.md.txt",
+      "sha256": "823023966035ec9b7c5675fce3c5eb1fb9e1a80878bc5df26bf8108cbf789755",
+      "bytes": 5194
+    },
+    {
+      "source": "docs/week1/day2-cpu-scheduler.md",
+      "archive": "docs/history/20260922-before-current/week1/day2-cpu-scheduler.md.txt",
+      "sha256": "dd4fb8abf63da70a195370b6c00d003cc5ab1ad3830a50013b2b44008eb7f7b1",
+      "bytes": 2972
+    },
+    {
+      "source": "docs/week1/day3-context-switch.md",
+      "archive": "docs/history/20260922-before-current/week1/day3-context-switch.md.txt",
+      "sha256": "b03a1b6a3b3dbc3e00b47fffe6f685e456475a023b335c16160c1bf85b37bbce",
+      "bytes": 2915
+    },
+    {
+      "source": "docs/week1/day4-cpu-utilization.md",
+      "archive": "docs/history/20260922-before-current/week1/day4-cpu-utilization.md.txt",
+      "sha256": "d98e931fe013e9b148916629685db762bd545b12a6620efb819a61dd75c9541f",
+      "bytes": 2553
+    },
+    {
+      "source": "docs/week1/day5-memory.md",
+      "archive": "docs/history/20260922-before-current/week1/day5-memory.md.txt",
+      "sha256": "cf25e94b8b58185badfd69d75812c0eb54aaac8419e310fa6947b5860db875d3",
+      "bytes": 2712
+    },
+    {
+      "source": "docs/week1/day6-disk-io.md",
+      "archive": "docs/history/20260922-before-current/week1/day6-disk-io.md.txt",
+      "sha256": "f95c34bd0e747395ac08ceab92f0f1be204d536c8a13832da06b93b04ae00e49",
+      "bytes": 2834
+    },
+    {
+      "source": "docs/week1/day7-performance-analysis.md",
+      "archive": "docs/history/20260922-before-current/week1/day7-performance-analysis.md.txt",
+      "sha256": "a1648fec27e732120d32ebdbf9118a158fa992001c658cf4add5330bb25f5dcd",
+      "bytes": 4159
+    },
+    {
+      "source": "docs/week2/day1-python.md",
+      "archive": "docs/history/20260922-before-current/week2/day1-python.md.txt",
+      "sha256": "23ce2fcb71fd287bc10ff295a66e53acf5ad7bf97f46a9ed9f34be4201fd3c2a",
+      "bytes": 3536
+    },
+    {
+      "source": "docs/week2/day2-function.md",
+      "archive": "docs/history/20260922-before-current/week2/day2-function.md.txt",
+      "sha256": "87c46875fce5875e0cee9765977ea29027e330ad8be9831ca947ad9d28483723",
+      "bytes": 2731
+    },
+    {
+      "source": "docs/week2/day3-return.md",
+      "archive": "docs/history/20260922-before-current/week2/day3-return.md.txt",
+      "sha256": "62c1a8c77c63cc7ba226f31e4e5317c9e6563dd71d5b94411d77d7cde228b2df",
+      "bytes": 2455
+    },
+    {
+      "source": "docs/week2/day4-list.md",
+      "archive": "docs/history/20260922-before-current/week2/day4-list.md.txt",
+      "sha256": "c35db567f5ac98b3b47fb082b5f7eba3b6e06293fd8061aa7ec0d8f4abe18eb5",
+      "bytes": 2248
+    },
+    {
+      "source": "docs/week2/day5-dictionary.md",
+      "archive": "docs/history/20260922-before-current/week2/day5-dictionary.md.txt",
+      "sha256": "af14d1bb98046952568a6a8d42236d9e8a8f0a5d58630e05e0e53bec1092e786",
+      "bytes": 2564
+    },
+    {
+      "source": "docs/week2/day6-subprocess.md",
+      "archive": "docs/history/20260922-before-current/week2/day6-subprocess.md.txt",
+      "sha256": "ae96f64b4e514e50381cb8979611925ac9249a251f9950517f504af945228b3c",
+      "bytes": 2883
+    },
+    {
+      "source": "docs/week2/day7-stdout.md",
+      "archive": "docs/history/20260922-before-current/week2/day7-stdout.md.txt",
+      "sha256": "0a4d405a2b36644efd1928a687f1fef7892fbbb960653d2e5c98fdc68304d12b",
+      "bytes": 2652
+    },
+    {
+      "source": "docs/week3/day1-why-docker.md",
+      "archive": "docs/history/20260922-before-current/week3/day1-why-docker.md.txt",
+      "sha256": "64bdecff0438aa77460e25d4984f456df0badc79681e668ad7e06c604f09cf0b",
+      "bytes": 3491
+    },
+    {
+      "source": "docs/week3/day2-install-docker.md",
+      "archive": "docs/history/20260922-before-current/week3/day2-install-docker.md.txt",
+      "sha256": "cefbc8d7672c68a2acd3149bdd31a1ebdbdc2ce55581132715a0f95d72144716",
+      "bytes": 2648
+    },
+    {
+      "source": "docs/week3/day3-image-container.md",
+      "archive": "docs/history/20260922-before-current/week3/day3-image-container.md.txt",
+      "sha256": "778dedf0c02ef3d4802f52f77941e2b6d887c0a46d5f32c5a194d7aa93abac93",
+      "bytes": 2950
+    },
+    {
+      "source": "docs/week3/day4-dockerfile.md",
+      "archive": "docs/history/20260922-before-current/week3/day4-dockerfile.md.txt",
+      "sha256": "193d07c3e573685fcc2f6f54fb2a761855d8e4f5b93bfb06518320d58c490ba5",
+      "bytes": 2997
+    },
+    {
+      "source": "docs/week3/day5-docker-compose.md",
+      "archive": "docs/history/20260922-before-current/week3/day5-docker-compose.md.txt",
+      "sha256": "1f7564c4458603e53f676a171a0cdddce4e71c7f56a617e20848ee87fd28dc2f",
+      "bytes": 2830
+    },
+    {
+      "source": "docs/week3/day6-containerize-monitoring.md",
+      "archive": "docs/history/20260922-before-current/week3/day6-containerize-monitoring.md.txt",
+      "sha256": "1b52f54abdb8a2f5698b61e3b3c30e0e2b2b25680e02abc3ffce61206d14659c",
+      "bytes": 3073
+    },
+    {
+      "source": "docs/week3/day7-docker-integration.md",
+      "archive": "docs/history/20260922-before-current/week3/day7-docker-integration.md.txt",
+      "sha256": "46852825cb0f16fe9d4fa58cc8890ae86133cd3756c322f900f5b2a61a54f76e",
+      "bytes": 4141
+    },
+    {
+      "source": "docs/week4/day1-platform-api-design.md",
+      "archive": "docs/history/20260922-before-current/week4/day1-platform-api-design.md.txt",
+      "sha256": "ee7c0221de46c34496c5a877c642a681fd148d3818c9639c6bf53f9e4e0e5f79",
+      "bytes": 3902
+    },
+    {
+      "source": "docs/week4/day2-rest-api-design.md",
+      "archive": "docs/history/20260922-before-current/week4/day2-rest-api-design.md.txt",
+      "sha256": "7fdb31e3561d935f67bf1588b4912dfe10b1ca4ba4ca94f6f24605b4ab225cc6",
+      "bytes": 5439
+    },
+    {
+      "source": "docs/week4/day3-job-identity.md",
+      "archive": "docs/history/20260922-before-current/week4/day3-job-identity.md.txt",
+      "sha256": "cd6db3a7f8d9f4e3468b160ea5306deecd76c01ef6abdd0cb6228bfe8c5b0d69",
+      "bytes": 4753
+    },
+    {
+      "source": "docs/week4/day4-memory-queue.md",
+      "archive": "docs/history/20260922-before-current/week4/day4-memory-queue.md.txt",
+      "sha256": "1e5a00d23aff9ef4f916bd3154c064ba7b0ab82503a2ea748075ac6990333951",
+      "bytes": 4361
+    },
+    {
+      "source": "docs/week4/day5-dockerize-api.md",
+      "archive": "docs/history/20260922-before-current/week4/day5-dockerize-api.md.txt",
+      "sha256": "6037c0460c371f7f1bd1ca6eb422dc491271fb003a0973cb275877b689c42864",
+      "bytes": 5521
+    },
+    {
+      "source": "docs/week4/day6-monitoring-integration.md",
+      "archive": "docs/history/20260922-before-current/week4/day6-monitoring-integration.md.txt",
+      "sha256": "afefedfbd397fb1a9e69252b1aaac0a0e188f8d33d946a5721e05b3332afee22",
+      "bytes": 4633
+    },
+    {
+      "source": "docs/week5/day1-redis-foundation.md",
+      "archive": "docs/history/20260922-before-current/week5/day1-redis-foundation.md.txt",
+      "sha256": "3659fe96da1802b515f0a83d2f8e0a4aa8cd29040a96b823cc583ab04fe83be2",
+      "bytes": 6542
+    },
+    {
+      "source": "docs/week5/day2-redis-persistence.md",
+      "archive": "docs/history/20260922-before-current/week5/day2-redis-persistence.md.txt",
+      "sha256": "8747c0d613c780d744c129fc85bfe40b48dd135d8dbb738ab6d0dfb7977cd84b",
+      "bytes": 6401
+    },
+    {
+      "source": "docs/week5/day3-reliable-worker-state-machine.md",
+      "archive": "docs/history/20260922-before-current/week5/day3-reliable-worker-state-machine.md.txt",
+      "sha256": "225856dea948242d4d8f40ac90fb760eb1d00492b81ae73dc3f8284371c386b4",
+      "bytes": 5745
+    },
+    {
+      "source": "docs/week5/day4-stuck-job-recovery.md",
+      "archive": "docs/history/20260922-before-current/week5/day4-stuck-job-recovery.md.txt",
+      "sha256": "38d35a1f968ca3834c7d8c02e7f0b8680e68ab97a2d62fa1e694dffce451f546",
+      "bytes": 4807
+    },
+    {
+      "source": "docs/week5/day5-retry-strategy-and-deadletter-que.md",
+      "archive": "docs/history/20260922-before-current/week5/day5-retry-strategy-and-deadletter-que.md.txt",
+      "sha256": "3a5dc18b436f8eb62bc4b50cc07f2e27e5ef2ee7d0f7d6e06b2802bdf6e7d9c0",
+      "bytes": 6699
+    },
+    {
+      "source": "docs/week5/day6-postgresql-foundation.md",
+      "archive": "docs/history/20260922-before-current/week5/day6-postgresql-foundation.md.txt",
+      "sha256": "6f326d73d1ea07b8d568be256f7987d6d167c4af8ed8a6ca6d37fd717901c2ed",
+      "bytes": 6725
+    },
+    {
+      "source": "docs/week5/day7-sqlalchemy-foundation.md",
+      "archive": "docs/history/20260922-before-current/week5/day7-sqlalchemy-foundation.md.txt",
+      "sha256": "acc1ee29bebfcc97cd1a4e867d74f5125ffaf09bcd0b97e3d272c34aa8d4661b",
+      "bytes": 5876
+    },
+    {
+      "source": "docs/week6/Day1_Kubernetes_Foundation.md",
+      "archive": "docs/history/20260922-before-current/week6/Day1_Kubernetes_Foundation.md.txt",
+      "sha256": "11ea5eb0dd39c7912b6f0a7b891d017e899f2e64c9c4ce20d9c7bdf4b4b5e830",
+      "bytes": 4483
+    },
+    {
+      "source": "docs/week6/Day2_Pod_Foundation.md",
+      "archive": "docs/history/20260922-before-current/week6/Day2_Pod_Foundation.md.txt",
+      "sha256": "f96aeb005d0f6f31d1ef68f4ee062a09ae9342ee46d4b16d88d0ac218d1ba779",
+      "bytes": 4843
+    },
+    {
+      "source": "docs/week6/Day3_Deployment_Foundation.md",
+      "archive": "docs/history/20260922-before-current/week6/Day3_Deployment_Foundation.md.txt",
+      "sha256": "bae0eceacbdcf8233e7c5ca783fd5fd71dbc05f66f3ccf0cd45c01f7b730c1a8",
+      "bytes": 4865
+    },
+    {
+      "source": "docs/week6/Day4_Service_Foundation.md",
+      "archive": "docs/history/20260922-before-current/week6/Day4_Service_Foundation.md.txt",
+      "sha256": "a1b0b5eea85adcf6e95db17b7965d05c92ec2880a0b9c294aa4fbfe0476275b0",
+      "bytes": 5273
+    },
+    {
+      "source": "docs/week6/Day5_K3s_Foundation.md",
+      "archive": "docs/history/20260922-before-current/week6/Day5_K3s_Foundation.md.txt",
+      "sha256": "b937684ce0d62b8a877ce73e9beb586edd85d824f95298564ac0700f4996455d",
+      "bytes": 5065
+    },
+    {
+      "source": "docs/week6/Day6_Deploy_API_and_Redis.md",
+      "archive": "docs/history/20260922-before-current/week6/Day6_Deploy_API_and_Redis.md.txt",
+      "sha256": "6c95b883700576b79bb1c0b8746645b6facc82ef10b3fb377dd92c0c2dd1383b",
+      "bytes": 6441
+    },
+    {
+      "source": "docs/week6/Day7_Complete_Platform_on_Kubernetes.md",
+      "archive": "docs/history/20260922-before-current/week6/Day7_Complete_Platform_on_Kubernetes.md.txt",
+      "sha256": "b3146f8b14639cdb8d46a2a662ac8df7cca774fd547eba899618cbfb5010b6b9",
+      "bytes": 7765
+    },
+    {
+      "source": "docs/week7/Day1_ConfigMap.md",
+      "archive": "docs/history/20260922-before-current/week7/Day1_ConfigMap.md.txt",
+      "sha256": "620f6de49b25e828e74d54b636f3a94a7420c6529c0ec13adab5c55fd16a6323",
+      "bytes": 2761
+    },
+    {
+      "source": "docs/week7/Day2_Secret.md",
+      "archive": "docs/history/20260922-before-current/week7/Day2_Secret.md.txt",
+      "sha256": "8519d1bc7973a585fa846390d9c3024518c3482a4151ef16bf06d62133e9dbd0",
+      "bytes": 7514
+    },
+    {
+      "source": "docs/week7/Day3_Resource_Requests_Limits_QoS.md",
+      "archive": "docs/history/20260922-before-current/week7/Day3_Resource_Requests_Limits_QoS.md.txt",
+      "sha256": "662a6e582e847f2812b03d06601e2660ba26396d95032b01149e63642a63a25f",
+      "bytes": 4864
+    },
+    {
+      "source": "docs/week7/Day4_Liveness_and_Readiness_Probe.md",
+      "archive": "docs/history/20260922-before-current/week7/Day4_Liveness_and_Readiness_Probe.md.txt",
+      "sha256": "d0fcc671863d95624f9fc5665c27f1fbf85922e0d6ca3c69489bdedc2ca14944",
+      "bytes": 5150
+    },
+    {
+      "source": "docs/week7/Day5_Service_Types_NodePort.md",
+      "archive": "docs/history/20260922-before-current/week7/Day5_Service_Types_NodePort.md.txt",
+      "sha256": "68f2483f507b7e87cb168778f224fc5c00decc875c21550cca449ad3e0ce8f06",
+      "bytes": 5503
+    },
+    {
+      "source": "docs/week7/Day6_Ingress_Traefik.md",
+      "archive": "docs/history/20260922-before-current/week7/Day6_Ingress_Traefik.md.txt",
+      "sha256": "d66626aa306bd801131885e12172e464126ceee836f2b0ea1c8caf0a422e2a55",
+      "bytes": 5451
+    },
+    {
+      "source": "docs/week7/Day7_Horizontal_Pod_Autoscaler.md",
+      "archive": "docs/history/20260922-before-current/week7/Day7_Horizontal_Pod_Autoscaler.md.txt",
+      "sha256": "c58ff75fb84a69e90c69c0e6d115a65cad8fda1aca87e84acf85a66e870133fb",
+      "bytes": 5851
+    },
+    {
+      "source": "docs/week8/Day1_GitOps_Foundation.md",
+      "archive": "docs/history/20260922-before-current/week8/Day1_GitOps_Foundation.md.txt",
+      "sha256": "70e14f5d92dc693fd678ba18afb2b8f03cb3b1bd3359c3860296bf8af572e9ff",
+      "bytes": 5085
+    },
+    {
+      "source": "docs/week8/Day2_Helm_Foundation.md",
+      "archive": "docs/history/20260922-before-current/week8/Day2_Helm_Foundation.md.txt",
+      "sha256": "3233bde6eb7b08a2667ffc576747054c1852b02434aa4ad1876d410cc45f7ac4",
+      "bytes": 5998
+    },
+    {
+      "source": "docs/week8/Day3_Helmize_Platform.md",
+      "archive": "docs/history/20260922-before-current/week8/Day3_Helmize_Platform.md.txt",
+      "sha256": "61a0a8727d40762e0d9c54354b26e3112bcb20dd60bbfdd20d393aeca9bcf9b1",
+      "bytes": 7874
+    },
+    {
+      "source": "docs/week8/Day4_Helm_Advanced.md",
+      "archive": "docs/history/20260922-before-current/week8/Day4_Helm_Advanced.md.txt",
+      "sha256": "d3dfdfcd70d0ecbad9be739771b499959c60f01c7798abb1fbd39ea9c28bf3b5",
+      "bytes": 5685
+    },
+    {
+      "source": "docs/week8/Day5_Kustomize_Foundation.md",
+      "archive": "docs/history/20260922-before-current/week8/Day5_Kustomize_Foundation.md.txt",
+      "sha256": "1b121823511ac296e30928128d9262c8e5344a83938b522d48783deb7908e184",
+      "bytes": 7316
+    },
+    {
+      "source": "docs/week8/Day6-Helm-Kustomize-Integration.md",
+      "archive": "docs/history/20260922-before-current/week8/Day6-Helm-Kustomize-Integration.md.txt",
+      "sha256": "116318c605f61428cae254e1befcd7794be894f0ef2330a766b6514a3df2b48b",
+      "bytes": 4573
+    },
+    {
+      "source": "docs/week8/Day7-GitOps_Multi_Environment_Integration.md",
+      "archive": "docs/history/20260922-before-current/week8/Day7-GitOps_Multi_Environment_Integration.md.txt",
+      "sha256": "104c222cbe01023a695894bcfa2ef3c8a47aba44cfa5fc913cf930a35d2d5ecf",
+      "bytes": 7562
+    },
+    {
+      "source": "docs/week9/Day1-Terraform.md",
+      "archive": "docs/history/20260922-before-current/week9/Day1-Terraform.md.txt",
+      "sha256": "66768b2cfcae5b6642112656bfc2121e58f94f7de5a5b803c459258508ff6b59",
+      "bytes": 6723
+    },
+    {
+      "source": "docs/week9/Day2-Terraform-Language-Foundation.md",
+      "archive": "docs/history/20260922-before-current/week9/Day2-Terraform-Language-Foundation.md.txt",
+      "sha256": "9061f66cbb1edf43dd77d0604988dd629cfee97b398e5a54e1be2de8078275d7",
+      "bytes": 6350
+    },
+    {
+      "source": "docs/week9/Day3-Terraform-Apply-State-Resource-Lifecycle.md",
+      "archive": "docs/history/20260922-before-current/week9/Day3-Terraform-Apply-State-Resource-Lifecycle.md.txt",
+      "sha256": "50bce4b5e6e426cd6bc624761758b6d24e242c19fdc6e1d1ad70791b0ab78a4d",
+      "bytes": 5734
+    },
+    {
+      "source": "docs/week9/Day4-Terraform-Output-Resource-Reference.md",
+      "archive": "docs/history/20260922-before-current/week9/Day4-Terraform-Output-Resource-Reference.md.txt",
+      "sha256": "0eb725a86b91458ff8507e515765ced4a4d124faa09acb73b2ad4b65886446d0",
+      "bytes": 6167
+    },
+    {
+      "source": "docs/week9/Day5-Terraform-Module-Refactor.md",
+      "archive": "docs/history/20260922-before-current/week9/Day5-Terraform-Module-Refactor.md.txt",
+      "sha256": "779a20f9b03d9be84b3e48a80703e8349920d2fddd0a393b814458549b3be7ea",
+      "bytes": 5208
+    },
+    {
+      "source": "docs/week9/Day6-Terraform-Network-Module.md",
+      "archive": "docs/history/20260922-before-current/week9/Day6-Terraform-Network-Module.md.txt",
+      "sha256": "2d8398c7433725b89fe1d16c5b31e4086a16871fc357942ebe8a9b73d7b38396",
+      "bytes": 4951
+    },
+    {
+      "source": "docs/week9/Day7-Terraform-Multi-Environment.md",
+      "archive": "docs/history/20260922-before-current/week9/Day7-Terraform-Multi-Environment.md.txt",
+      "sha256": "dfb307e1a6d1f91be41b554f66c2f62a0fd5c3fcd9b290ab57ec7d614bb1acfc",
+      "bytes": 5614
+    },
+    {
+      "source": "docs/week9/Day8-GKE-Cluster-withTerraform.md",
+      "archive": "docs/history/20260922-before-current/week9/Day8-GKE-Cluster-withTerraform.md.txt",
+      "sha256": "e006eab698f5b5e8b29c70e61253aa8b6ad2fc8b7861287c7498a35c7834bcb3",
+      "bytes": 7654
+    },
+    {
+      "source": "docs/week10/Day1-CICD-Foundation.md",
+      "archive": "docs/history/20260922-before-current/week10/Day1-CICD-Foundation.md.txt",
+      "sha256": "e5d5ab3aa35b6d3986c912d6dbc99f1571730f4be461ba8c2a4ba15901f6d383",
+      "bytes": 3474
+    },
+    {
+      "source": "docs/week10/Day2-First-GitHub-ActionsCI-Pipeline.md",
+      "archive": "docs/history/20260922-before-current/week10/Day2-First-GitHub-ActionsCI-Pipeline.md.txt",
+      "sha256": "a44da231100cb82daddaba107c7d418ce34bfed1ce72fbe193caac7107a53e4c",
+      "bytes": 5354
+    },
+    {
+      "source": "docs/week10/Day3-CodeQuality-withRuff.md",
+      "archive": "docs/history/20260922-before-current/week10/Day3-CodeQuality-withRuff.md.txt",
+      "sha256": "aabdd31e8ac6f0d1dd53b8104a449f1c172b9c41f2cae15beaac1360bbaeeec5",
+      "bytes": 4745
+    },
+    {
+      "source": "docs/week10/Day4-Pytest-API-Testing-Foundation.md",
+      "archive": "docs/history/20260922-before-current/week10/Day4-Pytest-API-Testing-Foundation.md.txt",
+      "sha256": "a84d7769045728256326da92b2dfcd8b5e9808a98ba3f660d52927e22b3ee5d6",
+      "bytes": 3887
+    },
+    {
+      "source": "docs/week10/Day5-Pytest-MockCI-Integration.md",
+      "archive": "docs/history/20260922-before-current/week10/Day5-Pytest-MockCI-Integration.md.txt",
+      "sha256": "160f978ff8a96b2f2b89c1e0b0c5d9407bc206cd14af41294f28f5ae2fbed9e3",
+      "bytes": 3651
+    },
+    {
+      "source": "docs/week10/Day6-Docker-Build-inCI.md",
+      "archive": "docs/history/20260922-before-current/week10/Day6-Docker-Build-inCI.md.txt",
+      "sha256": "a83ec972eba0f6c30234857342f88f0052d3befbf7d0862b225664e76b204409",
+      "bytes": 3572
+    },
+    {
+      "source": "docs/week10/Day7-GitHub-Actions-GitOps-自動部署-ArgoCD.md",
+      "archive": "docs/history/20260922-before-current/week10/Day7-GitHub-Actions-GitOps-自動部署-ArgoCD.md.txt",
+      "sha256": "e2c2e0d163bf6a636ca183da6f32a27ef6b14f33c63f1a98226fa7ca06531b68",
+      "bytes": 4612
+    },
+    {
+      "source": "docs/week11/Day1-建立Prometheus監控平台與Observability-Node-Pool.md",
+      "archive": "docs/history/20260922-before-current/week11/Day1-建立Prometheus監控平台與Observability-Node-Pool.md.txt",
+      "sha256": "9cc3be3698fc2a29a80f7919379ba758e7ede311b7730f1c44d868beb37e3fbe",
+      "bytes": 8238
+    },
+    {
+      "source": "docs/week11/Day2-Prometheus-ScrapeJob-Target與PullModel.md",
+      "archive": "docs/history/20260922-before-current/week11/Day2-Prometheus-ScrapeJob-Target與PullModel.md.txt",
+      "sha256": "f9a18952309ab0778fb84c7fc7a208733fdd13d67c434f6ec105ba1c004b5370",
+      "bytes": 7294
+    },
+    {
+      "source": "docs/week11/Day3-FastAPI-Application-Metrics.md",
+      "archive": "docs/history/20260922-before-current/week11/Day3-FastAPI-Application-Metrics.md.txt",
+      "sha256": "a2a675577779f5fa3dc6a9b769c9f475185052baf4cef1e1ef1cc743872251c8",
+      "bytes": 7173
+    },
+    {
+      "source": "docs/week11/Day4-NodeExporter-GrafanaDashboard-KubernetesServiceDiscovery.md",
+      "archive": "docs/history/20260922-before-current/week11/Day4-NodeExporter-GrafanaDashboard-KubernetesServiceDiscovery.md.txt",
+      "sha256": "205036a8cf2d025ef076f3401720971bf9dc67957dd00d59bf4a4ab1d92d9545",
+      "bytes": 9163
+    },
+    {
+      "source": "docs/week12/Day1-Linux-CPU-Performance-Analysis.md",
+      "archive": "docs/history/20260922-before-current/week12/Day1-Linux-CPU-Performance-Analysis.md.txt",
+      "sha256": "461774bde5b462fa5f27a6089afb1abc7eaa9146dc20497c0018c0f61cf38fc2",
+      "bytes": 6373
+    },
+    {
+      "source": "docs/week12/Day2-Linux-Memory-Performance-Analysis.md",
+      "archive": "docs/history/20260922-before-current/week12/Day2-Linux-Memory-Performance-Analysis.md.txt",
+      "sha256": "619ad151ef7486784602f639174238c37c70a60b37d22c0928fa4c0ddfc6c998",
+      "bytes": 7845
+    },
+    {
+      "source": "docs/week12/Day3-Linux-Disk-Performance-Analysis.md",
+      "archive": "docs/history/20260922-before-current/week12/Day3-Linux-Disk-Performance-Analysis.md.txt",
+      "sha256": "3b397fe9727ef8b91360e808414184231f1a111babcdf1e54117b7ff04e1cd63",
+      "bytes": 4932
+    },
+    {
+      "source": "docs/week12/Day4-Linux-Historical-Performance-Analysis.md",
+      "archive": "docs/history/20260922-before-current/week12/Day4-Linux-Historical-Performance-Analysis.md.txt",
+      "sha256": "a964c2129e7978bd984683d2c3cc4d3a00b12c3a38bd68b5ab4007cc8970d093",
+      "bytes": 5188
+    },
+    {
+      "source": "docs/week12/Day5-Linux-CPU-Benchmark-with-sysbench.md",
+      "archive": "docs/history/20260922-before-current/week12/Day5-Linux-CPU-Benchmark-with-sysbench.md.txt",
+      "sha256": "04558d8488286c6fcb18d70d6ac80241d89113854a25327f3a61882f3a13221c",
+      "bytes": 7335
+    },
+    {
+      "source": "docs/week12/Day6-Linux-CPU-Profiling-with-perf.md",
+      "archive": "docs/history/20260922-before-current/week12/Day6-Linux-CPU-Profiling-with-perf.md.txt",
+      "sha256": "d4641996246778ba4db442e9d1f118fed88d705454afcd3315ffdb2be9452cfd",
+      "bytes": 7519
+    },
+    {
+      "source": "docs/week12/Day7-Linux-System-Call-Analysis-with-strace.md",
+      "archive": "docs/history/20260922-before-current/week12/Day7-Linux-System-Call-Analysis-with-strace.md.txt",
+      "sha256": "f4460fc21fc860061f7e01d011aad32bf1a69aadb7329c4dd9b6b605e676c593",
+      "bytes": 6395
+    },
+    {
+      "source": "docs/week13/Day1-FastAPI-API-Benchmark.md",
+      "archive": "docs/history/20260922-before-current/week13/Day1-FastAPI-API-Benchmark.md.txt",
+      "sha256": "9f83491007810d34ff2d39ba957246e1512240f0cbdc4e66efe62e9ba8984aea",
+      "bytes": 4611
+    },
+    {
+      "source": "docs/week13/Day2-Redis-Benchmark.md",
+      "archive": "docs/history/20260922-before-current/week13/Day2-Redis-Benchmark.md.txt",
+      "sha256": "ed6c58d77d28fcfe140cfadcf3b0e899cecf1be0ae63c8cd76690e9b7277b6c5",
+      "bytes": 3688
+    },
+    {
+      "source": "docs/week13/Day3-PostgreSQL-Benchmark.md",
+      "archive": "docs/history/20260922-before-current/week13/Day3-PostgreSQL-Benchmark.md.txt",
+      "sha256": "318c7906e9056fe8a2f754e98219fa9347f40aa4cb98f9098dd69e692e546ade",
+      "bytes": 3761
+    },
+    {
+      "source": "docs/week13/Day4-PostgreSQL-Concurrency-Benchmark.md",
+      "archive": "docs/history/20260922-before-current/week13/Day4-PostgreSQL-Concurrency-Benchmark.md.txt",
+      "sha256": "46e1010b75a2bf27e46275be2aa4c5e8317817bc5c0b3e7a53991310c6bbaa46",
+      "bytes": 3220
+    },
+    {
+      "source": "docs/week13/day5-resource-monitoring.md",
+      "archive": "docs/history/20260922-before-current/week13/day5-resource-monitoring.md.txt",
+      "sha256": "5b7f1432376501224ccd03df632abfec8d445f916b85065a237df242e7a350f0",
+      "bytes": 4910
+    },
+    {
+      "source": "docs/week13/day6-benchmark-automation.md",
+      "archive": "docs/history/20260922-before-current/week13/day6-benchmark-automation.md.txt",
+      "sha256": "d793d9a44922a6126d5f13ef4f66b21689a0ef7889d8672be4fbbf9a91dd252d",
+      "bytes": 5366
+    },
+    {
+      "source": "docs/week13/day7-1-cpu-benchmark.md",
+      "archive": "docs/history/20260922-before-current/week13/day7-1-cpu-benchmark.md.txt",
+      "sha256": "4818888f75bff6095eb302f940aed3c901035dd3ea85aa84b2feee0cd67f5a38",
+      "bytes": 5458
+    },
+    {
+      "source": "docs/week13/day7-2-storage-benchmark.md",
+      "archive": "docs/history/20260922-before-current/week13/day7-2-storage-benchmark.md.txt",
+      "sha256": "6d89524d77619ed0d3f840a187e7b2ea0cae5f81254fe3a786cd308c58cedede",
+      "bytes": 9732
+    },
+    {
+      "source": "docs/week13/day7-3-network-benchmark.md",
+      "archive": "docs/history/20260922-before-current/week13/day7-3-network-benchmark.md.txt",
+      "sha256": "2e7678842c6ebd25d42c26914edc05d7c1ef9292f09146b6f89ddb857a00a76d",
+      "bytes": 7123
+    },
+    {
+      "source": "docs/week13/day7-4-benchmark-framework.md",
+      "archive": "docs/history/20260922-before-current/week13/day7-4-benchmark-framework.md.txt",
+      "sha256": "52e1405231421204feb2c34c7cbd62c297efede6624dc8a1ca772c7e84e32b3f",
+      "bytes": 4974
+    },
+    {
+      "source": "docs/week13/day7-5-benchmark-framework-v2.md",
+      "archive": "docs/history/20260922-before-current/week13/day7-5-benchmark-framework-v2.md.txt",
+      "sha256": "805ea999a2bd33ddf5f916336ee2ea240d847b00fc01b10d8c659c5d64d3cfb5",
+      "bytes": 7173
+    },
+    {
+      "source": "docs/week13/day7-6-result-integration.md",
+      "archive": "docs/history/20260922-before-current/week13/day7-6-result-integration.md.txt",
+      "sha256": "91f8f9732b5b56abe7db0501516efb4a7048eb9811c286d609e13014ba4a224e",
+      "bytes": 4751
+    },
+    {
+      "source": "docs/week13/day7-7-week13-final-report.md",
+      "archive": "docs/history/20260922-before-current/week13/day7-7-week13-final-report.md.txt",
+      "sha256": "b6f07cceca65d873bd05b2cee7a38a4a9ad78743289592dbd3bb5fdb03ac2f68",
+      "bytes": 5740
+    },
+    {
+      "source": "docs/week13/day7-benchmark-report.md",
+      "archive": "docs/history/20260922-before-current/week13/day7-benchmark-report.md.txt",
+      "sha256": "20a858540f94b3cd4f48b2e367891ef47a54e6afb31522ce1f3fcdf2158849a8",
+      "bytes": 1143
+    },
+    {
+      "source": "docs/week14/day2-kubernetes-gpu-scheduling.md",
+      "archive": "docs/history/20260922-before-current/week14/day2-kubernetes-gpu-scheduling.md.txt",
+      "sha256": "2c4f84d5f10ab26c4d429fbee45424dd07bb99e497da0775935da236c6a47b2b",
+      "bytes": 5509
+    },
+    {
+      "source": "docs/week14/day3-gpu-monitoring-architecture.md",
+      "archive": "docs/history/20260922-before-current/week14/day3-gpu-monitoring-architecture.md.txt",
+      "sha256": "f867a1cc3e395055754c6f3bff7a9e5393cad31ec752394a3058d14e9e49a168",
+      "bytes": 5982
+    },
+    {
+      "source": "docs/week14/Day4-GKE-GPU-Node-Pool-GPU-Scheduling.md",
+      "archive": "docs/history/20260922-before-current/week14/Day4-GKE-GPU-Node-Pool-GPU-Scheduling.md.txt",
+      "sha256": "e51c7f68000029bc096a25c20266bd16c586321ae557d89467c68bc8264bfccf",
+      "bytes": 7688
+    },
+    {
+      "source": "docs/week14/Day5-GPU-Metrics-Monitoring-integration.md",
+      "archive": "docs/history/20260922-before-current/week14/Day5-GPU-Metrics-Monitoring-integration.md.txt",
+      "sha256": "a061a0d2f516b99f315ca4a75b3e50a4be2cd60da28317396d1edeef8b0f5b3a",
+      "bytes": 9271
+    },
+    {
+      "source": "docs/week14/Day6-gpu-dashboard-establish-and-gpuworkload-verification.md",
+      "archive": "docs/history/20260922-before-current/week14/Day6-gpu-dashboard-establish-and-gpuworkload-verification.md.txt",
+      "sha256": "3c3ecf77d43d873258e62f955f0b41fad2c820cf844a454eec98ae5d08d11875",
+      "bytes": 4417
+    },
+    {
+      "source": "docs/week15/Day1—PyTorch-GPU-Runtime.md",
+      "archive": "docs/history/20260922-before-current/week15/Day1—PyTorch-GPU-Runtime.md.txt",
+      "sha256": "ed3d7cc923cf4b05f0b5077e964fcd7dafa4d7a7c3012f3563877f655759ed2c",
+      "bytes": 17930
+    },
+    {
+      "source": "docs/week15/Day2-PyTorch-Training-Runtime.md",
+      "archive": "docs/history/20260922-before-current/week15/Day2-PyTorch-Training-Runtime.md.txt",
+      "sha256": "d02042605acac0ec86c992bc7fb0e634040b9ad741e77545e1104cc625b36711",
+      "bytes": 26315
+    },
+    {
+      "source": "docs/week15/Day3-vLLM-Inference-Runtime.md",
+      "archive": "docs/history/20260922-before-current/week15/Day3-vLLM-Inference-Runtime.md.txt",
+      "sha256": "b7c434eecdfbb17610a79c60d002d716d3b77aa80ee8824e5cfca40dec17c886",
+      "bytes": 17635
+    },
+    {
+      "source": "docs/week15/Day4-Runtime-Abstraction.md",
+      "archive": "docs/history/20260922-before-current/week15/Day4-Runtime-Abstraction.md.txt",
+      "sha256": "7bf3ac6ae168e20baecf3c4eb341dd60f2c575d2aa460679972f12b214941a9a",
+      "bytes": 19015
+    },
+    {
+      "source": "docs/week15/Day5-Benchmark-Engine.md",
+      "archive": "docs/history/20260922-before-current/week15/Day5-Benchmark-Engine.md.txt",
+      "sha256": "cac040b766c97e11ebf45b7955ebfc9b72532d7a85269e4884c2d19a909fef55",
+      "bytes": 15158
+    },
+    {
+      "source": "docs/week15/Day6-Performance-Analyzer.md",
+      "archive": "docs/history/20260922-before-current/week15/Day6-Performance-Analyzer.md.txt",
+      "sha256": "c104138553e9df15d18140263eaaa0e0513b41bfa671845f5499bed4e88420b1",
+      "bytes": 15997
+    },
+    {
+      "source": "docs/week15/Day7-AI-Runtime-Platform-v1-Integration.md",
+      "archive": "docs/history/20260922-before-current/week15/Day7-AI-Runtime-Platform-v1-Integration.md.txt",
+      "sha256": "73f57937d6e854cede1d2348c159a06168896237d9d9a19db6d7970663f2c3e6",
+      "bytes": 18440
+    },
+    {
+      "source": "docs/week16/day1-multi-gpu-fundamentals.md",
+      "archive": "docs/history/20260922-before-current/week16/day1-multi-gpu-fundamentals.md.txt",
+      "sha256": "4e819039dc4cf4e5ff88a5d93377a160294fb2dcc76abe6824bf321b69910c80",
+      "bytes": 16553
+    },
+    {
+      "source": "docs/week16/day2-pytorch-ddp.md",
+      "archive": "docs/history/20260922-before-current/week16/day2-pytorch-ddp.md.txt",
+      "sha256": "9a74e2159db904fa9c99ba6f8f0c73869c102684caf819a551a767b08f2fb74d",
+      "bytes": 8480
+    },
+    {
+      "source": "docs/week16/day3-nccl-fundamentals.md",
+      "archive": "docs/history/20260922-before-current/week16/day3-nccl-fundamentals.md.txt",
+      "sha256": "c4bf4a5be54202789b1ea3461a0a42e4016d0e6cfb45006552feb99da019ffec",
+      "bytes": 6005
+    },
+    {
+      "source": "docs/week16/day4-nccl-communication-benchmark.md",
+      "archive": "docs/history/20260922-before-current/week16/day4-nccl-communication-benchmark.md.txt",
+      "sha256": "192a007165b7a215fbf303cab2c7628f883b25903debf861e1b11c255ec19999",
+      "bytes": 4323
+    },
+    {
+      "source": "docs/week16/day5-distributed-training-scaling.md",
+      "archive": "docs/history/20260922-before-current/week16/day5-distributed-training-scaling.md.txt",
+      "sha256": "ce14f4ee1ffd0e338c2252f0408bfe179d9d6e3b3611226d666947b9e4a6ee5e",
+      "bytes": 5322
+    },
+    {
+      "source": "docs/week17/day1-mpi-fundamentals.md",
+      "archive": "docs/history/20260922-before-current/week17/day1-mpi-fundamentals.md.txt",
+      "sha256": "c4b9f6e333992d2683882ed9d692c44921c2733bf2538b09550bc4236347cd53",
+      "bytes": 6602
+    },
+    {
+      "source": "docs/week17/day2-mpi-performance-benchmark.md",
+      "archive": "docs/history/20260922-before-current/week17/day2-mpi-performance-benchmark.md.txt",
+      "sha256": "81711fd9978e45352a2258873d82cbadb92c1d66999fc0c48354d6a205b1b0b7",
+      "bytes": 8146
+    },
+    {
+      "source": "docs/week17/day3-hpc-communication-stack.md",
+      "archive": "docs/history/20260922-before-current/week17/day3-hpc-communication-stack.md.txt",
+      "sha256": "83d79403979460acccaa024a9a86549ec719b2a93f7509ed8bd0282405835f7c",
+      "bytes": 12692
+    },
+    {
+      "source": "docs/week17/day4-slurm-multinode-hpc-cluster.md",
+      "archive": "docs/history/20260922-before-current/week17/day4-slurm-multinode-hpc-cluster.md.txt",
+      "sha256": "f3007aaec082a6b93674ec7bf0d2a8e213382d10860f3a47db2e6679cbe3a7cf",
+      "bytes": 12265
+    },
+    {
+      "source": "docs/week17/day5-ray-kuberay-distributed-computing.md",
+      "archive": "docs/history/20260922-before-current/week17/day5-ray-kuberay-distributed-computing.md.txt",
+      "sha256": "a4b9a95285fd2dacf01048c4b026dd2e4f2990ffc2331219d5eba15d4cf1c263",
+      "bytes": 8652
+    },
+    {
+      "source": "docs/week17/day6-cluster-scheduling-integration.md",
+      "archive": "docs/history/20260922-before-current/week17/day6-cluster-scheduling-integration.md.txt",
+      "sha256": "cfb89666fcb8a88c29190430fd17553d5fc5611714188ef936e947eb8069483f",
+      "bytes": 10294
+    },
+    {
+      "source": "docs/week18/day1-linux-network-troubleshooting-baseline.md",
+      "archive": "docs/history/20260922-before-current/week18/day1-linux-network-troubleshooting-baseline.md.txt",
+      "sha256": "1b53047264d37b357f3d4ab6989c642b12b01fb0141529d0cf68a747481297cf",
+      "bytes": 7758
+    },
+    {
+      "source": "docs/week18/day2-network-quality-bandwidth-latency-mtu.md",
+      "archive": "docs/history/20260922-before-current/week18/day2-network-quality-bandwidth-latency-mtu.md.txt",
+      "sha256": "b148d6efe96f17a3645d983029463a8bfb60c97d47a4ab8fc33ce2e697a42f47",
+      "bytes": 7451
+    },
+    {
+      "source": "docs/week18/day3-packet-level-network-failure-troubleshooting.md",
+      "archive": "docs/history/20260922-before-current/week18/day3-packet-level-network-failure-troubleshooting.md.txt",
+      "sha256": "3b5786ecf14ecdc2cc477f7d153f68f37ba0679f8c56e7ce71bd99209672c766",
+      "bytes": 7601
+    },
+    {
+      "source": "docs/week18/day4-kubernetes-network-troubleshooting.md",
+      "archive": "docs/history/20260922-before-current/week18/day4-kubernetes-network-troubleshooting.md.txt",
+      "sha256": "c235cb74ed6f451f2ee06be226bc7260c7a457c136c44e06ff7001ff47c93989",
+      "bytes": 11604
+    },
+    {
+      "source": "docs/week18/day5-nccl-transport-debugging.md",
+      "archive": "docs/history/20260922-before-current/week18/day5-nccl-transport-debugging.md.txt",
+      "sha256": "403fc67aacdcbb26d3280b38b5d880b0f82b120cdc9e5bfb23e41075da4d332c",
+      "bytes": 10265
+    },
+    {
+      "source": "docs/week18/day6-gpu-nic-numa-topology.md",
+      "archive": "docs/history/20260922-before-current/week18/day6-gpu-nic-numa-topology.md.txt",
+      "sha256": "818fd29fbae9aa20ac70750d10799d6a4bce4a8373172781bf798edac2db4728",
+      "bytes": 7363
+    },
+    {
+      "source": "docs/week18/day7-distributed-communication-troubleshooting-playbook.md",
+      "archive": "docs/history/20260922-before-current/week18/day7-distributed-communication-troubleshooting-playbook.md.txt",
+      "sha256": "8672cd9543aa0dd476e9ba110423c3e35252d5384adf515c11e6ae60f19bda64",
+      "bytes": 9865
+    },
+    {
+      "source": "docs/week19/day1-gpu-sharing-models.md",
+      "archive": "docs/history/20260922-before-current/week19/day1-gpu-sharing-models.md.txt",
+      "sha256": "27f94b5e7b113c896984da7f05b62267f9a12c8b7efa130204eb1d9e1b65fd01",
+      "bytes": 10137
+    },
+    {
+      "source": "docs/week19/day2-kueue-gpu-admission.md",
+      "archive": "docs/history/20260922-before-current/week19/day2-kueue-gpu-admission.md.txt",
+      "sha256": "439030163df7a05ef84bb440b133f2b1547d5d1dc3ab5df17e9639805d9434c7",
+      "bytes": 11408
+    },
+    {
+      "source": "docs/week19/day3-gpu-quota-admission-queue-behavior.md",
+      "archive": "docs/history/20260922-before-current/week19/day3-gpu-quota-admission-queue-behavior.md.txt",
+      "sha256": "76b7b214f810d975f78a697020921c420a7bd8e7558df94bc41b0891c5b1b63c",
+      "bytes": 10578
+    },
+    {
+      "source": "docs/week19/day4-priority-preemption-multi-tenancy.md",
+      "archive": "docs/history/20260922-before-current/week19/day4-priority-preemption-multi-tenancy.md.txt",
+      "sha256": "9e8d3a6fcef83e0477508985b9d0e863842f03d95cef0942d6c87439d4056955",
+      "bytes": 10293
+    },
+    {
+      "source": "docs/week19/day5-gang-jobset-mpi.md",
+      "archive": "docs/history/20260922-before-current/week19/day5-gang-jobset-mpi.md.txt",
+      "sha256": "a86e936708d081cd29d45c5588b0f80dcf710f8d1c0fff310d03ce3c07768180",
+      "bytes": 6072
+    },
+    {
+      "source": "docs/week19/day6-topology-aware-gpu-scheduling.md",
+      "archive": "docs/history/20260922-before-current/week19/day6-topology-aware-gpu-scheduling.md.txt",
+      "sha256": "2a6f9700873c12e71aecfafd3589138c2291aa0995424192cb95f09857237ade",
+      "bytes": 6274
+    },
+    {
+      "source": "docs/week19/day7-gpu-scheduling-platform-integration.md",
+      "archive": "docs/history/20260922-before-current/week19/day7-gpu-scheduling-platform-integration.md.txt",
+      "sha256": "3fe235bd2d7ce5413a37716ff29a0ae2dca4ac85dbc374bba7e26be672b8a11f",
+      "bytes": 10446
+    },
+    {
+      "source": "docs/week20/day1-rbac-serviceaccount-least-privilege.md",
+      "archive": "docs/history/20260922-before-current/week20/day1-rbac-serviceaccount-least-privilege.md.txt",
+      "sha256": "fdf8468932976e99790c421ba5ce55320cee97f8dfff88af2166f95083093647",
+      "bytes": 5648
+    },
+    {
+      "source": "docs/week20/day2-pod-image-secret-security.md",
+      "archive": "docs/history/20260922-before-current/week20/day2-pod-image-secret-security.md.txt",
+      "sha256": "2ec8df8f7f86968c614feeba9a6bed5efff391bd228209bca2fde60b5dba3e13",
+      "bytes": 6862
+    },
+    {
+      "source": "docs/week20/day3-networkpolicy-tenant-isolation.md",
+      "archive": "docs/history/20260922-before-current/week20/day3-networkpolicy-tenant-isolation.md.txt",
+      "sha256": "b0497c18a57e20b3220be10c2aefeeebae6dbabf535e4f5415f27eb78b3b18bc",
+      "bytes": 6287
+    },
+    {
+      "source": "docs/week20/day4-ha-node-failure-recovery.md",
+      "archive": "docs/history/20260922-before-current/week20/day4-ha-node-failure-recovery.md.txt",
+      "sha256": "1cee3c7970bfb29418f41c8852e5d6a0078debc2a27cff8b684d35c98c1d80e3",
+      "bytes": 7807
+    },
+    {
+      "source": "docs/week20/day5-ai-hpc-production-troubleshooting.md",
+      "archive": "docs/history/20260922-before-current/week20/day5-ai-hpc-production-troubleshooting.md.txt",
+      "sha256": "c32c9807fcf836901ace038d136e551a65826aea8a5cb73fe8482fa97e069c86",
+      "bytes": 9198
+    },
+    {
+      "source": "docs/week20/day6-ai-hpc-platform-technology-selection.md",
+      "archive": "docs/history/20260922-before-current/week20/day6-ai-hpc-platform-technology-selection.md.txt",
+      "sha256": "de0eb71506aa0a2de86e471da7d9d597f2557df4bda843dae521ac0c61da6c8d",
+      "bytes": 13254
+    }
+  ],
+  "protected_evidence_sha256": {
+    "docs/evidence/platform-preflight-20260921.json": "a63196ace1d7a9d818af047343fd40eb244d5e9d50700b0729e473ef3ba2d45b",
+    "docs/evidence/platform-preflight-after-20260921.json": "925b5556dc2091f6ae18ee4c3bdac1f551f9f40d52949cb45bacefc668fc4e47",
+    "docs/evidence/mpi-api-lifecycle-20260921.json": "ab9959fe5a723a1d11d302e266eec8cd62c43fb12b95c36eceda2479d7f25603",
+    "docs/evidence/cpu-bootstrap-acceptance-20260921.json": "357d79b7f27486255cabbd86ce889049300afafaf2b62f861f335861491823eb",
+    "docs/evidence/terraform-gpu-sg-20260921.md": "e54665dcb8e0668e5e0874ef2dec258d0367ee57f780a82e47aaded7da03d03e",
+    "docs/evidence/platform-after-training-20260922.json": "7066bffac7809fb748da0d50bdc9a171c65fb02496fa8b25eceb12ceed7234dd",
+    "docs/evidence/cluster-bootstrap-validation-20260921.json": "543532c955c974caef5fda2018dfb298075474224474b9b688cbb9fbf553ece6",
+    "docs/evidence/mpi-validation-20260921.json": "1de3720cc6617bb1ce2d60f6fc9669fa0c7c0844b3421cbea4e61c082b4da125",
+    "docs/evidence/cpu-bootstrap-platform-20260921.json": "a35a095b7186eb8a2570159fc7d070c708a66e7d8ec15eb43f42e8f33ed6dbe6",
+    "docs/evidence/platform-preflight-final-20260921.json": "1417a832632aa05f1a9dbcf7239bccf0a4ba01b202f8626918b0a1e5ef23b22d",
+    "docs/evidence/redis-persistence-migration-20260921.json": "bd88fbee55cf7ed6d9a29c7843da35c82b2e6e024c8e601ee1936041d2a59835",
+    "docs/evidence/gpu-quota-preflight-20260921.json": "1feeeb56ce9d5e5ce5761c2bcbe94b8cd09d957f74c84d37a6c5d366bbbf2017",
+    "docs/evidence/cpu-bootstrap-execution-20260921.json": "6c72cceb9549835b953e00059dd73c101cf390947eb6a4d79ea191db445c937e",
+    "docs/evidence/platform-preflight-post-bootstrap-20260921.json": "cffe8fd5e0e89855cc9c793d868dcaebdf6a7d9da8c83c6fb428a88f65a64785",
+    "docs/evidence/network-policy-validation-20260921.json": "1f371baeea6a977fcd2e2c6a281d8fa910065c3fd8c86c1ba3e19de4c6e72d37",
+    "docs/evidence/gpu-bootstrap-rehearsal-20260921.json": "ef293281f01e76d6746f93444987ec381c6c0a5b88b980cd53ba80495a1705a1",
+    "docs/evidence/platform-deploy-dry-run-20260921.json": "91f31347b40ca6fbbb654f94f1ff22c0518e817541990d34504cc8f045424ba2",
+    "docs/evidence/cluster-bootstrap-validation-platform-20260921.json": "1900201f192a7a2d21f1258c1059b336e1f78a767068d12cfa2669ab8268edb3",
+    "docs/evidence/platform-deployment-health-20260921.json": "e0c96e9dd1b0ff02d50a7b73934cf83d3740a1c1c3285b7e315ae575adf9cbc0",
+    "docs/evidence/mpi-placement-recovery-20260921.json": "bd9db2c7ed92c09f6890f9ac13ee781d8f6fdaf71c198dfbcbfc8b844539a6dc",
+    "docs/evidence/automatic-worker-20260922.json": "a825f066f06db0aaa68872820dfcaecde0a47785dd5cbbd5c587c737fa2ea5aa",
+    "docs/evidence/platform-deployment-20260921.json": "7e381047a7e1cab924f0623251eaa1444418a792cfd0aa1fb05964fb05852c0d",
+    "benchmark/results/week16-day4-nccl-single-gpu.txt": "70cc7cc4b458469613cbb7cb248ddf0604696e0ac06d6a42d92d4ee8c609f881",
+    "benchmark/results/vllm-c32.json": "c8d5031dfbbe99c169948675ab7f1d247c773df48c97cfb137199d8cd0a25ed2",
+    "benchmark/results/vllm-c16.json": "aa9eb374481f3547dd77a2c1ef9c02a6493259bc2238beecd74c118c61adc508",
+    "benchmark/results/transformer-train-b8-20260921.json": "59cdb8c073ac2a4c924897deb20a24c03f3e0791f69b4cdb777b510dc5e13b58",
+    "benchmark/results/vllm-c64.json": "9b92355ca787121ada371083341c132988a7e1a71573881706217f2c49e6c6b0",
+    "benchmark/results/vllm-c16-fixed.json": "589704e55b28e212dd68c5d34d0b5d66f0512608db6abd1d4dfdd79c278a717d",
+    "benchmark/results/vllm-c32-fixed.json": "18a603a178dbfe76cc3630c7266c5ffd0a0b05e1aa68e27542042e87fed8774f",
+    "benchmark/results/day7-vllm.json": "d3d61d4bd971bcaaf432358af3d42cd1f098c07b5e90e08bd7bbef19ade56377",
+    "benchmark/results/transformer-train-b16-20260921.json": "f14df1776764294180a6dee5a8e7f3fa00946a67ed4afb423929267488bacec1",
+    "benchmark/results/vllm-c4.json": "eb043ae5f09b3ad327952af8b1b3b99f236ec1ea9c1200d36c581fb3b16ab356",
+    "benchmark/results/vllm-c8.json": "180ea7010d9c3e8baf736baf88e16207bc59ce7362a944219f9547837deb33dc",
+    "benchmark/results/vllm-c1.json": "1f120835e7cb21ee9c0971774da13b4256af0dc7d1cf98c3006e605e18083e23",
+    "benchmark/results/causal-lm-20260922/result.json": "d6312e4cd2aacc90037404778f9d8f74af05c9741dda443d437ad837b6c634e8",
+    "benchmark/results/causal-lm-20260922/batch8.trace.json.gz": "e69e93ce14ef3208b4ac87b973c3d1fb0e9eef0c51076df27cea1082f87a3feb",
+    "benchmark/results/causal-lm-20260922/pod.json": "a134a77ed33c8642bd118c91878379b00a23bbab647cb7d08ebdbdc8fdd9939e",
+    "benchmark/results/causal-lm-20260922/evidence.json": "34a351c62a529bd00327206b83f448e1031a3eea818c601aab4c11a665910d04",
+    "benchmark/results/causal-lm-20260922/manifest.yaml": "3c27c5bc598d891904d1768c60067848a4a3c219c0f9b15495b5d5c9ff4db36f",
+    "benchmark/results/causal-lm-20260922/summary.json": "1a17bfae31c0f82cb100321f895748a3fd95dcc52377309d0979f2dfad347729",
+    "benchmark/results/causal-lm-20260922/run.log": "539b78e5eb7f2bba7325863cf646648c2f6175e3ac0db610aa56aa44b1dcd802",
+    "benchmark/results/causal-lm-20260922/batch16.trace.json.gz": "cccf43fd86b615337010fccb0398d8050674df69ac832ee5f838aeff14e9ef99",
+    "benchmark/results/causal-lm-20260922/corpus.txt": "fdbf59e534ee015f65a75326ad6b03338f981ab9ac78318b8538dd59bc9d961d",
+    "benchmark/results/causal-lm-20260922/benchmark-source.py": "204d836224b94086fe95e12885e6a23496d01a1a20f76b1e49a593b387f72171"
+  },
+  "navigation_index_before_sha256": "49fafc949e02cbd259c2e9d45db4a9754ce0eb088ff7339ee20b9cf4857a2657",
+  "navigation_note": "Evidence README links are updated to archived Week outputs; all protected raw artifacts retain their hashes."
+}

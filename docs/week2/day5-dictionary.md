@@ -1,150 +1,69 @@
-# Week 2 Day 5－Dictionary（字典）
+<!-- current-curriculum: 2026-09-22 -->
+# Week2 Day5 — dict 與 JSON
 
-## 對應檔案
+[上一課](<day4-list.md>) · [本週目錄](README.md) · [下一課](<day6-subprocess.md>) · [全程導讀](../learning-guide.md)
 
-本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-延伸對照文件：[day3-job-identity](../week4/day3-job-identity.md)。
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「dict 與 JSON」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日目標
+## 概念解說
 
-理解如何使用 Dictionary 表示一個 Process 的完整資訊，建立 Monitoring Framework 的基本資料模型。
+dict 用 key 查值，JSON 是交換資料的文字格式。json.dumps 做序列化、json.loads 還原；Redis 保存的 JSON 字串不是 Python 物件本身。
 
----
+## 在現在的專案中
 
-# 為什麼需要 Dictionary？
+本週先閱讀與執行純 Python 小例子；不要直接啟動依賴雲端的 worker。
 
-Linux 的一個 Process 不只有名稱。
-
-例如：
-
-```text
-PID     COMMAND     RSS
-1       systemd     12584
-```
-
-一個 Process 至少包含：
-
-- PID
-- Name
-- Memory
-
-因此需要一個可以描述多個屬性的資料結構。
-
----
-
-# Dictionary
-
-建立：
+本課對照：[api/main.py](<../../api/main.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```python
-process = {
-    "pid": 1,
-    "name": "systemd",
-    "memory": 15
-}
-```
-
-代表：
-
-一個 Process 的完整資訊。
-
----
-
-# Key 與 Value
-
-例如：
-
-```python
-"pid": 1
-```
-
-其中：
-
-- `pid` 是 Key
-- `1` 是 Value
-
-Key 表示欄位名稱。
-
-Value 表示實際資料。
-
----
-
-# List 與 Dictionary 的關係
-
-一個 Process：
-
-```python
-{
-    "pid": 1,
-    "name": "systemd"
-}
-```
-
-很多 Process：
-
-```python
-[
-    {
-        "pid": 1,
-        "name": "systemd"
-    },
-    {
-        "pid": 320,
-        "name": "python3"
+        pipe.set(f"job:{job_id}", json.dumps(job))
+        pipe.rpush('job_queue', job_id)
+        pipe.execute()
+    return {
+        "message": "benchmark request received",
+        "job_id": job_id,
+        "benchmark": request.benchmark,
+        "status": "accepted",
+        "next_step": f"Check job status at GET /jobs/{job_id}"
     }
-]
+
+#第八週要改成scan而不是keys方式
+# 讀取 job:* 對應的工作；KEYS 會掃描鍵空間，資料量大時有阻塞風險。
+@app.get("/jobs")
+def get_jobs():
+
+    job_keys = redis_client.keys("job:*")
+
+    jobs = []
+
+    for key in job_keys:
+        # loads 把 JSON 字串還原成 Python 字典或清單。
+        job = json.loads(
+            redis_client.get(key)
 ```
 
-List 用來保存很多 Process。
+## 閱讀與練習
 
-Dictionary 用來表示一個 Process。
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 將一個 job dict dumps 後再 loads，觀察型別差異。找 API 寫入 Redis 的地方，說明 queue 中的 ID 和 job record 不同。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
----
-
-# 今日重點
-
-- Dictionary 可以描述一筆完整資料。
-- Key 表示欄位。
-- Value 表示資料。
-- Monitoring Framework 會使用 Dictionary 表示一個 Process。
-- List 則保存多個 Process。
-
----
-
-# 與 HPC AI Performance Engineering Platform 的關聯
-
-未來：
-
-```python
-get_processes()
+```bash
+sed -n '144,167p' 'api/main.py'
 ```
 
-將回傳：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```python
-[
-    {
-        "pid": 1,
-        "name": "systemd",
-        "cpu": 0.2,
-        "memory": 15
-    }
-]
-```
+## 怎樣判斷自己讀懂了
 
-Analysis Engine 將依據：
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../../tests/test_platform_preflight.py>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-- PID
-- CPU
-- Memory
+## 舊版與新版本的關係
 
-分析：
-
-- CPU Bottleneck
-- Memory Bottleneck
-- Process 使用情況
-
-Dictionary 是 Monitoring Framework 最核心的資料模型之一。
+[改寫前完整教材快照](<../history/20260922-before-current/week2/day5-dictionary.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

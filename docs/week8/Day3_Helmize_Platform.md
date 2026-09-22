@@ -1,583 +1,69 @@
-# Week8 Day3 - Helmize HPC AI Performance Engineering Platform
+<!-- current-curriculum: 2026-09-22 -->
+# Week8 Day3 — 平台 Chart 拆分
 
-## 對應檔案
+[上一課](<Day2_Helm_Foundation.md>) · [本週目錄](README.md) · [下一課](<Day4_Helm_Advanced.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [helm/api/Chart.yaml](../../helm/api/Chart.yaml)
-- [helm/api/templates/_helpers.tpl](../../helm/api/templates/_helpers.tpl)
-- [helm/api/templates/configmap.yaml](../../helm/api/templates/configmap.yaml)
-- [helm/api/templates/deployment.yaml](../../helm/api/templates/deployment.yaml)
-- [helm/api/templates/hpa.yaml](../../helm/api/templates/hpa.yaml)
-- [helm/api/templates/ingress.yaml](../../helm/api/templates/ingress.yaml)
-- [helm/api/templates/service.yaml](../../helm/api/templates/service.yaml)
-- [helm/api/values-dev.yaml](../../helm/api/values-dev.yaml)
-- [helm/api/values-prod.yaml](../../helm/api/values-prod.yaml)
-- [helm/api/values-stage.yaml](../../helm/api/values-stage.yaml)
-- [helm/api/values.yaml](../../helm/api/values.yaml)
-- [helm/postgres/Chart.yaml](../../helm/postgres/Chart.yaml)
-- [helm/postgres/templates/pvc.yaml](../../helm/postgres/templates/pvc.yaml)
-- [helm/postgres/templates/secret.yaml](../../helm/postgres/templates/secret.yaml)
-- [helm/postgres/templates/service.yaml](../../helm/postgres/templates/service.yaml)
-- [helm/postgres/templates/statefulset.yaml](../../helm/postgres/templates/statefulset.yaml)
-- [helm/postgres/values.yaml](../../helm/postgres/values.yaml)
-- [helm/redis/Chart.yaml](../../helm/redis/Chart.yaml)
-- [helm/redis/templates/deployment.yaml](../../helm/redis/templates/deployment.yaml)
-- [helm/redis/templates/service.yaml](../../helm/redis/templates/service.yaml)
-- [helm/redis/values.yaml](../../helm/redis/values.yaml)
-- [k8s/api-configmap.yaml](../../k8s/api-configmap.yaml)
-- [k8s/api-deployment.yaml](../../k8s/api-deployment.yaml)
-- [k8s/api-hpa.yaml](../../k8s/api-hpa.yaml)
-- [k8s/api-ingress.yaml](../../k8s/api-ingress.yaml)
-- [k8s/api-service.yaml](../../k8s/api-service.yaml)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「平台 Chart 拆分」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 本日成果
+## 概念解說
 
-將原本以 `k8s/` 管理的 Kubernetes YAML，正式轉換為 Helm Chart。
+API、Redis、PostgreSQL 各有 chart，overlay 統一 namespace 與環境值。chart 的預設值未必是主環境實際值，必須再看 valuesFile 和 patch。
 
-平台開始具備可參數化部署能力。
+## 在現在的專案中
 
----
+主線是 Helm／Kustomize 渲染與 deploy 工具；Argo CD 為獨立 GitOps 設定教材。
 
-# 今日目標
-
-將：
-
-```text
-k8s/
-```
-
-中的 Kubernetes Resource：
-
-* Deployment
-* Service
-* ConfigMap
-* Secret
-* Ingress
-* HorizontalPodAutoscaler
-
-全部移至：
-
-```text
-helm/api/templates/
-```
-
-並逐步以 `values.yaml` 管理可變參數。
-
----
-
-# 為什麼要 Helm 化？
-
-原本平台：
-
-```text
-k8s/
-
-api-deployment.yaml
-api-service.yaml
-api-ingress.yaml
-api-configmap.yaml
-postgres-secret.yaml
-api-hpa.yaml
-```
-
-所有值都直接寫死：
+本課對照：[kustomize/overlays/gpu-sg-platform/kustomization.yaml](<../../kustomize/overlays/gpu-sg-platform/kustomization.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```yaml
-replicas: 1
+helmCharts:
+  - name: api
+    releaseName: api
+    namespace: hpc-platform-dev
+    # 覆寫 Helm values 的設定檔路徑。
+    valuesFile: api-values.yaml
+    includeCRDs: false
 
-image:
-  hpc-ai-benchmark-platform-api
+  - name: redis
+    releaseName: redis
+    namespace: hpc-platform-dev
+    valuesFile: redis-values.yaml
+    includeCRDs: false
 
-nodePort: 30080
+  - name: postgres
+    releaseName: postgres
+    namespace: hpc-platform-dev
+    valuesFile: postgres-values.yaml
+    includeCRDs: false
 
-host: api.hpc.local
+# 對選定資源套用局部修改。
+patches:
+  - path: system-pool-patch.yaml
+    target:
 ```
 
-如果：
-
-* dev
-* stage
-* prod
-
-三個環境。
-
-就需要維護多份 YAML。
-
----
-
-# Helm 化流程
-
-今天採用企業常見做法：
-
-```text
-原本 Kubernetes YAML
-
-↓
-
-搬進 templates/
-
-↓
-
-確認 Render 完全一致
-
-↓
-
-開始參數化
-```
-
-而不是重新撰寫所有 Deployment。
-
----
-
-# Chart 結構
-
-```text
-helm/
-
-└── api/
-
-    Chart.yaml
-
-    values.yaml
-
-    templates/
-
-        deployment.yaml
-        service.yaml
-        configmap.yaml
-        secret.yaml
-        ingress.yaml
-        hpa.yaml
-```
-
----
-
-# Deployment
-
-Deployment 保留原有 Kubernetes YAML。
-
-逐步改為：
-
-```yaml
-replicas: {{ .Values.replicaCount }}
-```
-
-Image：
-
-```yaml
-image:
-  repository
-  tag
-  pullPolicy
-```
-
-改由：
-
-```yaml
-.Values.image
-```
-
-控制。
-
----
-
-# Service
-
-Service：
-
-原本：
-
-```yaml
-type: NodePort
-
-port: 8000
-
-targetPort: 8000
-
-nodePort: 30080
-```
-
-改為：
-
-```yaml
-.Values.service
-```
-
-管理。
-
-values：
-
-```yaml
-service:
-  type: NodePort
-  port: 8000
-  targetPort: 8000
-  nodePort: 30080
-```
-
----
-
-# ConfigMap
-
-ConfigMap：
-
-Redis：
-
-```text
-REDIS_HOST
-
-REDIS_PORT
-```
-
-PostgreSQL：
-
-```text
-POSTGRES_HOST
-
-POSTGRES_PORT
-
-POSTGRES_DB
-```
-
-全部改由：
-
-```yaml
-.Values.config
-```
-
-管理。
-
----
-
-# Secret
-
-Secret：
-
-改為：
-
-```yaml
-stringData
-```
-
-而非：
-
-```yaml
-data
-```
-
-避免手動 Base64。
-
-values：
-
-```yaml
-secret:
-  postgresUser: hpc
-  postgresPassword: hpc_password
-```
-
-Render：
-
-Kubernetes 自動完成 Base64。
-
----
-
-# Ingress
-
-Host：
-
-```yaml
-host: api.hpc.local
-```
-
-改為：
-
-```yaml
-.Values.ingress.hosts
-```
-
-管理。
-
-Path：
-
-```yaml
-path: /
-
-pathType: Prefix
-```
-
-也改由 values 控制。
-
----
-
-# HorizontalPodAutoscaler
-
-HPA：
-
-改由：
-
-```yaml
-autoscaling:
-```
-
-控制。
-
-包含：
-
-```text
-enabled
-
-minReplicas
-
-maxReplicas
-
-targetCPUUtilizationPercentage
-```
-
-Template：
-
-使用：
-
-```yaml
-{{ if .Values.autoscaling.enabled }}
-```
-
-控制是否 Render HPA。
-
----
-
-# Resource Requests / Limits
-
-Deployment：
-
-改為：
-
-```yaml
-resources:
-{{ toYaml .Values.resources | nindent 10 }}
-```
-
-values：
-
-```yaml
-resources:
-
-  requests:
-
-    cpu: 100m
-
-    memory: 128Mi
-
-  limits:
-
-    cpu: 500m
-
-    memory: 512Mi
-```
-
-避免 Deployment 直接寫死資源設定。
-
----
-
-# Readiness Probe
-
-Probe：
-
-改為：
-
-```yaml
-.Values.readinessProbe
-```
-
-管理。
-
-包含：
-
-```text
-path
-
-port
-
-initialDelaySeconds
-
-periodSeconds
-```
-
----
-
-# Liveness Probe
-
-Probe：
-
-改為：
-
-```yaml
-.Values.livenessProbe
-```
-
-管理。
-
-Deployment 不再寫死 Probe。
-
----
-
-# Render 驗證
-
-使用：
+## 閱讀與練習
+
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 從主 kustomization 找三個 helmCharts，逐個找到對應 valuesFile。解釋為何單讀 helm/api/values.yaml 會漏掉主環境 image tag。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-helm template api ./api
+sed -n '20,43p' 'kustomize/overlays/gpu-sg-platform/kustomization.yaml'
 ```
 
-確認：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-Render 結果：
+## 怎樣判斷自己讀懂了
 
-與原本：
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/platform-deployment-20260921.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-```text
-k8s/
-```
+## 舊版與新版本的關係
 
-中的 Kubernetes YAML 一致。
-
-證明 Helm Chart 可正確產生平台部署設定。
-
----
-
-# 今日完成的參數化
-
-目前已參數化：
-
-```text
-replicaCount
-
-image.repository
-
-image.tag
-
-image.pullPolicy
-
-service.type
-
-service.port
-
-service.targetPort
-
-service.nodePort
-
-config.*
-
-secret.*
-
-autoscaling.*
-
-resources.*
-
-readinessProbe.*
-
-livenessProbe.*
-
-configMapName
-
-secretName
-
-containerPort
-```
-
----
-
-# 平台架構
-
-```text
-values.yaml
-
-        │
-
-        ▼
-
-Helm Templates
-
-        │
-
-        ▼
-
-helm template
-
-        │
-
-        ▼
-
-Rendered Kubernetes YAML
-
-        │
-
-        ▼
-
-Kubernetes Cluster
-```
-
----
-
-# 今日重點
-
-* Helm 化不是重寫 Kubernetes。
-* 先保持 Render 與原始 YAML 一致，再逐步參數化。
-* values.yaml 管理所有可變參數。
-* templates 專注於 Kubernetes 資源結構。
-* helm template 可驗證 Render 結果是否正確。
-
----
-
-# Interview Q&A
-
-## Q1：Helm 化時，為什麼先搬 YAML 再參數化？
-
-可以先確保 Helm Render 的結果與原始 Kubernetes YAML 完全一致，再逐步降低風險地導入 Template。
-
----
-
-## Q2：為什麼 Secret 使用 stringData？
-
-stringData 可直接使用明文，Kubernetes 會自動轉換為 Base64，避免人工編碼。
-
----
-
-## Q3：為什麼使用 toYaml 搭配 nindent？
-
-`toYaml` 可將 values 中的物件轉為 YAML，`nindent` 則負責補上正確縮排，避免 Render 出錯。
-
----
-
-# 今日成果
-
-平台已完成第一版 Helm Chart。
-
-Deployment、Service、ConfigMap、Secret、Ingress、HPA 全部由 Helm 管理。
-
-平台開始具備真正可重複部署、可參數化的能力。
-
----
-
-# 下一步
-
-Week8 Day4：
-
-Helm Advanced
-
-學習：
-
-* `_helpers.tpl`
-* `define`
-* `include`
-* Labels
-* Fullname
-* `helm install`
-* `helm upgrade`
-* `helm uninstall`
-* Helm Release 管理
-
-將目前 Helm Chart 提升至企業常見的設計方式。
-
+[改寫前完整教材快照](<../history/20260922-before-current/week8/Day3_Helmize_Platform.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

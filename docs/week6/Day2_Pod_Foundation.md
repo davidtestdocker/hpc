@@ -1,370 +1,69 @@
-# Week6 Day2 - Pod Foundation
+<!-- current-curriculum: 2026-09-22 -->
+# Week6 Day2 — Pod 的範圍
 
-## 對應檔案
+[上一課](<Day1_Kubernetes_Foundation.md>) · [本週目錄](README.md) · [下一課](<Day3_Deployment_Foundation.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [k8s/api-deployment.yaml](../../k8s/api-deployment.yaml)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Pod 的範圍」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日平台增加什麼
+## 概念解說
 
-今天建立 Kubernetes 最重要的核心概念：
+同一 Pod 的容器共用網路，可透過 localhost 通訊；不同 Pod 要用服務／網路連線。Pod Running 不保證應用 Ready，更不保證工作 completed。
 
-```text
-Container
+## 在現在的專案中
 
-↓
+K3s 是獨立基礎練習選項，不是本次主環境；雲端修改只依 runbook。
 
-Pod
+本課對照：[helm/api/templates/worker.yaml](<../../helm/api/templates/worker.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
+
+```yaml
+  template:
+    metadata:
+      labels:
+        app: {{ include "api.fullname" . }}-worker
+    spec:
+      # 沿用 namespace 最小 RBAC 身分，允許建立／讀取 JobSet 與回收 launcher log。
+      serviceAccountName: {{ .Values.worker.serviceAccountName }}
+      # 預設排入 system-pool；worker 負責協調，自己不申請 GPU。
+      nodeSelector:
+        {{- toYaml .Values.worker.nodeSelector | nindent 8 }}
+      containers:
+        - name: worker
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # 覆寫映像預設的 Uvicorn 命令，啟動獨立 Python worker。
+          command: ["python", "-m", "api.worker"]
+          envFrom:
+            # ConfigMap 提供服務位址與輪詢設定；密碼沿用外部建立的 Secret。
+            - configMapRef:
+                name: {{ include "api.fullname" . }}-config
+            - secretRef:
+                name: postgres-secret
+          resources:
+            # requests 供排程器計算容量，limits 限制容器 CPU／記憶體上限。
 ```
 
-理解：
+## 閱讀與練習
 
-> Pod 是 Kubernetes 最小的部署單位（Smallest Deployable Unit）。
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 讀 worker Pod template，找容器命令、serviceAccount、nodeSelector。分清 spec.template 與 Deployment 自己的 metadata。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
-而不是：
-
-```text
-Container
+```bash
+sed -n '19,42p' 'helm/api/templates/worker.yaml'
 ```
 
----
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-# Platform Problem
+## 怎樣判斷自己讀懂了
 
-目前平台：
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/cpu-bootstrap-acceptance-20260921.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-```text
-Docker Compose
+## 舊版與新版本的關係
 
-api Container
-redis Container
-postgres Container
-```
-
-目前：
-
-```text
-1 Service
-
-=
-
-1 Container
-```
-
-如果未來：
-
-API 需要：
-
-* Log Agent
-* Monitoring Agent
-* Service Mesh Proxy
-
-Docker 會變成：
-
-```text
-api Container
-
-log Container
-
-otel Container
-```
-
-Container 彼此沒有共同生命週期。
-
----
-
-# Kubernetes 如何解決？
-
-Kubernetes 增加：
-
-```text
-Pod
-```
-
-例如：
-
-```text
-api Pod
-│
-├── api Container
-├── log-agent Container
-└── otel-agent Container
-```
-
-Pod 內所有 Container：
-
-* 共用 Network Namespace
-* 共用 localhost
-* 共用 Volume
-* 一起建立
-* 一起刪除
-
-因此：
-
-Pod 才是 Kubernetes 的最小部署單位。
-
----
-
-# Docker 與 Kubernetes
-
-Docker：
-
-```text
-Container
-```
-
-Kubernetes：
-
-```text
-Pod
-```
-
-目前：
-
-```text
-1 Pod
-
-=
-
-1 Container
-```
-
-但：
-
-```text
-Pod
-
-≠
-
-Container
-```
-
-一個 Pod 可以有多個 Container。
-
----
-
-# 今日知識鏈
-
-```text
-Container
-      │
-      ▼
-Pod
-      │
-      ▼
-Pod Lifecycle
-```
-
----
-
-# Pod Lifecycle
-
-Pod 常見生命週期：
-
-```text
-Pending
-
-↓
-
-Running
-
-↓
-
-Succeeded / Failed
-
-↓
-
-Deleted
-```
-
-說明：
-
-Pending
-
-Image 尚未下載完成，或等待排程。
-
-Running
-
-Pod 已建立完成，Container 正常執行。
-
-Succeeded
-
-工作型 Pod 已成功完成。
-
-Failed
-
-Pod 執行失敗。
-
-Deleted
-
-Pod 已被 Kubernetes 移除。
-
----
-
-# Pod 架構
-
-目前平台：
-
-```text
-api Pod
-│
-└── api Container
-
-redis Pod
-│
-└── redis Container
-
-postgres Pod
-│
-└── postgres Container
-```
-
-目前：
-
-```text
-3 Pods
-
-3 Containers
-```
-
-只是目前每個 Pod 都只有一個 Container。
-
-未來：
-
-```text
-api Pod
-│
-├── api
-├── envoy
-└── otel-agent
-```
-
-仍然只有：
-
-```text
-1 Pod
-```
-
----
-
-# 為什麼 Kubernetes 不直接管理 Container？
-
-Container 缺少：
-
-* 共用生命週期
-* 共用 Network Namespace
-* 共用 localhost
-* 共用 Storage
-
-因此 Kubernetes 增加：
-
-```text
-Pod
-```
-
-讓相關 Container 成為一個部署單位。
-
----
-
-# Platform Evolution
-
-目前：
-
-```text
-Docker Host
-│
-├── api Container
-├── redis Container
-└── postgres Container
-```
-
-未來：
-
-```text
-Kubernetes Cluster
-│
-├── api Pod
-│      └── api Container
-│
-├── redis Pod
-│      └── redis Container
-│
-└── postgres Pod
-       └── postgres Container
-```
-
----
-
-# 今日重點
-
-* Pod 是 Kubernetes 最小部署單位。
-* Container 永遠運行於 Pod 內。
-* Pod 可以包含一個或多個 Container。
-* 同一個 Pod 內的 Container 共用 Network、localhost 與 Volume。
-* Pod 擁有共同生命週期。
-
----
-
-# Interview Q&A
-
-## Q1：Pod 和 Container 有什麼差別？
-
-Container 是應用程式執行單位。
-
-Pod 是 Kubernetes 管理 Container 的最小部署單位，可以包含一個或多個 Container，並提供共同的網路、儲存與生命週期。
-
----
-
-## Q2：為什麼 Kubernetes 不直接管理 Container？
-
-因為許多相關 Container 需要一起部署、一起停止、共享網路與儲存空間。
-
-Pod 將這些 Container 包裝成同一個部署單位，使 Kubernetes 更容易管理與調度。
-
----
-
-# 今日成果
-
-建立 Kubernetes 最重要的第二個核心觀念：
-
-```text
-Container
-
-↓
-
-Pod
-```
-
-理解：
-
-* Docker 管理 Container。
-* Kubernetes 管理 Pod。
-* Pod 是一個或多個 Container 的執行與部署單位。
-
----
-
-# 下一步
-
-Week6 Day3：
-
-Deployment Foundation
-
-開始學習：
-
-```text
-Pod
-
-↓
-
-ReplicaSet
-
-↓
-
-Deployment
-```
-
-理解 Kubernetes 如何透過 Deployment 維持 Pod 的期望數量（Desired State）、自動修復（Self Healing）與滾動更新（Rolling Update）。
-
+[改寫前完整教材快照](<../history/20260922-before-current/week6/Day2_Pod_Foundation.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

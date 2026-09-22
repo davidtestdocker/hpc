@@ -20,6 +20,8 @@ spec:
   source:
     repoURL: https://github.com/davidtestdocker/hpc.git
     targetRevision: master
+    # 歷史 dev 路徑，不是現行 gpu-sg-platform。切換前須檢查 diff／資源所有權；
+    # 下方 prune=true 可能刪除舊受管資源，不可把改路徑當成單純文件同步。
     path: kustomize/overlays/dev
 
   # Argo CD 同步目標叢集與 namespace。

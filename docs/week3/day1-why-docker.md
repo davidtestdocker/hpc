@@ -1,181 +1,69 @@
-# Week 3 Day 1－為什麼需要 Docker？
+<!-- current-curriculum: 2026-09-22 -->
+# Week3 Day1 — 為何容器化
 
-## 對應檔案
+[本週基礎](README.md) · [本週目錄](README.md) · [下一課](<day2-install-docker.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [docker/Dockerfile](../../docker/Dockerfile)：容器映像建置
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「為何容器化」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日目標
+## 概念解說
 
-理解 Docker 在 HPC AI Performance Engineering Platform 中存在的目的。
+主機上的套件版本不同會讓同一程式行為不同。Image 封裝程式及使用者空間依賴，但 GPU driver、kernel、硬體與外部 DB 仍影響結果，因此只有 image tag 不足以重現實驗。
 
-Docker 並不是學習目標，而是平台部署與管理的工具。
+## 在現在的專案中
 
----
+本週以檢查與離線讀設定為主；不要求安裝另一個 Docker daemon 或啟動正式服務。
 
-# 為什麼需要 Docker？
-
-目前平台直接在 Ubuntu 上執行：
-
-```text
-Ubuntu
-
-├── Python
-├── Monitoring Framework
-├── FastAPI（未來）
-├── Prometheus（未來）
-├── Grafana（未來）
-└── Benchmark Worker（未來）
-```
-
-所有服務都安裝在同一個作業系統中。
-
-當服務越來越多，就容易出現：
-
-- 套件衝突
-- Python 版本衝突
-- 升級影響其他服務
-- 難以部署
-- 難以回滾
-
----
-
-# Docker 解決什麼問題？
-
-Docker 提供：
-
-**Isolation（隔離）**
-
-每一個服務都有自己的執行環境。
-
-例如：
+本課對照：[docker/Dockerfile](<../../docker/Dockerfile>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```text
-Ubuntu
+FROM python:3.12-slim
 
-├── FastAPI Container
-│       Python 3.12
-│
-├── Prometheus Container
-│
-├── Grafana Container
-│
-└── Benchmark Worker Container
+# 設定容器環境變數：停用 .pyc 輸出，並讓 Python 日誌即時輸出。
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# 設定後续 RUN／COPY 與啟動程式使用的工作目錄。
+WORKDIR /app
+
+# 建置映像時執行 Shell 指令；&& 只在前一指令成功後繼續。
+RUN groupadd --system app \
+    && useradd --system --gid app app
+
+# 從建置 context 複製檔案；--chown 設定檔案擁有者。
+COPY requirements.txt .
+
+# 建置映像時執行 Shell 指令；&& 只在前一指令成功後繼續。
+RUN python -m pip install --no-cache-dir --upgrade pip \
+    && python -m pip install --no-cache-dir -r requirements.txt
+
+# 從建置 context 複製檔案；--chown 設定檔案擁有者。
+COPY --chown=app:app api ./api
+# 從建置 context 複製檔案；--chown 設定檔案擁有者。
+COPY --chown=app:app monitoring ./monitoring
 ```
 
-每個 Container 彼此獨立。
+## 閱讀與練習
 
-其中一個服務更新，不會影響其他服務。
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 列出 Dockerfile 固定的部分與依賴外部環境的部分，對照訓練證據中的 image digest 和 node 資訊。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
----
-
-# Image 與 Container
-
-Docker 有兩個重要概念：
-
-Image：
-
-```
-Template
+```bash
+sed -n '3,26p' 'docker/Dockerfile'
 ```
 
-Container：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```
-Running Instance
-```
+## 怎樣判斷自己讀懂了
 
-兩者關係類似：
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../../docker/Dockerfile>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-```
-Program
-        │
-        ▼
-Process
-```
+## 舊版與新版本的關係
 
-Docker：
-
-```
-Image
-        │
-        ▼
-Container
-```
-
-Image 可以建立多個 Container。
-
----
-
-# Docker 在平台中的角色
-
-未來平台：
-
-```
-Control Node
-
-├── FastAPI Container
-├── Prometheus Container
-├── Grafana Container
-└── Analysis Engine Container
-
-Compute Node
-
-├── Benchmark Worker Container
-├── vLLM Container
-├── Node Exporter Container
-└── DCGM Exporter Container
-```
-
-Docker 是所有平台服務的執行環境。
-
----
-
-# 今日重點
-
-- Docker 的核心價值是隔離（Isolation）。
-- Container 可以避免不同服務互相影響。
-- Image 是 Container 的模板。
-- Container 是真正執行中的服務。
-- Docker 是 Kubernetes 的基礎。
-
----
-
-# 與 HPC AI Performance Engineering Platform 的關聯
-
-本平台未來所有核心元件都會以 Container 執行，包括：
-
-- Monitoring Framework
-- FastAPI
-- Prometheus
-- Grafana
-- Benchmark Worker
-- vLLM
-
-Docker 讓每個服務可以：
-
-- 獨立部署
-- 獨立升級
-- 獨立回滾
-- 獨立除錯
-
-降低平台維護成本，提升部署一致性。
-
----
-
-# 面試重點
-
-如果沒有 Docker：
-
-- 不同服務可能產生版本衝突。
-- 升級一個服務可能影響整個系統。
-- 測試新版本風險較高。
-
-使用 Docker 後：
-
-- 每個服務擁有自己的執行環境。
-- 可以快速建立、測試、刪除 Container。
-- 適合大型平台的部署與維護。
+[改寫前完整教材快照](<../history/20260922-before-current/week3/day1-why-docker.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

@@ -1,557 +1,62 @@
-# Week8 Day4 - Helm Advanced
+<!-- current-curriculum: 2026-09-22 -->
+# Week8 Day4 — Helm 條件與共用命名
 
-## 對應檔案
+[上一課](<Day3_Helmize_Platform.md>) · [本週目錄](README.md) · [下一課](<Day5_Kustomize_Foundation.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [helm/api/Chart.yaml](../../helm/api/Chart.yaml)
-- [helm/api/templates/_helpers.tpl](../../helm/api/templates/_helpers.tpl)
-- [helm/api/templates/deployment.yaml](../../helm/api/templates/deployment.yaml)
-- [helm/api/values.yaml](../../helm/api/values.yaml)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Helm 條件與共用命名」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 本日成果
+## 概念解說
 
-完成 Helm Release 管理與 Helm Helper（`_helpers.tpl`）的學習，平台正式具備企業級 Helm Chart 的基本架構。
+if 可選擇是否產生資源，toYaml／nindent 把巢狀值以正確縮排輸出。模板空白控制可能影響 YAML，因此看原模板不足以保證渲染正確。
 
----
+## 在現在的專案中
 
-# 今日目標
+主線是 Helm／Kustomize 渲染與 deploy 工具；Argo CD 為獨立 GitOps 設定教材。
 
-完成 Helm 的核心能力：
-
-* Helm Install
-* Helm Upgrade
-* Helm History
-* Helm Rollback
-* Helper Template
-* define
-* include
-
----
-
-# Helm 與 kubectl 的角色
-
-Helm：
-
-負責：
-
-* Chart
-* Release
-* Revision
-* Values
-* 部署管理
-
-kubectl：
-
-負責：
-
-* Pod
-* Deployment
-* Service
-* Log
-* Debug
-* Cluster 狀態
-
-因此：
-
-部署：
-
-```bash
-helm upgrade api ./api -n hpc-platform
-```
-
-驗證：
-
-```bash
-kubectl get pods -n hpc-platform
-```
-
-查看 Log：
-
-```bash
-kubectl logs -n hpc-platform deployment/api
-```
-
----
-
-# Helm Install
-
-第一次部署：
-
-```bash
-helm install api ./api -n hpc-platform
-```
-
-建立：
-
-Release：
-
-```text
-api
-```
-
----
-
-# Helm Upgrade
-
-修改：
+本課對照：[helm/api/templates/worker.yaml](<../../helm/api/templates/worker.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```yaml
-replicaCount
+        {{- toYaml .Values.worker.nodeSelector | nindent 8 }}
+      containers:
+        - name: worker
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # 覆寫映像預設的 Uvicorn 命令，啟動獨立 Python worker。
+          command: ["python", "-m", "api.worker"]
+          envFrom:
+            # ConfigMap 提供服務位址與輪詢設定；密碼沿用外部建立的 Secret。
+            - configMapRef:
+                name: {{ include "api.fullname" . }}-config
+            - secretRef:
+                name: postgres-secret
+          resources:
+            # requests 供排程器計算容量，limits 限制容器 CPU／記憶體上限。
+            {{- toYaml .Values.worker.resources | nindent 12 }}
+{{- end }}
 ```
 
-更新：
+## 閱讀與練習
+
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 比較 worker.enabled true／false 的離線輸出，檢查 worker 是否存在；再核對 API 和 worker 的命名與 ConfigMap 引用一致。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-helm upgrade api ./api -n hpc-platform
+sed -n '28,44p' 'helm/api/templates/worker.yaml'
 ```
 
-Helm：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-自動比較差異。
+## 怎樣判斷自己讀懂了
 
-更新 Kubernetes Resource。
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/platform-deployment-20260921.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
----
+## 舊版與新版本的關係
 
-# Helm History
-
-查看：
-
-```bash
-helm history api -n hpc-platform
-```
-
-平台：
-
-完成：
-
-```text
-Revision1
-
-↓
-
-Revision2
-
-↓
-
-Revision3
-
-↓
-
-Revision4
-```
-
-完整保留部署歷史。
-
----
-
-# Helm Rollback
-
-Rollback：
-
-```bash
-helm rollback api 2 -n hpc-platform
-```
-
-注意：
-
-Rollback：
-
-不是：
-
-回到 Revision2。
-
-而是：
-
-建立：
-
-新的：
-
-```text
-Revision4
-```
-
-內容：
-
-等同：
-
-Revision2。
-
-History：
-
-永遠保留。
-
-方便：
-
-Audit。
-
----
-
-# Release
-
-目前：
-
-Release：
-
-```text
-api
-```
-
-Chart：
-
-```text
-api
-```
-
-Chart：
-
-可以建立：
-
-多個：
-
-Release。
-
-例如：
-
-```text
-api
-
-api-dev
-
-api-stage
-
-api-prod
-```
-
-互不影響。
-
----
-
-# _helpers.tpl
-
-Helm：
-
-提供：
-
-```text
-_helpers.tpl
-```
-
-作為：
-
-共用 Template。
-
-避免：
-
-每個 YAML：
-
-重複相同內容。
-
----
-
-# define
-
-建立：
-
-Helper：
-
-例如：
-
-```tpl
-{{ define "api.labels" }}
-...
-{{ end }}
-```
-
-建立：
-
-可重複使用 Template。
-
----
-
-# include
-
-使用：
-
-Helper：
-
-```tpl
-{{ include "api.labels" . }}
-```
-
-如同：
-
-Python：
-
-```python
-function()
-```
-
-概念。
-
----
-
-# selectorLabels
-
-Deployment：
-
-Selector：
-
-```yaml
-matchLabels:
-```
-
-Pod：
-
-Labels：
-
-```yaml
-labels:
-```
-
-Service：
-
-Selector：
-
-```yaml
-selector:
-```
-
-全部：
-
-改為：
-
-```tpl
-{{ include "api.selectorLabels" . }}
-```
-
-避免：
-
-Selector 不一致。
-
----
-
-# labels
-
-Deployment：
-
-Metadata：
-
-Labels：
-
-改為：
-
-```tpl
-{{ include "api.labels" . }}
-```
-
-由：
-
-Helper：
-
-統一管理。
-
----
-
-# fullname
-
-平台：
-
-開始使用：
-
-```tpl
-{{ include "api.fullname" . }}
-```
-
-建立：
-
-Resource Name。
-
-例如：
-
-Service：
-
-```text
-api-service
-```
-
-ConfigMap：
-
-```text
-api-config
-```
-
-Secret：
-
-```text
-api-secret
-```
-
-未來：
-
-若：
-
-Release：
-
-改為：
-
-```text
-api-dev
-```
-
-Render：
-
-自動變成：
-
-```text
-api-dev-service
-
-api-dev-config
-
-api-dev-secret
-```
-
-避免：
-
-不同 Release：
-
-互相衝突。
-
----
-
-# Helper 化資源
-
-目前：
-
-完成：
-
-* Deployment Labels
-* Deployment Selector
-* Pod Labels
-* Service Selector
-* ConfigMap Name
-* Secret Name
-* Service Name
-
-開始使用：
-
-Helper。
-
----
-
-# Helm Chart 能力提升
-
-目前 Chart：
-
-已具備：
-
-* Values 管理
-* Helper Template
-* Release Name
-* Dynamic Resource Name
-* Dynamic Selector
-* Dynamic Labels
-
-開始符合企業 Helm Chart 設計方式。
-
----
-
-# 今日重點
-
-Helm：
-
-不是：
-
-取代 kubectl。
-
-Helm：
-
-負責：
-
-Release。
-
-kubectl：
-
-負責：
-
-Cluster。
-
-企業：
-
-日常流程：
-
-```text
-helm upgrade
-
-↓
-
-kubectl rollout status
-
-↓
-
-kubectl get pods
-
-↓
-
-kubectl logs
-```
-
----
-
-# Interview Q&A
-
-## Q1：Helm Rollback 為什麼會建立新的 Revision？
-
-Rollback 不會修改歷史，而是重新部署指定 Revision 的內容，因此會建立新的 Revision，保留完整部署紀錄。
-
----
-
-## Q2：為什麼需要 `_helpers.tpl`？
-
-將名稱、Labels、Selector 等共用邏輯集中管理，避免重複並提升 Helm Chart 的可維護性。
-
----
-
-## Q3：Helm 與 kubectl 的差別？
-
-Helm 負責 Chart、Release 與版本管理；kubectl 負責操作及觀察 Kubernetes Cluster 中的實際資源。
-
----
-
-# 今日成果
-
-平台已完成：
-
-* Helm Release 管理
-* Helm History
-* Helm Rollback
-* Helper Template
-* define
-* include
-* Dynamic Labels
-* Dynamic Selector
-* Dynamic Resource Name
-
-Helm Chart 已具備企業實務中常見的設計模式。
-
----
-
-# 下一步
-
-Week8 Day5：
-
-Kustomize
-
-學習：
-
-* Base
-* Overlay
-* Patch
-* Strategic Merge
-* JSON6902 Patch
-* dev / stage / prod 環境管理
-* 與 Helm 的搭配方式
-
+[改寫前完整教材快照](<../history/20260922-before-current/week8/Day4_Helm_Advanced.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

@@ -1,289 +1,57 @@
-# Week4 Day3 - Job Identity
+<!-- current-curriculum: 2026-09-22 -->
+# Week4 Day3 — Job identity
 
-## 對應檔案
+[上一課](<day2-rest-api-design.md>) · [本週目錄](README.md) · [下一課](<day4-memory-queue.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [api/main.py](../../api/main.py)：API、工作狀態與佇列處理
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Job identity」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日平台增加什麼？
+## 概念解說
 
-今天平台新增 **Job Identity**。
+UUID 是工作身分，固定 mpi-<job_id> 名稱讓重試可接回同一 JobSet。名稱衝突不自動表示是自己的工作，dispatcher 還核對 owner label。
 
-平台流程由：
+## 在現在的專案中
 
-```text
-Client
-  ↓
-POST /benchmark
-  ↓
-Accepted
-```
+現行 GKE 主線；本機先用 mock 測試學習，不需要先拿雲端權限。
 
-變成：
-
-```text
-Client
-  ↓
-POST /benchmark
-  ↓
-Request Body
-  ↓
-Pydantic Validation
-  ↓
-建立 Job
-  ↓
-產生 UUID
-  ↓
-回傳 Job ID
-```
-
-平台開始能識別每一個 Benchmark Request。
-
----
-
-## 今日解決的 Platform Problem
-
-如果平台同時收到多個 Benchmark Request：
-
-```text
-Client A
-POST /benchmark
-
-Client B
-POST /benchmark
-
-Client C
-POST /benchmark
-```
-
-平台必須知道：
-
-* 哪個 Job 正在執行
-* 哪個 Job 已完成
-* 哪個 Worker 正在處理
-* Client 查詢的是哪一個 Benchmark
-
-因此，每個 Request 都需要唯一的 **Job Identity**。
-
----
-
-## 今日知識鏈
-
-```text
-HTTP Request
-      ↓
-Benchmark Request
-      ↓
-Request Body
-      ↓
-Schema
-      ↓
-Pydantic
-      ↓
-Job
-      ↓
-Identity
-      ↓
-UUID
-```
-
----
-
-## 今日實作
-
-### 1. 建立 Request Schema
-
-新增：
+本課對照：[api/workloads/dispatcher.py](<../../api/workloads/dispatcher.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```python
-from pydantic import BaseModel
+        # create 成功後程序可能中斷。409 時查回同名資源，而不是產生第二個 JobSet。
+        # 其他 API 錯誤保持拋出，讓背景 worker 留待下一輪重試。
+        if exc.status != 409:
+            raise
+        response = api.get_namespaced_custom_object(
+            group='jobset.x-k8s.io', version='v1alpha2', namespace=NAMESPACE,
+            plural='jobsets', name=manifest['metadata']['name'], _request_timeout=15,
+        )
+        if response.get('metadata', {}).get('labels', {}).get('platform-job-id') != job_id:
+            raise RuntimeError('Existing JobSet is not owned by this platform job') from exc
 
-
-class BenchmarkRequest(BaseModel):
-    benchmark: str
+    return response["metadata"]["name"]
 ```
 
-目的：
+## 閱讀與練習
 
-* 定義 Request Body 格式
-* 驗證 Client 傳入資料
-* 自動產生 OpenAPI Schema
-
----
-
-### 2. 修改 POST API
-
-修改：
-
-```python
-def create_benchmark(request: BenchmarkRequest):
-```
-
-FastAPI 會自動：
-
-* 解析 JSON
-* 建立 `BenchmarkRequest`
-* 驗證資料格式
-* 傳入 Handler
-
----
-
-### 3. 建立 Job Identity
-
-新增：
-
-```python
-from uuid import uuid4
-
-job_id = str(uuid4())
-```
-
-目的：
-
-* 每個 Benchmark Request 都擁有唯一 ID
-* 提供後續 Job 查詢依據
-* 避免分散式環境 ID 衝突
-
----
-
-### 4. 回傳 Job 資訊
-
-回傳：
-
-```json
-{
-  "message": "benchmark request received",
-  "job_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  "benchmark": "cpu",
-  "status": "accepted"
-}
-```
-
-代表平台已成功建立一個新的 Benchmark Job。
-
----
-
-## 今日驗證
-
-### 驗證 Request Body 必填
-
-未提供 Body：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 從 API 的 uuid4 追到 renderer 與 dispatcher 的 409 分支；解釋使用隨機新名稱重試為何可能重複執行。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-curl -X POST http://localhost:8000/benchmark
+sed -n '36,47p' 'api/workloads/dispatcher.py'
 ```
 
-結果：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```text
-422 Unprocessable Entity
-```
+## 怎樣判斷自己讀懂了
 
-代表 FastAPI 已完成 Request Validation。
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/automatic-worker-20260922.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
----
+## 舊版與新版本的關係
 
-### 驗證正常 Request
-
-```bash
-curl -X POST http://localhost:8000/benchmark \
-  -H "Content-Type: application/json" \
-  -d '{"benchmark":"cpu"}'
-```
-
-結果：
-
-```json
-{
-  "message":"benchmark request received",
-  "job_id":"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  "benchmark":"cpu",
-  "status":"accepted"
-}
-```
-
-成功建立 Benchmark Job。
-
----
-
-## 今日平台架構
-
-```text
-Client
-      │
-POST /benchmark
-      │
-      ▼
-JSON Request Body
-      │
-      ▼
-Pydantic Schema Validation
-      │
-      ▼
-FastAPI
-      │
-      ▼
-建立 Job
-      │
-      ▼
-UUID
-      │
-      ▼
-JSON Response
-```
-
----
-
-## 今日學到的重點
-
-* Request Body 用來接收 Client 提交的資料。
-* Pydantic 負責定義 Schema 與驗證資料。
-* FastAPI 會自動將 JSON 轉成 Python Object。
-* UUID 提供每個 Benchmark Job 唯一身份。
-* `job_id` 是未來查詢 Job 狀態、Queue、Worker、Database 的基礎。
-
----
-
-## 它最後會變成平台哪一部分？
-
-今天建立的是 **Job Identity**。
-
-後續會一路延伸：
-
-```text
-POST /benchmark
-      ↓
-Job ID
-      ↓
-Memory Queue
-      ↓
-Redis Queue
-      ↓
-Worker
-      ↓
-Database
-      ↓
-GET /jobs/{job_id}
-      ↓
-Benchmark Result
-```
-
-Day3 建立的是整個 HPC AI Performance Engineering Platform 的任務識別基礎。
-
----
-
-## Interview
-
-### Q1：為什麼 Benchmark Request 需要 Job ID？
-
-因為平台可能同時處理大量 Benchmark Request，每個 Request 都必須有唯一身份，才能查詢狀態、追蹤執行流程、對應 Worker 與最終結果。
-
----
-
-### Q2：Pydantic 在 FastAPI 中負責什麼？
-
-Pydantic 用來定義 API Schema、驗證 Request Body，並將 JSON 自動轉換成 Python 物件，同時提供 OpenAPI Schema 給 Swagger 使用。
-
+[改寫前完整教材快照](<../history/20260922-before-current/week4/day3-job-identity.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

@@ -1,164 +1,56 @@
-# Week 3 Day 3－Image 與 Container
+<!-- current-curriculum: 2026-09-22 -->
+# Week3 Day3 — Image 與 container
 
-## 對應檔案
+[上一課](<day2-install-docker.md>) · [本週目錄](README.md) · [下一課](<day4-dockerfile.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [docker/Dockerfile](../../docker/Dockerfile)：容器映像建置
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Image 與 container」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日目標
+## 概念解說
 
-理解 Docker Image 與 Docker Container 的差異，以及 Container 的生命週期。
+image 不會隨容器內每次修改自動改版；刪除容器可能失去可寫層資料。API 與 worker 共用 image，Helm 的 command 可覆寫 image 預設啟動方式。
 
----
+## 在現在的專案中
 
-# Image 是什麼？
+本週以檢查與離線讀設定為主；不要求安裝另一個 Docker daemon 或啟動正式服務。
 
-Image 是 Docker 的模板（Template）。
+本課對照：[helm/api/templates/worker.yaml](<../../helm/api/templates/worker.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
-例如：
-
-- ubuntu:24.04
-- python:3.12
-- nginx:latest
-
-Image 本身不能執行，它只是建立 Container 的基礎。
-
----
-
-# Container 是什麼？
-
-Container 是 Image 的執行實體（Running Instance）。
-
-關係如下：
-
-```
-Image
-    │
-    ▼
-Container
+```yaml
+          command: ["python", "-m", "api.worker"]
+          envFrom:
+            # ConfigMap 提供服務位址與輪詢設定；密碼沿用外部建立的 Secret。
+            - configMapRef:
+                name: {{ include "api.fullname" . }}-config
+            - secretRef:
+                name: postgres-secret
+          resources:
+            # requests 供排程器計算容量，limits 限制容器 CPU／記憶體上限。
+            {{- toYaml .Values.worker.resources | nindent 12 }}
+{{- end }}
 ```
 
-一個 Image 可以建立多個 Container。
+## 閱讀與練習
 
----
-
-# docker pull
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 比較 Dockerfile 的 CMD 與 worker command，解釋為何同一映像可運行 API 或背景 worker。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-docker pull ubuntu:24.04
+sed -n '34,44p' 'helm/api/templates/worker.yaml'
 ```
 
-作用：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-- 從 Docker Registry 下載 Image
-- 不建立 Container
-- 不啟動 Container
+## 怎樣判斷自己讀懂了
 
----
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../../docker/Dockerfile>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-# docker run
+## 舊版與新版本的關係
 
-```bash
-docker run -it ubuntu:24.04
-```
-
-作用：
-
-- 使用 Image 建立新的 Container
-- 啟動 Container
-- 執行預設主程序（本次為 `/bin/bash`）
-
----
-
-# docker ps
-
-查看目前執行中的 Container。
-
-停止的 Container 不會顯示。
-
----
-
-# docker ps -a
-
-查看所有 Container。
-
-包含：
-
-- Running
-- Exited
-
----
-
-# Container 的生命週期
-
-本次實驗：
-
-```
-docker pull
-        │
-        ▼
-Image
-        │
-docker run
-        ▼
-Running Container
-        │
-exit
-        ▼
-Exited Container
-```
-
-Container 並沒有被刪除，只是停止執行。
-
----
-
-# Main Process
-
-Container 的生命週期與主程序（Main Process）綁定。
-
-本次主程序為：
-
-```
-/bin/bash
-```
-
-當執行：
-
-```bash
-exit
-```
-
-`/bin/bash` 結束，因此 Container 也停止。
-
----
-
-# 與 HPC AI Performance Engineering Platform 的關聯
-
-未來平台中的所有服務，例如：
-
-- FastAPI
-- Prometheus
-- Grafana
-- Benchmark Worker
-- vLLM
-
-都會以 Docker Container 執行。
-
-每個服務都有自己的 Main Process。
-
-若 Main Process 結束，Container 就會停止，因此 Kubernetes 會負責監控與重新啟動 Container。
-
----
-
-# 今日重點
-
-- Image 是模板。
-- Container 是 Image 的執行實體。
-- `docker pull` 只下載 Image。
-- `docker run` 建立並啟動新的 Container。
-- `docker ps` 查看執行中的 Container。
-- `docker ps -a` 查看所有 Container。
-- Container 的生命週期由 Main Process 決定。
+[改寫前完整教材快照](<../history/20260922-before-current/week3/day3-image-container.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

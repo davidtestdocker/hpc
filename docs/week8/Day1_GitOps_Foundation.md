@@ -1,397 +1,69 @@
-# Week8 Day1 - GitOps Foundation
+<!-- current-curriculum: 2026-09-22 -->
+# Week8 Day1 — GitOps 的期望狀態
 
-## 對應檔案
+[本週基礎](README.md) · [本週目錄](README.md) · [下一課](<Day2_Helm_Foundation.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [argocd/application-dev.yaml](../../argocd/application-dev.yaml)
-- [argocd/project.yaml](../../argocd/project.yaml)
-- [k8s/api-deployment.yaml](../../k8s/api-deployment.yaml)
-- [k8s/api-ingress.yaml](../../k8s/api-ingress.yaml)
-- [k8s/api-service.yaml](../../k8s/api-service.yaml)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「GitOps 的期望狀態」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 本週成果
+## 概念解說
 
-建立 Production Deployment Pipeline。
+GitOps 不只是把 YAML 放進 Git，還需要控制器讀取指定 revision 並協調叢集。主環境目前不是既有 dev Application 的完整受管目標；配置存在也不是同步成功證據。
 
-平台將從：
+## 在現在的專案中
 
-```text
-手動 kubectl apply
-```
+主線是 Helm／Kustomize 渲染與 deploy 工具；Argo CD 為獨立 GitOps 設定教材。
 
-進化為：
-
-```text
-Git
-
-↓
-
-Argo CD
-
-↓
-
-Kubernetes
-```
-
-開始建立企業級 GitOps 部署流程。
-
----
-
-# 今日平台增加什麼
-
-今天建立 GitOps 核心概念。
-
-新增：
-
-```text
-gitops/
-```
-
-目錄，作為後續 GitOps 相關檔案與部署流程的起點。
-
-目前專案：
-
-```text
-hpc-ai-benchmark-platform/
-
-├── api/
-├── benchmark/
-├── docs/
-├── k8s/
-├── monitoring/
-├── loadtest/
-└── gitops/
-```
-
----
-
-# Platform Problem
-
-目前平台部署方式：
-
-```bash
-kubectl apply -f api-deployment.yaml
-
-kubectl apply -f api-service.yaml
-
-kubectl apply -f api-ingress.yaml
-```
-
-這種方式稱為：
-
-```text
-Imperative Deployment
-```
-
-雖然簡單，但存在許多問題：
-
-* 不知道誰修改了設定
-* Deployment 歷史難以追蹤
-* Cluster 容易與 Git 不一致
-* 無法自動修正 Drift
-
----
-
-# GitOps 是什麼？
-
-GitOps 的核心理念：
-
-> **Git 是唯一事實來源（Single Source of Truth）。**
-
-所有 Kubernetes 設定都以 Git Repository 為準。
-
-任何部署都必須先修改 Git，再同步到 Cluster。
-
----
-
-# 傳統部署流程
-
-```text
-Engineer
-     │
-kubectl apply
-     │
-Kubernetes Cluster
-```
-
-工程師直接操作 Cluster。
-
----
-
-# GitOps 部署流程
-
-```text
-Engineer
-     │
-git commit
-     │
-git push
-     │
-Git Repository
-     │
-Argo CD
-     │
-Kubernetes Cluster
-```
-
-工程師不直接修改 Cluster。
-
-所有修改都經過 Git。
-
----
-
-# Desired State
-
-Git Repository：
+本課對照：[argocd/application-dev.yaml](<../../argocd/application-dev.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```yaml
-replicas: 2
+  source:
+    repoURL: https://github.com/davidtestdocker/hpc.git
+    targetRevision: master
+    # 歷史 dev 路徑，不是現行 gpu-sg-platform。切換前須檢查 diff／資源所有權；
+    # 下方 prune=true 可能刪除舊受管資源，不可把改路徑當成單純文件同步。
+    path: kustomize/overlays/dev
+
+  # Argo CD 同步目標叢集與 namespace。
+  destination:
+    #Kubernetes API Server 的DNS，意思部屬到目前這個Cluster
+    server: https://kubernetes.default.svc
+    namespace: hpc-platform-dev
+
+  # Argo CD 自動同步與資源管理政策。
+  syncPolicy:
+  #automated 是不用手動按sync只要有差異(push完)就會同步
+  #prune true 如果git沒有這檔案但cluster 有的話檔案也會刪除變成跟git一樣
+  #selfHeal 假設有人編輯了replicas數量 但是git沒變的話 argocd會發現差異自動改回git上的數量 (不用等push)
+    automated:
+      # 同步時是否刪除 Git 中已移除的受管資源。
+      prune: true
+      # 是否自動修正叢集狀態與 Git 宣告之間的偏差。
+      selfHeal: true
+    syncOptions:
 ```
 
-代表：
+## 閱讀與練習
 
-平台應該有：
-
-```text
-2 Pods
-```
-
-這就是：
-
-```text
-Desired State
-```
-
----
-
-# Actual State
-
-目前 Cluster：
-
-```text
-5 Pods
-```
-
-代表：
-
-Cluster 與 Git 已經不同。
-
-這就是：
-
-```text
-Configuration Drift
-```
-
----
-
-# Reconciliation
-
-Argo CD 持續比較：
-
-```text
-Desired State
-```
-
-與：
-
-```text
-Actual State
-```
-
-如果不同：
-
-```text
-Git
-
-2 Pods
-
-↓
-
-Cluster
-
-5 Pods
-
-↓
-
-Argo CD
-
-↓
-
-Scale 回 2 Pods
-```
-
-這個持續同步的過程稱為：
-
-```text
-Reconciliation
-```
-
----
-
-# Self Heal
-
-若有人直接執行：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 讀 Application 的 repoURL、targetRevision、path、destination，逐一畫出讀取與寫入位置，指出它和 gpu-sg-platform 的差異。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-kubectl scale deployment api --replicas=10
+sed -n '20,43p' 'argocd/application-dev.yaml'
 ```
 
-Git：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```text
-replicas = 2
-```
+## 怎樣判斷自己讀懂了
 
-Argo CD 偵測到 Drift 後：
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/platform-deployment-20260921.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-```text
-10 Pods
+## 舊版與新版本的關係
 
-↓
-
-2 Pods
-```
-
-自動恢復到 Git 定義的狀態。
-
-這就是：
-
-```text
-Self Heal
-```
-
----
-
-# GitOps 架構
-
-```text
-Git Repository
-        │
-Desired State
-        │
-Argo CD
-        │
-Reconciliation
-        │
-Kubernetes Cluster
-        │
-Actual State
-```
-
----
-
-# Hands-on
-
-建立：
-
-```text
-gitops/
-```
-
-指令：
-
-```bash
-mkdir gitops
-```
-
-確認：
-
-```bash
-tree -L 1
-```
-
-專案結構已新增：
-
-```text
-gitops/
-```
-
----
-
-# 今日重點
-
-* GitOps 以 Git 作為唯一事實來源。
-* 不直接修改 Kubernetes Cluster。
-* Desired State 定義於 Git。
-* Actual State 為 Cluster 現況。
-* Argo CD 持續進行 Reconciliation。
-* Self Heal 可自動修正 Configuration Drift。
-
----
-
-# Interview Q&A
-
-## Q1：什麼是 GitOps？
-
-GitOps 是以 Git Repository 作為 Kubernetes 唯一設定來源，由 Git 控制部署與變更。
-
----
-
-## Q2：什麼是 Desired State？
-
-Desired State 是 Git Repository 中定義的平台狀態，例如 Deployment、Service、Ingress、Replica 數量等。
-
----
-
-## Q3：什麼是 Reconciliation？
-
-Reconciliation 是 GitOps Controller（例如 Argo CD）持續比較 Desired State 與 Actual State，並自動同步兩者的過程。
-
----
-
-# 今日成果
-
-平台開始從傳統部署方式：
-
-```text
-Engineer
-
-↓
-
-kubectl apply
-```
-
-邁向企業級 GitOps：
-
-```text
-Engineer
-
-↓
-
-Git Commit
-
-↓
-
-Git Push
-
-↓
-
-Argo CD
-
-↓
-
-Kubernetes
-```
-
-建立 GitOps 思維，為後續 Helm、Kustomize、Argo CD 做準備。
-
----
-
-# 下一步
-
-Week8 Day2：
-
-Helm Foundation
-
-學習：
-
-* Helm Chart
-* Chart.yaml
-* values.yaml
-* templates
-* Helm Template Render
-* 建立第一個 Helm Chart
-
+[改寫前完整教材快照](<../history/20260922-before-current/week8/Day1_GitOps_Foundation.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

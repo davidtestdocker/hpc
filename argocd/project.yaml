@@ -30,9 +30,11 @@ spec:
       server: https://kubernetes.default.svc
 
   clusterResourceWhitelist:
+    # 目前允許所有 cluster-scoped 類型；這是寬鬆 demo 設定，不是最小權限示範。
     - group: "*"
       kind: "*"
 
   namespaceResourceWhitelist:
+    # namespace 目的地受上方 destinations 限制，但資源類型仍全部允許。
     - group: "*"
       kind: "*"

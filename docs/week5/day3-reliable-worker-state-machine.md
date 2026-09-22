@@ -1,370 +1,80 @@
-# Week5 Day3 - Reliable Worker State Machine
+<!-- current-curriculum: 2026-09-22 -->
+# Week5 Day3 — 現行 worker 狀態機
 
-## 對應檔案
+[上一課](<day2-redis-persistence.md>) · [本週目錄](README.md) · [下一課](<day4-stuck-job-recovery.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [api/main.py](../../api/main.py)：API、工作狀態與佇列處理
-- [compose.yaml](../../compose.yaml)：本機服務組合
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「現行 worker 狀態機」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日平台增加什麼
+## 概念解說
 
-今天的平台從：
+reconcile_job 依狀態推進：processing 也可重入，submit 成功記 submitted，之後 collector 等終態。done marker 在狀態回寫與 queue 清理後設定；queue 並非唯一接續來源。
 
-```text
-Producer
-    ↓
-job_queue
-    ↓
-Worker
-    ↓
-Completed
-```
+## 在現在的專案中
 
-演進成：
+主 overlay 啟用獨立 api-worker；手動 /worker/* 返回 409。
 
-```text
-Producer
-    ↓
-Pending Queue
-    ↓
-Processing Queue
-    ↓
-Completed
-```
-
-新增能力：
-
-* Reliable Queue 基礎
-* Processing Queue
-* Worker State Machine
-* `accepted → processing → completed`
-* `processing_started_at`
-* 避免 Job 被 Worker 取出後直接消失
-
----
-
-# Platform Problem
-
-原本 Worker 使用：
+本課對照：[api/worker.py](<../../api/worker.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```python
-redis_client.lpop("job_queue")
+def reconcile_job(job, guard=lambda: None):
+    """推進一筆工作；先記錄提交意圖，終態則先寫 PostgreSQL 再發布 Redis。
+
+    guard 在關鍵寫入前檢查 lease；預設空操作供單元測試直接呼叫使用。
+    這是可重試流程，並非兩個資料庫之間的原子交易或 exactly-once 保證。
+    """
+    redis = main.redis_client
+    job_id = job['job_id']
+    key = f'job:{job_id}'
+    state = job['status']
+    guard()
+    if state in {'completed', 'failed'}:
+        # 終態已發布但尚未標記 done 時，補寫 DB 並接續下方 queue 清理。
+        main.persist_job_status(job_id, state)
+    elif state in {'accepted', 'retrying', 'processing'}:
+        # processing 也可以重入：上次可能已建立 JobSet，卻來不及保存 submitted。
+        # dispatcher 會用固定名稱及 owner label 接回同一個 JobSet。
+        job['status'] = 'processing'
+        redis.set(key, json.dumps(job))
+        if job.get('simulate_failure'):
+            # 僅此模擬故障累計三次後 failed；真實依賴例外由 tick 記錄並於下輪重試。
+            job['retry_count'] = job.get('retry_count', 0) + 1
+            job['status'] = 'failed' if job['retry_count'] >= 3 else 'retrying'
+            job['result'] = {'message': 'Simulated dispatch failure'}
 ```
 
-問題是：
+## 閱讀與練習
 
-```text
-LPOP 成功
-    ↓
-Job 從 Queue 消失
-    ↓
-Worker Crash
-    ↓
-Job Lost
-```
+先用這張表追程式，不必一次背完 Redis API：
 
-Job 會停留在：
+| 讀到的狀態 | 現行 MPI 分支做什麼 | 下一步 |
+|---|---|---|
+| accepted／retrying／processing | 保存 processing，再以固定名稱提交／接回 JobSet | 保存 submitted 與 jobset_name |
+| submitted，collector 回 None | 尚未拿到終態，不寫 completed | 留待下一輪 |
+| submitted，collector 回終態 | 先保存 DB status，再回寫 Redis result／finished_at | 清 queue、設 done marker |
+| completed／failed，尚未 done | 補寫 DB，再完成 queue 清理 | 設 done marker |
 
-```text
-status = accepted
-```
+例如：Kubernetes 已建立 JobSet，但 worker 在寫 submitted 前停止，Redis 可能仍是 processing。下次重入 submit 會遇到同名物件；dispatcher 必須核對 owner label 才能接回，不能把所有 409 都忽略。這才是「可重試」的具體設計，不是保證所有外部副作用只發生一次。
 
-但已經不在：
-
-```text
-job_queue
-```
-
-也不在 Worker 手上。
-
-企業平台不能接受這種 Lost Job。
-
----
-
-# 今日知識鏈
-
-```text
-Queue
-  ↓
-Consumer
-  ↓
-Worker Failure
-  ↓
-Lost Job
-  ↓
-Processing Queue
-  ↓
-State Machine
-  ↓
-Reliable Worker
-```
-
----
-
-# Hands-on
-
-## 1. 從 LPOP 改成 LMOVE
-
-原本：
-
-```python
-job_id = redis_client.lpop("job_queue")
-```
-
-改成：
-
-```python
-job_id = redis_client.lmove(
-    "job_queue",
-    "processing_queue",
-    "LEFT",
-    "RIGHT"
-)
-```
-
-目的：
-
-不是把 Job 從 Queue 拿出來後消失，而是：
-
-```text
-job_queue
-    ↓
-processing_queue
-```
-
-這是一個 atomic operation。
-
----
-
-## 2. 建立 Processing State
-
-Worker 取得 Job 後，先將狀態改成：
-
-```python
-job["status"] = "processing"
-
-job["processing_started_at"] = datetime.now(
-    timezone.utc
-).isoformat()
-```
-
-目的：
-
-讓 Job Storage 與 Queue 狀態一致。
-
-```text
-Job 在 processing_queue
-        ↓
-status 也應該是 processing
-```
-
----
-
-## 3. Job 完成後移出 Processing Queue
-
-Job 完成後：
-
-```python
-job["status"] = "completed"
-job["result"] = {
-    "message": "benchmark simulated"
-}
-```
-
-最後從 `processing_queue` 移除：
-
-```python
-redis_client.lrem(
-    "processing_queue",
-    1,
-    job_id
-)
-```
-
-為什麼不是 `LPOP`？
-
-因為多個 Worker 時，完成的 Job 不一定是 processing queue 最左邊那一筆。
-
-`LREM` 可以根據指定的 `job_id` 移除正確的 Job。
-
----
-
-# 最終 Worker Flow
-
-```text
-job_queue
-    ↓
-LMOVE
-    ↓
-processing_queue
-    ↓
-status = processing
-    ↓
-processing_started_at
-    ↓
-status = completed
-    ↓
-LREM processing_queue
-    ↓
-completed
-```
-
----
-
-# 驗證
-
-建立 Job：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 逐支閱讀 reconcile_job，畫出 MPI 正常路徑。對照 test_worker 的重啟／回寫失敗測試，說明 submitted 為何不等於 Running。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-curl -X POST http://localhost:8000/benchmark \
-  -H "Content-Type: application/json" \
-  -d '{"benchmark":"cpu"}'
+sed -n '19,42p' 'api/worker.py'
 ```
 
-處理 Job：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```bash
-curl -X POST http://localhost:8000/worker/process-next
-```
+## 怎樣判斷自己讀懂了
 
-查詢 Jobs：
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/automatic-worker-20260922.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-```bash
-curl http://localhost:8000/jobs
-```
+## 舊版與新版本的關係
 
-驗證結果：
-
-* Job 狀態從 `accepted` 進入 `processing`
-* 完成後變成 `completed`
-* Job 具有 `processing_started_at`
-* `processing_queue` 最後為空
-
-查詢 Processing Queue：
-
-```bash
-docker exec -it hpc-ai-benchmark-platform-redis-1 redis-cli LLEN processing_queue
-```
-
-預期：
-
-```text
-0
-```
-
----
-
-# 平台架構
-
-```text
-Client
-  ↓
-FastAPI
-  ↓
-Producer
-  ↓
-Redis job_queue
-  ↓
-LMOVE
-  ↓
-Redis processing_queue
-  ↓
-Worker
-  ↓
-Job Storage
-  ↓
-Completed
-```
-
----
-
-# 今日重點
-
-* `LPOP` 會造成 Worker Crash 時 Job Lost。
-* Reliable Queue 需要 Pending Queue 與 Processing Queue。
-* `LMOVE` 可以 atomic 地把 Job 從一個 Queue 搬到另一個 Queue。
-* `processing_queue` 是用來追蹤正在被 Worker 處理的 Job。
-* Job 狀態要跟 Queue 狀態一致。
-* `processing_started_at` 是未來做 Stuck Job Recovery 的基礎。
-* Job 完成後必須從 `processing_queue` 移除。
-* `LREM` 比 `LPOP` 更適合移除指定 Job。
-
----
-
-# Interview Q&A
-
-## Q1：為什麼 `LPOP` 不適合做可靠的 Worker Queue？
-
-因為 `LPOP` 會直接把 Job 從 Queue 移除。
-
-如果 Worker 在取出 Job 後 Crash，Job 不在 Queue，也沒有被完成，就會形成 Lost Job。
-
-可靠設計應該先把 Job 搬到 `processing_queue`，避免 Job 消失。
-
----
-
-## Q2：為什麼需要 `processing_queue`？
-
-`processing_queue` 用來記錄已被 Worker 取走、但尚未完成的 Job。
-
-它讓平台可以知道：
-
-```text
-哪些 Job 正在處理
-哪些 Job 可能卡住
-哪些 Job 未來需要 Recovery
-```
-
-這是後續實作 Stuck Job Recovery、Retry、Dead Letter Queue 的基礎。
-
----
-
-# 今日成果
-
-平台從：
-
-```text
-Simple Redis Queue
-```
-
-演進成：
-
-```text
-Reliable Worker State Machine
-```
-
-目前已具備：
-
-```text
-accepted
-    ↓
-processing
-    ↓
-completed
-```
-
----
-
-# 下一步
-
-Week5 Day4：
-
-實作 **Stuck Job Recovery**。
-
-會處理：
-
-```text
-processing_queue
-    ↓
-timeout detection
-    ↓
-requeue
-    ↓
-retry
-```
-
-目標是讓 Worker Crash 後，卡在 `processing_queue` 的 Job 可以被重新放回 `job_queue`。
-
+[改寫前完整教材快照](<../history/20260922-before-current/week5/day3-reliable-worker-state-machine.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

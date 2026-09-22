@@ -1,502 +1,69 @@
-# Week11 Day3 - FastAPI Application Metrics
+<!-- current-curriculum: 2026-09-22 -->
+# Week11 Day3 — FastAPI application metrics
 
-## 對應檔案
+[上一課](<Day2-Prometheus-ScrapeJob-Target與PullModel.md>) · [本週目錄](README.md) · [下一課](<Day4-NodeExporter-GrafanaDashboard-KubernetesServiceDiscovery.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [api/main.py](../../api/main.py)：API、工作狀態與佇列處理
-- [helm/api/values-dev.yaml](../../helm/api/values-dev.yaml)
-- [helm/prometheus/templates/configmap.yaml](../../helm/prometheus/templates/configmap.yaml)
-- [requirements.txt](../../requirements.txt)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「FastAPI application metrics」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
----
+## 概念解說
 
-# 今日目標
+Instrumentator 自動記錄 HTTP 請求，但 HTTP latency 不等於非同步 MPI 的 end-to-end latency。只量 POST /benchmark 會主要看提交路徑，而非計算時間。
 
-今天完成以下內容：
+## 在現在的專案中
 
-- FastAPI 整合 Prometheus Metrics
-- 建立 `/metrics`
-- Prometheus 成功 Scrape API
-- API Target 由 DOWN 變成 UP
-- 理解 Prometheus Instrumentator
-- 理解 Application Metrics
+監控 manifests 和歷史 dashboard 保留為獨立路徑；不宣稱即時 target 健康。
 
----
-
-# 今日平台架構
-
-```text
-                   Client
-                      │
-                      ▼
-                FastAPI API
-           ┌─────────┴─────────┐
-           │                   │
-           ▼                   ▼
-      REST API            /metrics
-                               │
-                               ▼
-                         Prometheus
-                               │
-                               ▼
-                          Targets = UP
-```
-
----
-
-# 一、安裝 Prometheus Instrumentator
-
-requirements.txt 新增：
-
-```text
-prometheus-fastapi-instrumentator
-```
-
-作用：
-
-提供 FastAPI 與 Prometheus 整合。
-
----
-
-# 二、FastAPI 整合 Metrics
-
-新增：
+本課對照：[api/main.py](<../../api/main.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```python
-from prometheus_fastapi_instrumentator import Instrumentator
-```
-
-建立 FastAPI 後：
-
-```python
-app = FastAPI(
-    title=APP_NAME,
-    version="0.1.0"
-)
-
 Instrumentator().instrument(app).expose(app)
+
+# class 定義 BenchmarkRequest 類別；括號內是繼承的父類別。
+# 繼承 Pydantic BaseModel，FastAPI 依欄位型別驗證 JSON；simulate_failure 預設為 False。
+class BenchmarkRequest(BaseModel):
+    benchmark: str
+    simulate_failure: bool = False
+
+
+# 回傳 API 首頁資訊。
+# @ 是 decorator：將下方函式註冊為指定 HTTP 方法與路徑的處理函式。
+@app.get("/")
+def root():
+    return {
+        "message": "HPC API DEV",
+        "status": "running"
+    }
+
+# 回傳程序健康狀態；這個端點未檢查所有外部相依服務。
+@app.get("/health")
+def health():
+    return {
+        "status": "healthy"
+    }
 ```
 
----
+## 閱讀與練習
 
-# 三、Instrumentator 做了什麼
-
-```python
-Instrumentator()
-```
-
-建立 Metrics 收集器。
-
----
-
-```python
-.instrument(app)
-```
-
-攔截所有 FastAPI Request。
-
-例如：
-
-```text
-GET /
-
-GET /jobs
-
-POST /benchmark
-
-GET /health
-```
-
-全部都會自動統計。
-
----
-
-```python
-.expose(app)
-```
-
-自動建立：
-
-```text
-GET /metrics
-```
-
-不用自行撰寫：
-
-```python
-@app.get("/metrics")
-```
-
----
-
-# 四、原本 Metrics API 衝突
-
-原本：
-
-```python
-@app.get("/metrics")
-def metrics():
-```
-
-回傳：
-
-```json
-{
-    "total_jobs": 10,
-    "queued_jobs": 2,
-    "completed_jobs": 8
-}
-```
-
-屬於：
-
-Business Metrics API。
-
-Instrumentator 也會建立：
-
-```text
-/metrics
-```
-
-因此會發生：
-
-Route 衝突。
-
----
-
-修改為：
-
-```python
-@app.get("/job-metrics")
-def job_metrics():
-```
-
-結果：
-
-```text
-/metrics
-```
-
-Prometheus 使用。
-
-```text
-/job-metrics
-```
-
-保留原本 JSON 統計功能。
-
----
-
-# 五、GitOps 部署流程
-
-修改完成後：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 找 API Instrumentator 初始化，再比較 POST 回應與 worker 完成時間。若要量整筆工作，列出還需哪些時間戳與關聯資訊。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-git add .
-
-git commit
-
-git pull --rebase origin master
-
-git push origin master
+sed -n '48,71p' 'api/main.py'
 ```
 
-GitHub Actions：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```text
-Build Image
+## 怎樣判斷自己讀懂了
 
-↓
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/README.md>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-Push Artifact Registry
+## 舊版與新版本的關係
 
-↓
-
-更新 values-dev.yaml
-
-↓
-
-Argo CD Sync
-
-↓
-
-Rolling Update API
-```
-
----
-
-# 六、Prometheus Target
-
-原本：
-
-```text
-api
-
-DOWN
-```
-
-錯誤：
-
-```text
-unsupported Content-Type
-
-application/json
-```
-
-原因：
-
-API 沒有 Prometheus Metrics。
-
----
-
-修改後：
-
-```text
-api
-
-UP
-```
-
-代表：
-
-Prometheus 已成功：
-
-```text
-GET /metrics
-```
-
-並成功解析 Metrics。
-
----
-
-# 七、驗證 Metrics
-
-使用：
-
-```bash
-kubectl port-forward \
--n hpc-platform-dev \
-svc/api-service \
-8000:8000
-```
-
-瀏覽：
-
-```text
-http://localhost:8000/metrics
-```
-
-成功看到：
-
-```text
-# HELP ...
-
-# TYPE ...
-
-python_gc_objects_collected_total
-
-process_virtual_memory_bytes
-
-process_cpu_seconds_total
-```
-
-代表：
-
-FastAPI 已成功輸出 Prometheus Metrics。
-
----
-
-# 八、為什麼不是 JSON
-
-以前：
-
-```text
-Content-Type
-
-application/json
-```
-
-例如：
-
-```json
-{
-    "status": "healthy"
-}
-```
-
-Prometheus：
-
-不能解析。
-
----
-
-現在：
-
-```text
-Content-Type
-
-text/plain
-```
-
-例如：
-
-```text
-# HELP process_cpu_seconds_total
-
-# TYPE process_cpu_seconds_total counter
-
-process_cpu_seconds_total 0.18
-```
-
-Prometheus：
-
-可以解析。
-
-因此：
-
-```text
-Target
-
-↓
-
-UP
-```
-
----
-
-# 九、目前 Application Metrics
-
-目前已自動產生：
-
-Python Runtime：
-
-```text
-python_gc_objects_collected_total
-
-python_gc_collections_total
-
-python_info
-```
-
----
-
-Process：
-
-```text
-process_cpu_seconds_total
-
-process_virtual_memory_bytes
-
-process_resident_memory_bytes
-
-process_open_fds
-```
-
----
-
-HTTP：
-
-Instrumentator 自動收集：
-
-- HTTP Request Count
-- HTTP Status Code
-- Request Duration
-- In Progress Requests
-
-之後可直接使用 PromQL 查詢。
-
----
-
-# 十、平台目前能力
-
-目前平台：
-
-```text
-FastAPI
-
-├── REST API
-
-├── /health
-
-├── /benchmark
-
-├── /jobs
-
-├── /job-metrics
-
-└── /metrics
-```
-
-Prometheus：
-
-```text
-Prometheus
-
-↓
-
-GET /metrics
-
-↓
-
-Application Metrics
-
-↓
-
-TSDB
-```
-
----
-
-# 十一、目前 Observability 架構
-
-```text
-                 Client
-                    │
-                    ▼
-               FastAPI API
-             ┌─────────────┐
-             │             │
-             ▼             ▼
-      Business API     /metrics
-                             │
-                             ▼
-                       Prometheus
-                             │
-                             ▼
-                          TSDB
-```
-
----
-
-# 今日重點整理
-
-- FastAPI 整合 Prometheus Instrumentator
-- Instrumentator 自動建立 `/metrics`
-- `.instrument(app)` 自動統計所有 HTTP Request
-- `.expose(app)` 自動建立 Metrics Endpoint
-- 原本 `/metrics` JSON API 改為 `/job-metrics`
-- Prometheus 成功 Scrape API
-- API Target 由 DOWN 變成 UP
-- `/metrics` 必須回傳 Prometheus Metrics 格式
-- Prometheus 開始收集 Application Metrics
-
----
-
-# Interview QA
-
-## Q1：為什麼原本的 `/metrics` 要改成 `/job-metrics`？
-
-### Answer
-
-`prometheus-fastapi-instrumentator` 會自動建立 `/metrics` Endpoint，提供 Prometheus 標準 Metrics。如果保留原本回傳 JSON 的 `/metrics`，兩個路由會衝突，因此將原本的業務統計 API 改名為 `/job-metrics`，讓 Prometheus 使用 `/metrics`，而業務統計仍可透過 `/job-metrics` 存取。
-
----
-
-## Q2：Prometheus 為什麼能將 API Target 從 DOWN 變成 UP？
-
-### Answer
-
-Prometheus 會定期向 `/metrics` 發送 HTTP GET 請求。原本 API 回傳的是 `application/json`，Prometheus 無法解析，因此 Target 顯示 DOWN。整合 Instrumentator 後，`/metrics` 改為回傳 Prometheus 規範的 `text/plain` Metrics 格式，Prometheus 成功解析並開始收集 Metrics，因此 Target 狀態變為 UP。
+[改寫前完整教材快照](<../history/20260922-before-current/week11/Day3-FastAPI-Application-Metrics.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

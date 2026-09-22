@@ -1,129 +1,69 @@
-# Week13 Day4 - PostgreSQL Concurrency Benchmark
+<!-- current-curriculum: 2026-09-22 -->
+# Week13 Day4 — DB concurrency
 
-## 對應檔案
+[上一課](<Day3-PostgreSQL-Benchmark.md>) · [本週目錄](README.md) · [下一課](<day5-resource-monitoring.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [benchmark/postgres/run_pgbench.sh](../../benchmark/postgres/run_pgbench.sh)：PostgreSQL 壓測
-- [k8s/postgres-service.yaml](../../k8s/postgres-service.yaml)
-- [k8s/postgres-statefulset.yaml](../../k8s/postgres-statefulset.yaml)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「DB concurrency」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-# 今天平台增加了什麼？
+## 概念解說
 
-今天平台新增 **Concurrency Benchmark**。
+更多 clients 可能提高吞吐，也可能增加鎖等待、連線競爭與尾延遲。連線池大小限制同時查詢數，增加 HTTP worker 不一定讓 DB 更快。
 
-除了測量 TPS 外，也分析不同併發數（Clients）對 PostgreSQL 的影響，找出資料庫的最佳運作區間（Operating Point）。
+## 在現在的專案中
 
----
+Day7 的子章按 7-1 到 7-7 閱讀，最後讀 day7-benchmark-report；不新增負載或覆寫舊結果。
 
-# Benchmark 指令
+本課對照：[api/database/connection.py](<../../api/database/connection.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
-## 10 Clients
+```python
+from sqlalchemy import create_engine
 
-```bash
-pgbench -h postgres-service -U hpc -d pgbench -c 10 -j 2 -t 100
+# 讀取環境變數，未設定時使用第二個引數的預設值。
+POSTGRES_HOST = os.getenv(
+    "POSTGRES_HOST",
+    "postgres-service"
+)
+
+# 讀取環境變數，未設定時使用第二個引數的預設值。
+POSTGRES_PORT = os.getenv(
+    "POSTGRES_PORT",
+    "5432"
+)
+
+# 讀取環境變數，未設定時使用第二個引數的預設值。
+POSTGRES_DB = os.getenv(
+    "POSTGRES_DB",
+    "hpc_platform"
+)
+
+# 讀取環境變數，未設定時使用第二個引數的預設值。
+POSTGRES_USER = os.getenv(
+    "POSTGRES_USER",
+    "hpc"
 ```
 
-## 20 Clients
+## 閱讀與練習
+
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 比較 DB pool 設定與 pgbench clients／threads，畫出請求排隊的位置。判讀數據時要同報成功率和 latency，不只看 TPS。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-pgbench -h postgres-service -U hpc -d pgbench -c 20 -j 2 -t 100
+sed -n '5,28p' 'api/database/connection.py'
 ```
 
-## 50 Clients
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```bash
-pgbench -h postgres-service -U hpc -d pgbench -c 50 -j 4 -t 100
-```
+## 怎樣判斷自己讀懂了
 
-## 100 Clients
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../../benchmark/results/causal-lm-20260922/evidence.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-```bash
-pgbench -h postgres-service -U hpc -d pgbench -c 100 -j 8 -t 100
-```
+## 舊版與新版本的關係
 
----
-
-# Benchmark 結果
-
-| Clients | Threads | TPS | Avg Latency |
-|---------:|---------:|----:|------------:|
-| 10 | 2 | 204.63 | 48.87 ms |
-| 20 | 2 | 189.40 | 105.59 ms |
-| 50 | 4 | 164.76 | 303.47 ms |
-| 100 | 8 | 150.34 | 665.17 ms |
-
----
-
-# 結果分析
-
-## TPS
-
-隨著 Clients 增加，TPS 並未提升，反而逐漸下降：
-
-- 10 Clients：204 TPS
-- 20 Clients：189 TPS
-- 50 Clients：165 TPS
-- 100 Clients：150 TPS
-
-代表 PostgreSQL 已進入飽和狀態。
-
----
-
-## Latency
-
-平均交易延遲：
-
-- 48.87 ms
-- 105.59 ms
-- 303.47 ms
-- 665.17 ms
-
-Clients 增加時，等待時間遠高於吞吐量提升。
-
----
-
-## 飽和點（Saturation Point）
-
-當 Client 持續增加，但 TPS 不再增加，Latency 卻快速上升時，表示系統已超過最佳運作區間。
-
----
-
-## 可能瓶頸
-
-- Transaction Lock
-- WAL 寫入
-- CPU Context Switch
-- Shared Buffer Contention
-- Connection Overhead
-
----
-
-## Platform Engineer 重點
-
-Benchmark 不只是追求最高 TPS，而是找出：
-
-- 最佳併發數
-- 可接受的 Latency
-- 系統飽和點
-- 是否需要擴充資源或調整 PostgreSQL 設定
-
----
-
-# Interview（2題）
-
-## Q1
-
-為什麼增加 Clients 不一定會增加 TPS？
-
-**A：** 因為資料庫會受到 CPU、Lock、WAL、Buffer 等資源限制，超過飽和點後，等待時間增加，TPS 反而下降。
-
----
-
-## Q2
-
-Latency 與 TPS 哪個更重要？
-
-**A：** 兩者都重要。TPS 代表吞吐量，Latency 代表單筆交易回應速度。高 TPS 若伴隨極高 Latency，實際使用者體驗仍會很差。
+[改寫前完整教材快照](<../history/20260922-before-current/week13/Day4-PostgreSQL-Concurrency-Benchmark.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

@@ -1,111 +1,53 @@
-# Week 1 Day 3－Context Switch（上下文切換）
+<!-- current-curriculum: 2026-09-22 -->
+# Week1 Day3 — Context switch
 
-## 對應檔案
+[上一課](<day2-cpu-scheduler.md>) · [本週目錄](README.md) · [下一課](<day4-cpu-utilization.md>) · [全程導讀](../learning-guide.md)
 
-本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-延伸對照文件：[Day1-Linux-CPU-Performance-Analysis](../week12/Day1-Linux-CPU-Performance-Analysis.md)。
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Context switch」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日目標
+## 概念解說
 
-理解 Context Switch 是什麼，以及它為什麼會影響系統效能。
+執行中的執行緒換成另一個時，核心要保存與恢復執行狀態。切換可能來自等待 I/O 或時間片用完；切換次數高不是自動成立的效能問題，還要看吞吐和等待原因。
 
----
+## 在現在的專案中
 
-# 什麼是 Context Switch？
+本週在自己的 Linux 學習環境做唯讀觀察，不聲稱主叢集當下健康。
 
-當 CPU Core 不足以同時執行所有 Process 時，Linux Scheduler 必須在不同 Process 之間切換。
+本課對照：[monitoring/process_monitor.py](<../../monitoring/process_monitor.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
-切換前，需要保存目前 Process 的執行狀態。
+```python
+result = subprocess.run(
+    ["ps", "-eo", "pid,comm"],
+    capture_output=True,
+    text=True,
+    check=False
+)
 
-切換後，需要恢復下一個 Process 的執行狀態。
-
-這個過程稱為 Context Switch。
-
----
-
-# 為什麼需要 Context Switch？
-
-目前實驗環境：
-
-- CPU Core：4
-
-建立五個高 CPU 使用率 Process：
-
-```bash
-yes > /dev/null &
-yes > /dev/null &
-yes > /dev/null &
-yes > /dev/null &
-yes > /dev/null &
+print(result.stdout)
 ```
 
-由於 Process 數量超過 CPU Core 數量，Scheduler 必須不停在 Process 之間切換。
+## 閱讀與練習
 
----
-
-# 實驗結果
-
-使用：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 用 vmstat 1 3 看 cs、r、b，先辨認第一行可能是開機以來的平均。將排程等待和 API 等 Redis 的等待分開描述。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-top
+sed -n '6,13p' 'monitoring/process_monitor.py'
 ```
 
-觀察到：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-- 五個 `yes` Process 同時存在
-- 每個 Process CPU 使用率約 75%～85%
+## 怎樣判斷自己讀懂了
 
-代表 Scheduler 正在公平分配 CPU 時間，而不是讓某一個 Process 長時間獨占 CPU。
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/README.md>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
----
+## 舊版與新版本的關係
 
-# Context Switch 的成本
-
-Context Switch 不會執行任何業務邏輯。
-
-它需要：
-
-- 保存目前 Process 狀態
-- 載入下一個 Process 狀態
-- 恢復執行
-
-因此會消耗 CPU 時間。
-
-Context Switch 越頻繁，可用於真正運算的 CPU 時間就越少。
-
----
-
-# 今日重點
-
-- Context Switch 是 Linux Scheduler 在 Process 間切換的過程。
-- 當 Process 數量超過 CPU Core 數量時，Context Switch 會增加。
-- CPU 使用率高，不代表 CPU 都在做有效工作。
-- Context Switch 過多會降低整體效能。
-
----
-
-# 與 HPC AI Performance Engineering Platform 的關聯
-
-未來平台中的：
-
-- FastAPI
-- Benchmark Worker
-- Prometheus
-- Grafana
-- vLLM
-
-都是 Linux Process。
-
-如果 Compute Node 的 CPU 資源不足，Scheduler 會增加 Context Switch。
-
-Context Switch 增加後，可能造成：
-
-- TPS 下降
-- TTFT 增加
-- Latency 增加
-
-因此，Performance Engineer 在分析 CPU Bottleneck 時，不能只看 CPU 使用率，還必須考慮 Context Switch 是否過於頻繁。
+[改寫前完整教材快照](<../history/20260922-before-current/week1/day3-context-switch.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

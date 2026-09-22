@@ -1,461 +1,64 @@
-# Week18 Day1 — Linux / Cluster Network Troubleshooting Baseline
+<!-- current-curriculum: 2026-09-22 -->
+# Week18 Day1 — Linux 網路 baseline
 
-## 對應檔案
+[本週基礎](README.md) · [本週目錄](README.md) · [下一課](<day2-network-quality-bandwidth-latency-mtu.md>) · [全程導讀](../learning-guide.md)
 
-本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-延伸對照文件：[day2-network-quality-bandwidth-latency-mtu](day2-network-quality-bandwidth-latency-mtu.md)。
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Linux 網路 baseline」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日完成內容
+## 概念解說
 
-建立 HPC / AI Cluster Linux 網路排障基線，實際驗證：
+ip addr 看介面與位址，ip route 看路由，ss 看 listener／連線；DNS 則把名字轉位址。沒有先定義 source namespace 就說某 port 不通，可能混淆 host 和容器視角。
 
-- NIC / IP / route
-- TCP LISTEN port
-- TCP retransmission counters
-- iperf3 bandwidth
-- MTU boundary
-- tcpdump 封包觀察
-- TCP three-way handshake
-- MTU 與 MSS 關係
+## 在現在的專案中
 
-測試節點：
+本週可用 CPU 學主機網路；不把 CPU 測試或 Socket fallback 當 RDMA 硬體實測。
 
-    hpc-demo      10.140.0.2
-    net-test-01   10.140.0.9
+本課對照：[helm/api/templates/service.yaml](<../../helm/api/templates/service.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
----
+```yaml
+  ports:
+    - port: {{ .Values.service.port }}
+      # Service 將流量轉送至 Pod 的目標埠號或命名埠。
+      targetPort: {{ .Values.service.targetPort }}
+      {{- if eq .Values.service.type "NodePort" }}
+      # 經節點 IP 開放的 Service 埠號，適用 NodePort／部分 LoadBalancer 配置。
+      nodePort: {{ .Values.service.nodePort }}
+      {{- end }}
+```
 
-## 1. NIC / IP / Route
+## 閱讀與練習
 
-確認介面與 IP：
+遇到「API 連不通」時，先寫下你從 host、哪個 Pod 或哪台 VM 出發，再依序問：
 
-    ip -br addr
+| 問題 | 本機可用的觀察 | 判讀限制 |
+|---|---|---|
+| 本機有哪些位址與路由？ | `ip addr`、`ip route` | 容器的視圖不一定等於 host |
+| 服務有沒有監聽？ | `ss -lnt` | 只能看到所在網路視圖的 listener |
+| 名稱能否解析？ | 在正確環境查 DNS，例如 `getent hosts localhost` | localhost 可解析不代表叢集 Service DNS 正常 |
+| 應用是否回應？ | 對你自己掌控的測試服務發起單次請求 | ping 成功不能代替 TCP／HTTP 檢查 |
 
-主要介面：
+若目標是 Kubernetes Service，下一層再查 selector／ready endpoints；不要在還沒確認 listener 或 DNS 前就改防火牆。tcpdump 抓包另需權限、明確介面與篩選，且不得公開敏感 payload。
 
-    ens4
-    hpc-demo: 10.140.0.2
-    net-test-01: 10.140.0.9
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 在自己的 Linux 執行 ip addr、ip route、ss -lnt，選一個 listener 說明 bind 位址；再對照 API Service，不需要向外掃描網段。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
-確認 routing：
+```bash
+sed -n '24,31p' 'helm/api/templates/service.yaml'
+```
 
-    ip route
-    ip route get 10.140.0.9
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-用途：
+## 怎樣判斷自己讀懂了
 
-    確認 Linux 實際會從哪個 interface / gateway 將 packet 送往目標節點。
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/network-policy-validation-20260921.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
----
+## 舊版與新版本的關係
 
-## 2. NIC 狀態與 counters
-
-查看 NIC：
-
-    ethtool ens4
-
-虛擬 NIC 環境中可能看到：
-
-    Speed: Unknown
-    Duplex: Unknown
-    Link detected: yes
-
-查看統計：
-
-    ethtool -S ens4
-
-篩選異常：
-
-    ethtool -S ens4 | grep -Ei 'drop|error|miss|timeout|fail|discard|overrun|crc'
-
-以及：
-
-    ip -s link show ens4
-
-本次結果：
-
-    RX errors: 0
-    RX dropped: 0
-    TX errors: 0
-    TX dropped: 0
-    tx_timeouts: 0
-
-代表目前 NIC baseline 沒有明顯 drop / error。
-
----
-
-## 3. TCP LISTEN Port
-
-確認服務是否真的 listen：
-
-    ss -lntp | grep 5201
-
-iperf3 預設 TCP port：
-
-    5201
-
-啟動 server：
-
-    iperf3 -s
-
-概念：
-
-    LISTEN 只代表本機 process 正在等待 TCP connection，
-    不代表遠端一定能成功連入，仍可能受 route / firewall / VPC rule 影響。
-
----
-
-## 4. TCP Retransmission Baseline
-
-查看 TCP counters：
-
-    netstat -s | grep -Ei 'retrans|lost'
-
-重點：
-
-    netstat counters 是開機後累積值，
-    troubleshooting 時應比較 workload 前後 delta。
-
-本次 iperf3 測試：
-
-    before retransmitted segments: 1
-    after retransmitted segments: 1
-
-所以：
-
-    retransmission delta = 0
-
----
-
-## 5. Bandwidth Baseline
-
-hpc-demo：
-
-    iperf3 -s
-
-net-test-01：
-
-    iperf3 -c 10.140.0.2 -t 30
-
-結果：
-
-    Transfer: 3.39 GBytes
-    Bitrate: 971 Mbits/sec
-    Retr: 0
-
-概念：
-
-    Transfer
-    = 測試期間傳送的總資料量
-
-    Bitrate
-    = 平均傳輸速率
-
-本次 30 秒測試沒有觀察到 TCP retransmission。
-
-注意：
-
-    約 971 Mbps 是此 VM / virtual network path 的測試 baseline，
-    不能直接推論為實體 NIC 的最高速度。
-
----
-
-## 6. MTU
-
-MTU：
-
-    Maximum Transmission Unit
-
-代表：
-
-    network interface 能送出的最大 Layer 3 IP packet size。
-
-本次：
-
-    ens4 MTU = 1460
-
-IPv4 ICMP 測試：
-
-    ping -c 3 -M do -s 1432 10.140.0.9
-
-計算：
-
-    1432 ICMP payload
-    + 8 ICMP header
-    + 20 IPv4 header
-    = 1460 bytes
-
-結果成功：
-
-    3 transmitted
-    3 received
-    0% packet loss
-
-超過 1 byte：
-
-    ping -c 3 -M do -s 1433 10.140.0.9
-
-結果：
-
-    local error: message too long, mtu=1460
-
-代表：
-
-    1461-byte IP packet 超過 local interface MTU，
-    且 -M do 禁止 fragmentation，因此 Linux 在本機直接拒絕送出。
-
----
-
-## 7. MSS
-
-MSS：
-
-    Maximum Segment Size
-
-代表：
-
-    TCP segment 中可承載的最大 TCP payload。
-
-tcpdump SYN 中觀察到：
-
-    mss 1420
-
-IPv4 TCP：
-
-    MTU 1460
-    - IPv4 header 20
-    - TCP header 20
-    = MSS 1420
-
-關係：
-
-    MTU
-    = 整個 IP packet 大小上限
-
-    MSS
-    = TCP payload 大小上限
-
----
-
-## 8. tcpdump
-
-安裝：
-
-    apt-get update
-    apt-get install -y tcpdump
-
-抓 iperf3 TCP 5201：
-
-    tcpdump -i ens4 -nn tcp port 5201
-
-參數：
-
-    -i ens4
-    = 指定 NIC
-
-    -nn
-    = 不做 hostname / service name 解析
-
-    tcp port 5201
-    = 只抓 TCP 5201 traffic
-
----
-
-## 9. TCP Data / ACK
-
-實際抓到：
-
-    10.140.0.9.41910 > 10.140.0.2.5201: Flags [P.], ... length 8448
-
-代表：
-
-    client 傳送 application data。
-
-Server 回：
-
-    10.140.0.2.5201 > 10.140.0.9.41910: Flags [.], ack ..., length 0
-
-代表：
-
-    server 透過 ACK 告知 sender 已收到資料，
-    ack number 表示下一個期待收到的 sequence number。
-
-常見 flags：
-
-    [S]
-    = SYN
-
-    [S.]
-    = SYN + ACK
-
-    [.]
-    = ACK
-
-    [P.]
-    = PSH + ACK
-
-    [F.]
-    = FIN
-
-    [R]
-    = RST
-
----
-
-## 10. TCP Three-Way Handshake
-
-使用：
-
-    tcpdump -i ens4 -nn -c 10 'tcp port 5201'
-
-Client：
-
-    nc -vz 10.140.0.2 5201
-
-抓到：
-
-    Client -> Server  SYN
-    Server -> Client  SYN + ACK
-    Client -> Server  ACK
-
-流程：
-
-    Client                      Server
-
-    SYN        ---------------->
-               <---------------- SYN + ACK
-    ACK        ---------------->
-
-    TCP connection established
-
-SYN：
-
-    Synchronize
-
-用途：
-
-    發起 TCP connection，
-    並同步雙方初始 sequence number。
-
----
-
-## 11. TCP Connection Close
-
-nc 測試完成後抓到：
-
-    FIN
-    FIN
-    ACK
-
-代表 TCP connection 正常關閉。
-
-FIN：
-
-    表示 sender 已沒有更多資料要傳，
-    請求正常終止 TCP connection。
-
----
-
-## 12. tcpdump 大封包觀察注意事項
-
-tcpdump 中曾看到：
-
-    length 56320
-
-這不代表 wire 上真的存在 56 KB 且突破 MTU 的單一 IP packet。
-
-Linux 可能使用：
-
-    TSO
-    GSO
-    GRO
-
-等 offload 機制。
-
-因此 host 上 tcpdump 看到的大 chunk，
-可能會在真正送往 network 前再被切成符合 MTU 的 packets。
-
----
-
-## 13. Network Troubleshooting Playbook
-
-遇到：
-
-    Node A 無法連到 Node B
-
-排查順序：
-
-    NIC / Link
-        ↓
-    IP
-        ↓
-    Route
-        ↓
-    LISTEN Port
-        ↓
-    TCP Handshake
-        ↓
-    Firewall / Network Path
-
-常用：
-
-    ip -br addr
-    ip route
-    ip route get <destination>
-    ss -lntp
-    tcpdump
-
-如果：
-
-    可以連，但 performance 很差
-
-再查：
-
-    NIC drop / error
-        ↓
-    TCP retransmission
-        ↓
-    latency
-        ↓
-    bandwidth
-        ↓
-    MTU / MSS
-
-常用：
-
-    ip -s link
-    ethtool -S
-    netstat -s
-    ping
-    iperf3
-    tcpdump
-
----
-
-## 今日驗證結果
-
-    ens4 link: UP
-    NIC errors/drops: 0
-    MTU: 1460
-    TCP MSS: 1420
-    iperf3 bandwidth: ~971 Mbits/sec
-    Transfer: 3.39 GBytes / 30 sec
-    iperf3 Retr: 0
-    TCP retransmission delta: 0
-    MTU 1432-byte ICMP payload: success
-    MTU 1433-byte ICMP payload: rejected
-    TCP SYN / SYN-ACK / ACK: verified
-    tcpdump kernel capture drops: 0
-
----
-
-## Interview Review
-
-**Q1：MTU 與 MSS 有什麼差別？**  
-A：MTU 是單一 IP packet 的最大大小；MSS 是 TCP segment 可承載的最大 TCP payload。IPv4 TCP 常見關係為 MSS = MTU - 20-byte IP header - 20-byte TCP header。
-
-**Q2：TCP 連線異常時，tcpdump 怎麼判斷問題在哪？**  
-A：先看 SYN 是否到達 server，再看 server 是否回 SYN-ACK。沒有 SYN 偏向 route / firewall / network path；有 SYN 但沒有 SYN-ACK 則優先檢查 server service、local firewall 或 TCP stack。
+[改寫前完整教材快照](<../history/20260922-before-current/week18/day1-linux-network-troubleshooting-baseline.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

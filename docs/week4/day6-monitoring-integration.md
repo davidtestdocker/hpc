@@ -1,282 +1,69 @@
-# Week4 Day6 - Monitoring Integration
+<!-- current-curriculum: 2026-09-22 -->
+# Week4 Day6 — API 監控與健康
 
-## 對應檔案
+[上一課](<day5-dockerize-api.md>) · [本週目錄](README.md) · [下一週](../week5/README.md) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [api/main.py](../../api/main.py)：API、工作狀態與佇列處理
-- [monitoring/process_monitor.py](../../monitoring/process_monitor.py)：程序資訊收集
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「API 監控與健康」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日平台增加什麼？
+## 概念解說
 
-今天平台加入最基本的 **Observability（可觀測性）** 能力。
+/health 目前只回程序層訊號；/health/redis 才 ping Redis，/metrics 則暴露 HTTP 指標。三者都不等於 MPI 工作完成，也不涵蓋全部資料庫失敗模式。
 
-平台流程由：
+## 在現在的專案中
 
-```text
-API
-```
+現行 GKE 主線；本機先用 mock 測試學習，不需要先拿雲端權限。
 
-進化成：
-
-```text
-API
- │
- ├── Health
- ├── Logging
- └── Metrics
-```
-
-平台開始具備健康檢查、日誌紀錄與基本指標能力。
-
----
-
-## 今日解決的 Platform Problem
-
-平台除了提供 API 外，還必須回答：
-
-```text
-服務還活著嗎？
-服務發生什麼事？
-目前平台狀態如何？
-```
-
-因此需要：
-
-* Health Check
-* Logging
-* Metrics
-
----
-
-## 今日知識鏈
-
-```text
-Application
-      │
-      ▼
-Observability
-      │
- ┌────┼────┐
- ▼    ▼    ▼
-Health Logging Metrics
-```
-
----
-
-## 今日實作
-
-### 1. Health Check
-
-新增：
-
-```text
-GET /health
-```
-
-回傳：
-
-```json
-{
-  "status": "healthy"
-}
-```
-
-用途：
-
-* Docker
-* Kubernetes
-* Load Balancer
-* Monitoring System
-
-確認服務是否正常運作。
-
----
-
-### 2. Logging
-
-新增：
+本課對照：[api/main.py](<../../api/main.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```python
-import logging
+def health():
+    return {
+        "status": "healthy"
+    }
 
-logging.basicConfig(level=logging.INFO)
+# 以 ping 檢查 Redis，連線失敗轉成 HTTP 503。
+@app.get("/health/redis")
+def redis_health():
+    try:
+        redis_client.ping()
 
-logger = logging.getLogger(__name__)
+        return {
+            "status": "healthy",
+            "redis": "connected"
+        }
+
+    except ConnectionError:
+        raise HTTPException(
+            status_code=503,
+            detail="Redis unavailable"
+        )
+
+
+# 列出 API 支援的 benchmark 名稱。
 ```
 
-於 `POST /benchmark` 紀錄：
+## 閱讀與練習
 
-```python
-logger.info(
-    "Received benchmark request: %s",
-    request.benchmark
-)
-```
-
-可透過：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 找 Instrumentator 和 health 實作，列出它們能證明及不能證明的事。可用 tests/test_api.py 的 mock 驗證端點，不需向正式環境提交工作。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-docker compose logs api
+sed -n '68,91p' 'api/main.py'
 ```
 
-查看 Application Log。
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
----
+## 怎樣判斷自己讀懂了
 
-### 3. Metrics
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/automatic-worker-20260922.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-新增：
+## 舊版與新版本的關係
 
-```text
-GET /metrics
-```
-
-回傳：
-
-```json
-{
-  "total_jobs": 2,
-  "queued_jobs": 1,
-  "completed_jobs": 1
-}
-```
-
-目前提供：
-
-* total_jobs
-* queued_jobs
-* completed_jobs
-
-作為平台最基本的運行指標。
-
----
-
-## 今日驗證
-
-### Health
-
-```bash
-curl http://localhost:8000/health
-```
-
-結果：
-
-```json
-{
-  "status": "healthy"
-}
-```
-
----
-
-### Logging
-
-建立 Benchmark：
-
-```bash
-curl -X POST http://localhost:8000/benchmark \
-  -H "Content-Type: application/json" \
-  -d '{"benchmark":"cpu"}'
-```
-
-查看：
-
-```bash
-docker compose logs api
-```
-
-成功看到：
-
-```text
-INFO:api.main:Received benchmark request: cpu
-```
-
----
-
-### Metrics
-
-```bash
-curl http://localhost:8000/metrics
-```
-
-結果：
-
-```json
-{
-  "total_jobs": 2,
-  "queued_jobs": 1,
-  "completed_jobs": 1
-}
-```
-
----
-
-## 今日平台架構
-
-```text
-Client
-    │
-    ▼
-FastAPI
-    │
-    ├──────────────┬──────────────┐
-    ▼              ▼              ▼
-Health         Logging        Metrics
-    │              │              │
-    ▼              ▼              ▼
-Platform     docker logs      Platform Status
-```
-
----
-
-## 今日學到的重點
-
-* Health 用於確認服務是否可用。
-* Logging 用於記錄平台事件，方便除錯與追蹤。
-* Metrics 用於量化平台目前狀態。
-* Access Log 與 Application Log 是不同層級的資訊。
-* Observability 是平台設計的重要基礎，而不只是監控工具。
-
----
-
-## 它最後會變成平台哪一部分？
-
-今天完成的是 **Observability Foundation**。
-
-後續將演進成：
-
-```text
-Health
-      ↓
-Metrics
-      ↓
-Prometheus
-      ↓
-Grafana
-      ↓
-Alertmanager
-      ↓
-Performance Dashboard
-```
-
-Week11 將把今天的 Metrics 接入 Prometheus 與 Grafana，形成完整監控平台。
-
----
-
-## Interview
-
-### Q1：Health、Logging、Metrics 三者有什麼差別？
-
-* Health：確認服務是否健康、是否可提供服務。
-* Logging：記錄事件與錯誤，協助除錯。
-* Metrics：提供可量化的系統狀態與趨勢，供監控系統分析。
-
----
-
-### Q2：為什麼平台需要 Metrics，而不能只看 Log？
-
-Log 適合追查單一事件；Metrics 適合持續觀察系統狀態，例如 Job 數量、Queue 長度與完成數，可直接用於儀表板、告警與容量分析。
-
+[改寫前完整教材快照](<../history/20260922-before-current/week4/day6-monitoring-integration.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

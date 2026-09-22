@@ -1,345 +1,64 @@
-# Week9 Day4 - Terraform Output & Resource Reference
+<!-- current-curriculum: 2026-09-22 -->
+# Week9 Day4 — Outputs 與資源引用
 
-## 對應檔案
+[上一課](<Day3-Terraform-Apply-State-Resource-Lifecycle.md>) · [本週目錄](README.md) · [下一課](<Day5-Terraform-Module-Refactor.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-早期 VM output 已重構至 compute module；stage outputs 提供模組輸出的引用範例，dev 現況則偏向 GKE。
+## 先備知識與本課目標
 
-- [terraform/environments/stage/outputs.tf](../../terraform/environments/stage/outputs.tf)
-- [terraform/modules/compute/main.tf](../../terraform/modules/compute/main.tf)
-- [terraform/modules/compute/outputs.tf](../../terraform/modules/compute/outputs.tf)
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Outputs 與資源引用」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
----
+## 概念解說
 
-## 今日目標
+output 引用實際管理資源屬性，可供後續取得 credentials 或 bootstrap。輸出 pool_name 不能推論現有 node 數、Ready 狀態或 GPU 可執行性。
 
-今天的目標是理解 Terraform 如何取得已建立 Resource 的資訊，並學會使用 Output 與 Resource Reference，讓不同 Resource 可以互相引用，而不需要將 IP、ID 或 Name 寫死在程式中。
+## 在現在的專案中
 
-今天也是第一次真正使用 Terraform State，而不是只有知道它的存在。
+本週只讀設定與既有證據；雲端 apply／destroy 須依 runbook 明確確認目標，GPU quota 固定一張。
 
----
-
-# 今日成果
-
-- 完成 Terraform Output
-- 理解 Resource Reference
-- 理解 Resource Attribute
-- 理解 Terraform State 如何提供資料
-- 理解 Implicit Dependency（隱式依賴）
-- 完成 VM Name、Zone、Machine Type、Internal IP Output
-
----
-
-# Terraform Output
-
-Terraform 可以將 Resource 的屬性輸出。
-
-建立：
+本課對照：[terraform/environments/gpu-sg/outputs.tf](<../../terraform/environments/gpu-sg/outputs.tf>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```hcl
-output "vm_name" {
-  description = "VM Name"
-  value       = google_compute_instance.api.name
+output "cluster_name" {
+  description = "Managed GKE cluster name"
+  value       = google_container_cluster.this.name
+}
+
+output "cluster_location" {
+  description = "Zonal location used by kubectl credential commands"
+  value       = google_container_cluster.this.location
+}
+
+output "system_pool_name" {
+  description = "CPU platform node pool"
+  value       = google_container_node_pool.system.name
+}
+
+output "gpu_pool_name" {
+  description = "L4 time-sharing node pool"
+  value       = google_container_node_pool.gpu.name
 }
 ```
 
-完成 Apply 後：
+## 閱讀與練習
+
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 讀 outputs.tf 的四個輸出，再到 platform.inspect 找需要另外查的 readiness；區分「知道資源名稱」和「驗證資源可用」。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-terraform output
+sed -n '3,21p' 'terraform/environments/gpu-sg/outputs.tf'
 ```
 
-輸出：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```
-vm_name = "hpc-api-dev"
-```
+## 怎樣判斷自己讀懂了
 
-Output 並不是查詢 Google Cloud API，而是直接從 Terraform State 取得資料。
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/cpu-bootstrap-acceptance-20260921.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
----
+## 舊版與新版本的關係
 
-# Resource Reference
-
-今天第一次使用 Terraform Resource Reference：
-
-```hcl
-google_compute_instance.api.name
-```
-
-結構如下：
-
-```
-google_compute_instance
-
-↓
-
-Resource Type
-
-↓
-
-api
-
-↓
-
-Logical Name
-
-↓
-
-name
-
-↓
-
-Attribute
-```
-
-Terraform 會依照 Resource Address 找到 Resource，再取得指定 Attribute。
-
-除了 `name` 之外，還可以取得：
-
-```text
-machine_type
-
-zone
-
-id
-
-self_link
-
-network_interface
-
-network_ip
-```
-
----
-
-# Resource Attribute
-
-今天新增以下 Output：
-
-```hcl
-output "vm_internal_ip" {
-  value = google_compute_instance.api.network_interface[0].network_ip
-}
-
-output "vm_machine_type" {
-  value = google_compute_instance.api.machine_type
-}
-```
-
-成功取得：
-
-```
-vm_internal_ip = "10.140.0.3"
-
-vm_machine_type = "e2-medium"
-```
-
-代表 Terraform 可以直接引用 Resource 的屬性，而不需要人工查詢或手動填寫。
-
----
-
-# Terraform State
-
-今天真正開始使用：
-
-```
-terraform.tfstate
-```
-
-Terraform Output 的流程：
-
-```
-terraform output
-
-↓
-
-terraform.tfstate
-
-↓
-
-Outputs
-
-↓
-
-顯示結果
-```
-
-因此：
-
-```bash
-terraform output
-```
-
-不需要再次呼叫 Google Cloud API。
-
-Terraform 已經將 Resource 的資訊保存於 State。
-
----
-
-# Resource Reference 的價值
-
-假設未來建立第二台 VM：
-
-```hcl
-resource "google_compute_instance" "database" {
-
-}
-```
-
-如果需要 API VM 的 Internal IP，
-
-錯誤方式：
-
-```hcl
-value = "10.140.0.3"
-```
-
-正確方式：
-
-```hcl
-value = google_compute_instance.api.network_interface[0].network_ip
-```
-
-Terraform 會自動取得目前 API VM 的最新 IP。
-
-即使未來 VM 重建、IP 改變，也不需要修改任何程式碼。
-
----
-
-# Implicit Dependency
-
-Terraform 並不是依照檔案順序建立 Resource。
-
-而是依照 Resource Reference 建立 Dependency。
-
-例如：
-
-```
-Firewall
-
-↓
-
-引用
-
-↓
-
-API VM
-```
-
-Terraform 會自動推導：
-
-```
-API VM
-
-↓
-
-Firewall
-```
-
-因此：
-
-API VM 一定先建立。
-
-Firewall 一定後建立。
-
-整個 Dependency Graph 都由 Terraform 自動計算。
-
-大部分情況下，不需要自行撰寫：
-
-```hcl
-depends_on
-```
-
----
-
-# 驗證
-
-Terraform Output：
-
-```bash
-terraform output
-```
-
-結果：
-
-```
-vm_internal_ip = "10.140.0.3"
-
-vm_machine_type = "e2-medium"
-
-vm_name = "hpc-api-dev"
-
-vm_zone = "asia-east1-a"
-```
-
-代表 Output 已成功從 Terraform State 取得所有 Resource Attribute。
-
----
-
-# 今日重點
-
-Terraform Resource 並不是一個固定字串。
-
-它是一個可以被其他 Resource 引用的物件。
-
-Terraform 透過：
-
-```
-Resource Type
-
-↓
-
-Logical Name
-
-↓
-
-Attribute
-```
-
-取得 Resource 的所有資訊。
-
-這也是 Terraform 能夠建立大型 Infrastructure 的核心能力。
-
----
-
-# Interview Q&A
-
-## Q1：Terraform Output 的用途是什麼？
-
-Terraform Output 用來輸出 Resource 的屬性，例如 VM Name、Internal IP、Machine Type 等資訊，方便其他 Module、使用者或 CI/CD 使用。
-
----
-
-## Q2：什麼是 Resource Reference？
-
-Resource Reference 是 Terraform 用來引用其他 Resource 的方式，例如：
-
-```hcl
-google_compute_instance.api.name
-```
-
-Terraform 會依照 Resource Type、Logical Name 與 Attribute 找到對應 Resource，並取得最新值，而不需要手動填寫。
-
----
-
-## Q3：什麼是 Implicit Dependency？
-
-當一個 Resource 引用另一個 Resource 時，Terraform 會自動建立 Dependency Graph，決定正確的建立順序，因此通常不需要手動撰寫 `depends_on`。
-
----
-
-# 本日總結
-
-今天正式進入 Terraform Resource 之間互相引用的階段。
-
-學會使用 Output、Resource Reference 與 Resource Attribute 後，Terraform 已經不只是建立 Infrastructure，而是開始描述 Infrastructure 之間的關係。
-
-這也是 Terraform 能夠管理大型雲端環境的重要基礎。
-
----
-
-# 下一步
-
-下一章將開始學習 Terraform Module，將 Compute、Network、Storage 等 Resource 模組化，建立符合企業實務的 Terraform 專案架構。
+[改寫前完整教材快照](<../history/20260922-before-current/week9/Day4-Terraform-Output-Resource-Reference.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

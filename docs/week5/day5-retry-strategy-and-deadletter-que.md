@@ -1,440 +1,69 @@
-# Week5 Day5 - Retry Strategy and Dead Letter Queue
+<!-- current-curriculum: 2026-09-22 -->
+# Week5 Day5 — Retry 與 dead-letter
 
-## 對應檔案
+[上一課](<day4-stuck-job-recovery.md>) · [本週目錄](README.md) · [下一課](<day6-postgresql-foundation.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [api/main.py](../../api/main.py)：API、工作狀態與佇列處理
-- [compose.yaml](../../compose.yaml)：本機服務組合
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Retry 與 dead-letter」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日平台增加什麼
+## 概念解說
 
-今天的平台新增：
+simulate_failure 分支會累計三次後 failed 並進 dead-letter；真實依賴例外由 tick 記錄後下輪重試，不是每種錯誤都三次耗盡。重試需要能辨識同一工作，否則可能產生重複副作用。
 
-* Retry Strategy
-* `retry_count`
-* `MAX_RETRY`
-* `failed` State
-* Dead Letter Queue（DLQ）
-* Failure Simulation
-* DLQ Query API
+## 在現在的專案中
 
-平台從：
+主 overlay 啟用獨立 api-worker；手動 /worker/* 返回 409。
 
-```text
-Recovery Worker
-    ↓
-retrying
-    ↓
-job_queue
-```
-
-演進成：
-
-```text
-Recovery Worker
-    ↓
-retry_count + 1
-    ↓
-Retry Policy
-    ↓
-retrying / failed
-    ↓
-Dead Letter Queue
-```
-
----
-
-# Platform Problem
-
-Day4 已經能把卡在 `processing_queue` 的 Job 找回並重新排隊。
-
-但是如果 Worker 一直失敗：
-
-```text
-processing
-    ↓
-timeout
-    ↓
-retrying
-    ↓
-processing
-    ↓
-timeout
-    ↓
-retrying
-    ↓
-...
-```
-
-平台會進入 Infinite Retry。
-
-企業平台不能無限重試，必須有：
-
-```text
-retry_count
-MAX_RETRY
-failed
-Dead Letter Queue
-```
-
----
-
-# 今日知識鏈
-
-```text
-Failure Simulation
-    ↓
-Recovery
-    ↓
-Retry Count
-    ↓
-Max Retry
-    ↓
-Failed
-    ↓
-Dead Letter Queue
-```
-
----
-
-# Hands-on
-
-## 1. 新增 retry_count
-
-建立 Job 時加入：
+本課對照：[api/worker.py](<../../api/worker.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```python
-"retry_count": 0
+        if job.get('simulate_failure'):
+            # 僅此模擬故障累計三次後 failed；真實依賴例外由 tick 記錄並於下輪重試。
+            job['retry_count'] = job.get('retry_count', 0) + 1
+            job['status'] = 'failed' if job['retry_count'] >= 3 else 'retrying'
+            job['result'] = {'message': 'Simulated dispatch failure'}
+        elif job['benchmark'] == 'mpi':
+            name = main.submit_mpi_jobset(job_id)
+            job['status'] = 'submitted'
+            job['result'] = {'jobset_name': name, 'message': 'MPI JobSet submitted'}
+        else:
+            job['status'] = 'completed'
+            job['result'] = {'message': 'benchmark simulated'}
+        guard()
+        main.persist_job_status(job_id, job['status'])
+        guard()
+        redis.set(key, json.dumps(job))
+    elif state == 'submitted' and job['benchmark'] == 'mpi':
+        # submitted 只代表已提交；collector 回傳 None 表示尚未取得終態。
+        update = main.collect_mpi_jobset(job['result']['jobset_name'])
+        if update is None:
+            return
+        guard()
+        main.persist_job_status(job_id, update['status'])
+        job.update(update)
 ```
 
-讓每一筆 Job 從建立開始就具備 Retry Metadata。
+## 閱讀與練習
 
----
-
-## 2. 新增 Failure Simulation
-
-在 Request Model 加入：
-
-```python
-simulate_failure: bool = False
-```
-
-建立 Job 時保存：
-
-```python
-"simulate_failure": request.simulate_failure
-```
-
-Worker 在進入 processing 並寫入 `processing_started_at` 後，如果：
-
-```python
-job["simulate_failure"]
-```
-
-為 True，則回傳：
-
-```python
-return {
-    "message": "worker crashed",
-    "job_id": job_id
-}
-```
-
-用來模擬 Worker Crash，驗證 Recovery / Retry / DLQ 流程。
-
----
-
-## 3. Recovery 時累加 retry_count
-
-Recovery Worker 發現 Job 超過 timeout 後：
-
-```python
-job["retry_count"] = job["retry_count"] + 1
-```
-
-代表這筆 Job 已被重新排隊處理一次。
-
----
-
-## 4. 加入 MAX_RETRY
-
-設定：
-
-```python
-MAX_RETRY = 3
-```
-
-判斷：
-
-```python
-if job["retry_count"] >= MAX_RETRY:
-    job["status"] = "failed"
-else:
-    job["status"] = "retrying"
-
-    redis_client.rpush(
-        "job_queue",
-        job_id
-    )
-```
-
-只有 `retrying` 的 Job 才會重新進入 `job_queue`。
-
-`failed` 的 Job 不會再被 Worker 處理。
-
----
-
-## 5. 加入 Dead Letter Queue
-
-當 Job 超過最大重試次數：
-
-```python
-if job["retry_count"] >= MAX_RETRY:
-    job["status"] = "failed"
-
-    redis_client.rpush(
-        "dead_letter_queue",
-        job_id
-    )
-```
-
-DLQ 用來保存永遠失敗、需要人工或後續系統處理的 Job。
-
----
-
-## 6. 新增 DLQ Query API
-
-新增：
-
-```python
-@app.get("/jobs/dead-letter")
-def get_dead_letter_jobs():
-```
-
-從：
-
-```text
-dead_letter_queue
-```
-
-取得 failed job_id，並回傳完整 Job Metadata。
-
-注意：
-
-`/jobs/dead-letter` 必須放在：
-
-```python
-@app.get("/jobs/{job_id}")
-```
-
-之前。
-
-否則 FastAPI 會把 `dead-letter` 當成 `job_id`。
-
----
-
-# 驗證
-
-建立會失敗的 Job：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 對照模擬失敗測試與例外處理，寫出何時增加 retry_count、何時清 queue。指出 retry_count 尚未同步 DB，不能假設 DB 與 Redis 所有欄位一致。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-curl -X POST http://localhost:8000/benchmark \
-  -H "Content-Type: application/json" \
-  -d '{"benchmark":"cpu","simulate_failure":true}'
+sed -n '38,61p' 'api/worker.py'
 ```
 
-執行 Worker：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```bash
-curl -X POST http://localhost:8000/worker/process-next
-```
+## 怎樣判斷自己讀懂了
 
-結果：
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/automatic-worker-20260922.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-```json
-{
-  "message": "worker crashed",
-  "job_id": "..."
-}
-```
+## 舊版與新版本的關係
 
-等待 timeout 後執行 Recovery：
-
-```bash
-curl -X POST http://localhost:8000/worker/recover-stuck
-```
-
-重複：
-
-```text
-process-next
-recover-stuck
-```
-
-直到：
-
-```json
-{
-  "status": "failed",
-  "retry_count": 3
-}
-```
-
-查詢 Worker：
-
-```bash
-curl -X POST http://localhost:8000/worker/process-next
-```
-
-結果：
-
-```json
-{
-  "message": "no pending jobs"
-}
-```
-
-代表 failed Job 沒有再回到 `job_queue`。
-
-查詢 DLQ：
-
-```bash
-curl http://localhost:8000/jobs/dead-letter
-```
-
-結果可看到 failed Jobs：
-
-```json
-{
-  "jobs": [
-    {
-      "benchmark": "cpu",
-      "simulate_failure": true,
-      "status": "failed",
-      "retry_count": 3
-    }
-  ]
-}
-```
-
----
-
-# 平台架構
-
-```text
-Client
-  ↓
-FastAPI
-  ↓
-Producer
-  ↓
-job_queue
-  ↓
-Worker
-  ↓
-processing_queue
-  ↓
-Recovery Worker
-  ↓
-retry_count + 1
-  ↓
-MAX_RETRY Check
-  ├── retrying → job_queue
-  └── failed → dead_letter_queue
-```
-
----
-
-# 今日重點
-
-* Retry 不能無限執行。
-* `retry_count` 是 Job Lifecycle Metadata。
-* `MAX_RETRY` 是 Retry Policy。
-* `failed` Job 不應再放回 `job_queue`。
-* DLQ 是保存永久失敗 Job 的 Queue。
-* Failure Simulation 是驗證 Recovery / Retry / DLQ 的重要手段。
-* Static Route 要放在 Dynamic Route 前面，例如 `/jobs/dead-letter` 要放在 `/jobs/{job_id}` 前面。
-
----
-
-# Interview Q&A
-
-## Q1：為什麼需要 Dead Letter Queue？
-
-因為有些 Job 即使重試多次仍然失敗。
-
-DLQ 可以集中保存這些永久失敗的 Job，方便後續人工分析、告警、重新派送或產生報告，而不是讓它們無限回到主 Queue。
-
----
-
-## Q2：為什麼 failed Job 不應該再放回 job_queue？
-
-`job_queue` 代表等待 Worker 處理的任務。
-
-如果 failed Job 又被放回 `job_queue`，`MAX_RETRY` 就失去意義，平台會繼續重試同一筆已判定失敗的 Job，造成無限循環與資源浪費。
-
----
-
-# 今日成果
-
-平台從：
-
-```text
-Recovery + retrying
-```
-
-演進成：
-
-```text
-Retry Strategy + Failed State + Dead Letter Queue
-```
-
-目前 Queue 已具備：
-
-```text
-accepted
-  ↓
-processing
-  ↓
-completed
-```
-
-以及失敗路徑：
-
-```text
-processing
-  ↓
-timeout
-  ↓
-retrying
-  ↓
-failed
-  ↓
-dead_letter_queue
-```
-
----
-
-# 下一步
-
-Week5 Day6：
-
-進入 PostgreSQL Foundation。
-
-核心問題：
-
-```text
-為什麼 Job Metadata 不應該永久只存在 Redis？
-```
-
-開始建立：
-
-* PostgreSQL Container
-* PostgreSQL Volume
-* Database
-* Table
-* Persistent Job Metadata
-
+[改寫前完整教材快照](<../history/20260922-before-current/week5/day5-retry-strategy-and-deadletter-que.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

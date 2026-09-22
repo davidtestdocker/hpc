@@ -1,576 +1,69 @@
-# Week9 Day2 - Terraform Language Foundation
+<!-- current-curriculum: 2026-09-22 -->
+# Week9 Day2 — HCL 與輸入驗證
 
-## 對應檔案
+[上一課](<Day1-Terraform.md>) · [本週目錄](README.md) · [下一課](<Day3-Terraform-Apply-State-Resource-Lifecycle.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [terraform/environments/dev/main.tf](../../terraform/environments/dev/main.tf)
-- [terraform/environments/dev/variables.tf](../../terraform/environments/dev/variables.tf)
-- [terraform/modules/compute/main.tf](../../terraform/modules/compute/main.tf)
-- [terraform/modules/compute/outputs.tf](../../terraform/modules/compute/outputs.tf)
-- [terraform/modules/compute/variables.tf](../../terraform/modules/compute/variables.tf)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「HCL 與輸入驗證」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 學習目標
+## 概念解說
 
-理解 Terraform Language 的核心概念。
+variable 的 type 和 validation 限制輸入，default 不表示適用所有環境。GPU node_count 設零可做 CPU-only rehearsal，但資源設計與驗收範圍也隨之不同。
 
-今天重點不是建立 VM，而是理解 Terraform 如何透過 Resource、Variable、Plan 與 State 管理 Infrastructure。
+## 在現在的專案中
 
----
+本週只讀設定與既有證據；雲端 apply／destroy 須依 runbook 明確確認目標，GPU quota 固定一張。
 
-# 完成成果
-
-✅ Resource
-
-✅ Google Compute Instance
-
-✅ Variable
-
-✅ terraform.tfvars
-
-✅ Terraform Plan
-
-✅ Terraform State（Concept）
-
----
-
-# Terraform Resource
-
-Terraform 所有 Infrastructure 都以 Resource 為核心。
-
-例如：
+本課對照：[terraform/environments/gpu-sg/variables.tf](<../../terraform/environments/gpu-sg/variables.tf>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```hcl
-resource "google_compute_instance" "api" {
+variable "gpu_node_count" {
+  description = "Fixed number of L4 nodes; keep zero only for a CPU-only rehearsal"
+  type        = number
+  default     = 1
 
+  validation {
+    condition     = var.gpu_node_count >= 0
+    error_message = "gpu_node_count cannot be negative."
+  }
 }
-```
-
-Resource 由三個部分組成：
-
-```
-resource
-
-↓
-
-google_compute_instance
-
-↓
-
-api
-```
-
-resource
-
-代表：
-
-建立 Infrastructure。
-
-google_compute_instance
-
-代表：
-
-Google Cloud VM Resource。
-
-api
-
-代表：
-
-Terraform Logical Name。
-
-注意：
-
-```
-api
-```
-
-不是 GCP VM 名稱。
-
-真正 VM 名稱：
-
-```
-name = "hpc-api-dev"
-```
-
----
-
-# Resource Schema
-
-建立 VM 時，
-
-Terraform Provider 定義了 Resource Schema。
-
-例如：
-
-```
-name
-
-machine_type
-
-boot_disk
-
-network_interface
-```
-
-都是必要欄位。
-
-如果缺少：
-
-```
-terraform validate
-```
-
-會失敗。
-
-因此：
-
-Terraform 不只檢查：
-
-```
-Syntax
-```
-
-也會檢查：
-
-```
-Provider Schema
-```
-
----
-
-# Terraform Variable
-
-Provider：
-
-```
-project = var.project_id
-```
-
-Variable：
-
-```
-variable "project_id"
-```
-
-作用：
-
-讓程式不要寫死。
-
-例如：
-
-不要：
-
-```
-project = "project-xxxx"
-```
-
-而是：
-
-```
-project = var.project_id
-```
-
-不同環境：
-
-```
-dev
-
-stage
-
-prod
-```
-
-只需提供不同 Variable。
-
-程式完全不用修改。
-
----
-
-# terraform.tfvars
-
-建立：
-
-```
-terraform.tfvars
-```
-
-內容：
-
-```hcl
-project_id = "project-4b82f780-0a12-4087-b94"
-```
-
-Terraform：
-
-執行：
-
-```
-terraform plan
-```
-
-時：
-
-自動載入：
-
-```
-terraform.tfvars
-```
-
-因此：
-
-不用每次：
-
-```
-Enter a value:
-```
-
-手動輸入。
-
----
-
-# Terraform Workflow
-
-目前流程：
-
-```
-main.tf
-
-↓
-
-variables.tf
-
-↓
-
-terraform.tfvars
-
-↓
-
-terraform plan
-```
-
-Variable：
-
-由：
-
-```
-terraform.tfvars
-```
-
-提供。
-
----
-
-# Terraform Plan
-
-今天第一次執行：
-
-```
-terraform plan
-```
-
-得到：
-
-```
-Plan:
-
-1 to add
-
-0 to change
-
-0 to destroy
-```
-
-代表：
-
-Terraform 預計：
 
-建立：
+variable "gpu_spot" {
+  description = "Use Spot VMs for an isolated GPU rehearsal; keep false for the main environment"
+  type        = bool
+  default     = false
+}
 
-```
-1 VM
-```
-
-注意：
-
-Plan：
-
-不會建立任何 Resource。
-
-只是：
-
-模擬：
-
-```
-如果 Apply
-
-將會做什麼。
-```
-
----
-
-# Terraform State
-
-Terraform 最重要概念：
-
-```
-terraform.tfstate
-```
-
-State：
-
-就是：
-
-Terraform 的記憶。
-
-Terraform：
-
-不是直接比較：
-
-```
-Code
-
-↓
-
-Cloud
-```
-
-真正流程：
-
-```
-Code
-
-↓
-
-State
-
-↓
-
-Cloud
-
-↓
-
-Diff
-```
-
-State：
-
-記錄：
-
-- Resource
-- Resource ID
-- Attributes
-- Dependency
-
-如果：
-
-State 遺失。
-
-Terraform：
-
-不知道：
-
-哪些 Infrastructure 是自己建立。
-
----
-
-# Local State
-
-目前：
-
-```
-terraform.tfstate
-```
-
-會存在：
-
-```
-terraform/environments/dev
-```
-
-稱為：
-
-```
-Local State
-```
-
-企業：
-
-通常改用：
-
-```
-Remote State
-```
-
-例如：
-
-- GCS
-- S3
-- Azure Blob
-
-避免多人協作造成 State 衝突。
-
----
-
-# Terraform Project Structure
-
-目前：
+# 主環境預設保護；不得為了照跑歷史 destroy 指令而關閉。
+variable "deletion_protection" {
+  description = "Protect the cluster from accidental Terraform deletion"
+  type        = bool
+  default     = true
+}
 
 ```
-terraform/
 
-├── environments/
-│   └── dev/
-│       ├── versions.tf
-│       ├── providers.tf
-│       ├── variables.tf
-│       ├── terraform.tfvars
-│       └── main.tf
-│
-├── modules/
-│
-└── .gitignore
-```
-
-Terraform：
-
-會自動讀取：
-
-```
-所有 *.tf
-```
-
-並合併成：
-
-一個 Terraform Project。
-
----
-
-# 驗證
-
-Terraform：
-
-```
-terraform validate
-```
-
-結果：
-
-```
-Success! The configuration is valid.
-```
-
-Terraform：
-
-```
-terraform plan
-```
-
-結果：
-
-```
-Plan:
-
-1 to add
+## 閱讀與練習
 
-0 to change
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 讀 variables.tf 的 system_node_count、gpu_node_count、enable_network_policy，列出預設值與變更含義；不直接修改主環境 tfvars。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
-0 to destroy
+```bash
+sed -n '50,73p' 'terraform/environments/gpu-sg/variables.tf'
 ```
-
-Variable：
-
-```
-terraform.tfvars
-```
-
-成功自動載入。
-
----
-
-# 本日重點
-
-1.
-
-Terraform Resource
-
-描述 Infrastructure。
-
----
-
-2.
-
-Variable
-
-避免寫死設定。
-
----
-
-3.
-
-terraform.tfvars
-
-提供 Environment Configuration。
-
----
-
-4.
-
-Plan
-
-只做預覽。
-
-不修改 Infrastructure。
-
----
-
-5.
-
-State
-
-是 Terraform 最重要的資料。
-
-沒有 State，
-
-Terraform 就不知道目前 Infrastructure 狀態。
-
----
-
-# Interview Q&A
-
-## Q1
-
-Terraform 的 Resource 是什麼？
-
-Resource 是 Terraform 描述 Infrastructure 的基本單位，例如 VM、Network、Firewall、Disk 等都屬於 Resource。
-
----
-
-## Q2
-
-Variable 與 terraform.tfvars 有什麼差別？
-
-Variable 用來宣告輸入介面；terraform.tfvars 則提供實際值，讓不同環境能使用相同 Terraform 程式。
-
----
-
-## Q3
-
-terraform plan 做了什麼？
-
-Terraform 會比較 Code、State 與實際 Infrastructure，計算即將新增、修改或刪除哪些 Resource，但不會真正執行任何變更。
-
----
-
-## Q4
 
-Terraform State 是什麼？
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-State 是 Terraform 的記憶，記錄 Terraform 建立與管理的 Infrastructure 狀態，供後續 Plan、Apply、Destroy 比對使用。
+## 怎樣判斷自己讀懂了
 
----
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/cpu-bootstrap-acceptance-20260921.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-# 本日總結
+## 舊版與新版本的關係
 
-今天完成 Terraform Language Foundation，理解 Resource、Variable、terraform.tfvars、Plan 與 State 的角色，建立了 Terraform 最重要的核心觀念，為後續建立真正的 GCP Infrastructure 做好準備。
+[改寫前完整教材快照](<../history/20260922-before-current/week9/Day2-Terraform-Language-Foundation.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

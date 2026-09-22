@@ -1,376 +1,69 @@
-# Week17 Day1 — MPI Fundamentals
+<!-- current-curriculum: 2026-09-22 -->
+# Week17 Day1 — MPI rank 與 launcher
 
-## 對應檔案
+[本週基礎](README.md) · [本週目錄](README.md) · [下一課](<day2-mpi-performance-benchmark.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [mpi_allreduce.c](../../mpi_allreduce.c)
-- [mpi_broadcast.c](../../mpi_broadcast.c)
-- [mpi_hello.c](../../mpi_hello.c)
-- [mpi_reduce.c](../../mpi_reduce.c)
-- [mpi_send_recv.c](../../mpi_send_recv.c)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「MPI rank 與 launcher」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日平台新增能力
+## 概念解說
 
-今天正式進入 HPC Distributed Computing，建立 MPI 基礎能力：
+MPI_Comm_rank 取得本程序編號，MPI_Comm_size 取得群組大小。hostname 讓你知道程序所在 host，但容器 hostname 不必然等於實體 node 名稱。
 
-- MPI Process / Rank
-- MPI Communicator
-- Point-to-Point Communication
-- Collective Communication
-- Broadcast / Reduce / AllReduce
-- OpenMPI 基本操作
+## 在現在的專案中
 
----
+Slurm／Ray 是獨立實驗教材與已保存歷史案例，不當作目前可用服務。
 
-## 1. HPC 與 MPI
+本課對照：[mpi_hello.c](<../../mpi_hello.c>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
-HPC（High Performance Computing）透過多個 CPU / GPU / Node 協同運算大型工作。
+```c
+    MPI_Init(&argc, &argv);
 
-MPI（Message Passing Interface）是 HPC 常用的 Process Communication 標準。
 
-基本模型：
+    int world_size;
+    int world_rank;
 
-    mpirun
-      |
-      +-- Rank 0
-      +-- Rank 1
-      +-- Rank 2
-      +-- Rank 3
 
-每個 Rank 都是一個獨立 Process。
+    /*
+     * 取得 MPI communicator 裡總共有多少 process
+     *
+     * MPI_COMM_WORLD:
+     * 代表目前所有 MPI process 的集合。
+     *
+     * 例如：
+     * mpirun -np 4
+     *
+     * world_size = 4
+     *
+     * 代表目前有：
+     * Rank 0
+     * Rank 1
+     * Rank 2
+     * Rank 3
+     */
+```
 
----
+## 閱讀與練習
 
-## 2. OpenMPI Environment
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 讀 mpi_hello.c，再對照現行 template 的 mpirun -np 與 worker 副本。確認 rank 0／1／2 是三個程序，不把 launcher 另算一個 MPI rank。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
-版本確認：
+```bash
+sed -n '21,44p' 'mpi_hello.c'
+```
 
-    mpirun --version
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-目前環境：
+## 怎樣判斷自己讀懂了
 
-    Open MPI 4.1.2
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/automatic-worker-20260922.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-因目前使用 root 執行 Lab，需要：
+## 舊版與新版本的關係
 
-    --allow-run-as-root
-
-目前 CPU slot 不足以直接啟動 4 個 Process，因此 Lab 使用：
-
-    --oversubscribe
-
-例如：
-
-    mpirun \
-      --allow-run-as-root \
-      --oversubscribe \
-      -np 4 \
-      ./mpi_hello
-
-其中：
-
-    -np 4
-
-代表啟動 4 個 MPI Process：
-
-    Rank 0
-    Rank 1
-    Rank 2
-    Rank 3
-
----
-
-## 3. MPI Process / Rank
-
-重要 API：
-
-    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-
-取得目前 Communicator 內的 Process 數量。
-
-例如：
-
-    -np 4
-
-則：
-
-    world_size = 4
-
-取得目前 Process 的 Rank：
-
-    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-
-可能得到：
-
-    Rank 0
-    Rank 1
-    Rank 2
-    Rank 3
-
-Rank 是 MPI Process 的識別 ID。
-
----
-
-## 4. MPI_Bcast
-
-Broadcast：
-
-一個 Rank 將資料傳給所有 Rank。
-
-範例：
-
-    Rank 0: data = 100
-
-Broadcast 後：
-
-    Rank 0 = 100
-    Rank 1 = 100
-    Rank 2 = 100
-    Rank 3 = 100
-
-核心 API：
-
-    MPI_Bcast(
-        &data,
-        1,
-        MPI_INT,
-        0,
-        MPI_COMM_WORLD
-    );
-
-參數：
-
-- `&data`：資料位置
-- `1`：資料數量
-- `MPI_INT`：資料型態
-- `0`：Root Rank
-- `MPI_COMM_WORLD`：參與 Communication 的 Process 群組
-
-實測結果：
-
-    Rank 0 created data = 100
-    Rank 0 received data = 100
-    Rank 1 received data = 100
-    Rank 2 received data = 100
-    Rank 3 received data = 100
-
----
-
-## 5. MPI_Reduce
-
-Reduce：
-
-多個 Rank 的資料進行聚合，結果只交給指定 Root。
-
-範例：
-
-    Rank 0 = 10
-    Rank 1 = 20
-    Rank 2 = 30
-    Rank 3 = 40
-
-使用：
-
-    MPI_SUM
-
-結果：
-
-    10 + 20 + 30 + 40 = 100
-
-只有 Root Rank 得到：
-
-    Rank 0 = 100
-
-核心 API：
-
-    MPI_Reduce(
-        &value,
-        &total,
-        1,
-        MPI_INT,
-        MPI_SUM,
-        0,
-        MPI_COMM_WORLD
-    );
-
-實測：
-
-    Total sum = 100
-
----
-
-## 6. MPI_Allreduce
-
-AllReduce：
-
-所有 Rank 的資料先進行聚合，再將結果提供給所有 Rank。
-
-可以理解為：
-
-    Reduce + Broadcast
-
-範例：
-
-    Rank 0 = 10
-    Rank 1 = 20
-    Rank 2 = 30
-    Rank 3 = 40
-
-SUM 後：
-
-    100
-
-最後：
-
-    Rank 0 = 100
-    Rank 1 = 100
-    Rank 2 = 100
-    Rank 3 = 100
-
-核心 API：
-
-    MPI_Allreduce(
-        &local_value,
-        &global_sum,
-        1,
-        MPI_INT,
-        MPI_SUM,
-        MPI_COMM_WORLD
-    );
-
-與 `MPI_Reduce` 不同：
-
-`MPI_Allreduce` 不需要 Root，因為所有 Rank 都會取得結果。
-
-實測：
-
-    Rank 3: local_value = 40, global_sum = 100
-    Rank 0: local_value = 10, global_sum = 100
-    Rank 1: local_value = 20, global_sum = 100
-    Rank 2: local_value = 30, global_sum = 100
-
----
-
-## 7. Point-to-Point Communication
-
-MPI 除了 Collective Communication，也支援指定 Rank 之間直接通信。
-
-主要 API：
-
-    MPI_Send()
-    MPI_Recv()
-
-本次測試：
-
-    Rank 0
-      |
-      | data = 123
-      v
-    Rank 1
-
-實測：
-
-    Rank 0 sent data = 123 to Rank 1
-    Rank 1 received data = 123 from Rank 0
-
-Point-to-Point：
-
-    Rank A <-> Rank B
-
-Collective Communication：
-
-    多個 Rank 一起參與 Communication
-
----
-
-## 8. Communication 類型整理
-
-### Point-to-Point
-
-    MPI_Send
-    MPI_Recv
-
-用途：
-
-指定 Process 之間直接交換資料。
-
-### Collective
-
-    MPI_Bcast
-    MPI_Reduce
-    MPI_Allreduce
-
-用途：
-
-多個 Process 共同參與 Communication。
-
----
-
-## 9. MPI 與 AI Distributed Training
-
-今天最重要的連結：
-
-    MPI_Allreduce
-          |
-          v
-    NCCL AllReduce
-          |
-          v
-    PyTorch DDP
-    Gradient Synchronization
-
-MPI：
-
-    CPU / General Process Communication
-
-NCCL：
-
-    NVIDIA GPU Collective Communication
-
-PyTorch DDP：
-
-每個 Worker 計算自己的 Gradient，之後透過 AllReduce 進行 Gradient Synchronization，使所有 Worker 的 Model 保持一致。
-
----
-
-## 今日成果
-
-完成：
-
-- OpenMPI Runtime 驗證
-- MPI Process / Rank
-- MPI_COMM_WORLD
-- MPI_Bcast
-- MPI_Reduce
-- MPI_Allreduce
-- MPI_Send / MPI_Recv
-- Point-to-Point vs Collective Communication
-- MPI AllReduce 與 NCCL / PyTorch DDP 的概念連結
-
-Day1 主要目的是建立 HPC Distributed Communication 基礎。
-
-Day2 將使用標準 HPC Benchmark 工具開始進行 MPI Performance Analysis，包括：
-
-- Latency
-- Bandwidth
-- Message Size
-- Collective Performance
-
----
-
-## Interview Review
-
-### Q1：MPI_Reduce 與 MPI_Allreduce 有什麼差別？
-
-MPI_Reduce 會將所有 Rank 的資料進行聚合，但結果只交給指定 Root Rank。
-
-MPI_Allreduce 則會將聚合結果提供給所有 Rank，因此常用於 Distributed Training 的 Gradient Synchronization。
-
-### Q2：Point-to-Point 與 Collective Communication 有什麼差別？
-
-Point-to-Point 是指定兩個 Rank 直接通信，例如 MPI_Send / MPI_Recv。
-
-Collective Communication 則需要一組 Rank 共同參與，例如 MPI_Bcast、MPI_Reduce、MPI_Allreduce。
+[改寫前完整教材快照](<../history/20260922-before-current/week17/day1-mpi-fundamentals.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

@@ -1,439 +1,60 @@
-# Week7 Day5 - Service Types and NodePort
+<!-- current-curriculum: 2026-09-22 -->
+# Week7 Day5 — Service type 與 NodePort
 
-## 對應檔案
+[上一課](<Day4_Liveness_and_Readiness_Probe.md>) · [本週目錄](README.md) · [下一課](<Day6_Ingress_Traefik.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [k8s/api-service.yaml](../../k8s/api-service.yaml)
-- [loadtest/benchmark.js](../../loadtest/benchmark.js)：k6 API 壓測
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Service type 與 NodePort」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日平台增加什麼
+## 概念解說
 
-今天平台完成 Kubernetes Service Type 的學習。
+ClusterIP 提供叢集內虛擬服務位址；NodePort 可透過節點埠暴露，但還受防火牆與路由限制。主展示可用顯式 context 的 port-forward，不依賴舊 node IP。
 
-API Service 從：
+## 在現在的專案中
 
-```text
-ClusterIP
-```
+學習現行 chart；歷史 Traefik／NodePort 位址不當作可用入口。
 
-修改為：
-
-```text
-NodePort
-```
-
-並成功透過 Node IP 對外提供服務。
-
----
-
-# Platform Problem
-
-前幾天測試 API 時，我們一直使用：
-
-```bash
-kubectl port-forward -n hpc-platform svc/api-service 8000:8000
-```
-
-雖然可以正常測試：
-
-```text
-localhost:8000
-```
-
-但：
-
-這只是 Kubernetes 建立的一條臨時 Tunnel。
-
-真正的 Service 並沒有直接對外提供服務。
-
----
-
-# 今日知識鏈
-
-```text
-Internet
-    │
-Node IP
-    │
-NodePort
-    │
-ClusterIP Service
-    │
-Pod
-```
-
-理解 Kubernetes 對外流量的第一步。
-
----
-
-# Kubernetes Service Types
-
-## ClusterIP
-
-預設 Service Type。
-
-只能提供 Cluster 內部存取。
-
-例如：
-
-```text
-api Pod
-    │
-redis-service
-    │
-redis Pod
-```
-
-Pod 與 Pod 之間透過 Service Name 通訊。
-
----
-
-## NodePort
-
-NodePort 會在每個 Node 開啟固定 Port。
-
-例如：
-
-```text
-Node IP
-10.140.0.2
-
-↓
-
-30080
-
-↓
-
-api-service
-
-↓
-
-api Pod
-```
-
-外部即可透過：
-
-```text
-http://10.140.0.2:30080
-```
-
-存取 API。
-
----
-
-## LoadBalancer
-
-在雲端平台（例如 GKE、EKS、AKS）：
+本課對照：[helm/api/templates/service.yaml](<../../helm/api/templates/service.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```yaml
-type: LoadBalancer
-```
+  type: {{ .Values.service.type }}
 
-Kubernetes 會自動向 Cloud Provider 建立真正的 Load Balancer。
-
-通常會取得：
-
-```text
-Public IP
-```
-
-供 Internet 存取。
-
----
-
-# Hands-on
-
-修改：
-
-```text
-k8s/api-service.yaml
-```
-
-內容：
-
-```yaml
-apiVersion: v1
-kind: Service
-
-metadata:
-  name: api-service
-  namespace: hpc-platform
-
-spec:
-  type: NodePort
-
+  # 選取要關聯的物件；不同資源種類支援的 selector 格式不同。
   selector:
-    app: api
+    {{- include "api.selectorLabels" . | nindent 4 }}
 
+  # 連接埠設定清單；容器宣告埠號本身不會自動對外公開。
   ports:
-    - port: 8000
-      targetPort: 8000
-      nodePort: 30080
+    - port: {{ .Values.service.port }}
+      # Service 將流量轉送至 Pod 的目標埠號或命名埠。
+      targetPort: {{ .Values.service.targetPort }}
+      {{- if eq .Values.service.type "NodePort" }}
+      # 經節點 IP 開放的 Service 埠號，適用 NodePort／部分 LoadBalancer 配置。
+      nodePort: {{ .Values.service.nodePort }}
+      {{- end }}
 ```
 
-部署：
+## 閱讀與練習
+
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 看 Service 的 type、port、targetPort，再讀現行 worker runbook 的 port-forward。說明 localhost:18081 不是永久公開服務網址。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-kubectl apply -f k8s/api-service.yaml
+sed -n '17,31p' 'helm/api/templates/service.yaml'
 ```
 
----
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-# 驗證 Service
+## 怎樣判斷自己讀懂了
 
-查看：
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/platform-after-training-20260922.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-```bash
-kubectl get svc -n hpc-platform
-```
+## 舊版與新版本的關係
 
-結果：
-
-```text
-api-service
-
-TYPE: NodePort
-
-PORT:
-8000:30080/TCP
-```
-
-代表 NodePort 建立成功。
-
----
-
-# 驗證 API
-
-取得 Node IP：
-
-```bash
-kubectl get nodes -o wide
-```
-
-Node：
-
-```text
-10.140.0.2
-```
-
-測試：
-
-```bash
-curl http://10.140.0.2:30080/health/redis
-```
-
-以及：
-
-```bash
-curl http://localhost:30080/health/redis
-```
-
-結果：
-
-```json
-{
-  "status": "healthy",
-  "redis": "connected"
-}
-```
-
-代表：
-
-NodePort → Service → Pod
-
-完整打通。
-
----
-
-# Port-forward 與 NodePort 差異
-
-## Port-forward
-
-```text
-kubectl port-forward
-        │
-        ▼
-ClusterIP
-        │
-        ▼
-Pod
-```
-
-用途：
-
-* 本機開發
-* Debug
-* 臨時測試
-
-不屬於正式對外服務方式。
-
----
-
-## NodePort
-
-```text
-Client
-    │
-NodeIP:30080
-    │
-NodePort
-    │
-ClusterIP
-    │
-Pod
-```
-
-用途：
-
-* Lab
-* Home Lab
-* Bare Metal
-* 沒有 Cloud LoadBalancer 的環境
-
----
-
-# 為什麼企業很少直接使用 NodePort？
-
-假設平台包含：
-
-* API
-* Grafana
-* Prometheus
-* Argo CD
-
-若全部使用 NodePort：
-
-```text
-30080
-30081
-30082
-30083
-```
-
-使用者必須記住大量 Port。
-
-因此企業通常改用：
-
-```text
-Internet
-     │
-Ingress
-     │
-ClusterIP Service
-     │
-Pod
-```
-
-透過同一個 80 / 443 Port，依照 Host 或 Path 將流量導向不同 Service。
-
----
-
-# 平台架構
-
-```text
-Client
-    │
-10.140.0.2:30080
-    │
-NodePort
-    │
-api-service
-    │
-api Pod
-    │
-Redis
-```
-
----
-
-# 今日重點
-
-* ClusterIP 只能在 Cluster 內使用。
-* Port-forward 是 Kubernetes 提供的除錯工具。
-* NodePort 可直接透過 Node IP 對外提供服務。
-* NodePort 建立於 ClusterIP 之上。
-* Ingress 建立於 Service 之上，而不是直接連 Pod。
-
----
-
-# Interview Q&A
-
-## Q1：Port-forward 和 NodePort 差在哪？
-
-Port-forward 建立一條臨時 Tunnel，主要用於開發與除錯。
-
-NodePort 則是在每個 Node 開啟固定 Port，提供外部存取。
-
----
-
-## Q2：NodePort 和 ClusterIP 是互斥的嗎？
-
-不是。
-
-NodePort Service 底層仍然會建立 ClusterIP。
-
-流量流程：
-
-```text
-NodePort
-    │
-ClusterIP
-    │
-Pod
-```
-
----
-
-## Q3：為什麼企業通常不用大量 NodePort？
-
-因為管理困難。
-
-正式環境通常使用：
-
-* LoadBalancer
-* Ingress
-
-讓多個 Service 共用 80 / 443 Port。
-
----
-
-# 今日成果
-
-平台正式具備 Kubernetes 對外存取能力：
-
-```text
-Client
-    │
-NodePort
-    │
-ClusterIP Service
-    │
-API Pod
-```
-
-完成：
-
-* Service Types
-* NodePort
-* 對外存取
-* Service 流量模型
-
----
-
-# 下一步
-
-Week7 Day6：
-
-Traefik Ingress。
-
-學習：
-
-* Ingress Resource
-* Host Routing
-* Path Routing
-* Traefik Controller
-* 為什麼正式環境幾乎都使用 Ingress 作為唯一入口。
-
+[改寫前完整教材快照](<../history/20260922-before-current/week7/Day5_Service_Types_NodePort.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

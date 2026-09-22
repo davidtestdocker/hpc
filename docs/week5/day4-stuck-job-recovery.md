@@ -1,280 +1,69 @@
-# Week5 Day4 - Stuck Job Recovery
+<!-- current-curriculum: 2026-09-22 -->
+# Week5 Day4 — 卡住與重啟接續
 
-## 對應檔案
+[上一課](<day3-reliable-worker-state-machine.md>) · [本週目錄](README.md) · [下一課](<day5-retry-strategy-and-deadletter-que.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [api/main.py](../../api/main.py)：API、工作狀態與佇列處理
-- [compose.yaml](../../compose.yaml)：本機服務組合
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「卡住與重啟接續」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日平台增加什麼
+## 概念解說
 
-今天的平台新增：
+程序停止時，Kubernetes 工作可能繼續執行。恢復後 worker 重新掃 record，依固定 JobSet 名稱取得狀態；鎖過期和失去鎖時也要防止不受控寫入。
 
-* Recovery Worker
-* Recovery Policy
-* Timeout Detection
-* `retrying` State
+## 在現在的專案中
 
-平台能力從：
+主 overlay 啟用獨立 api-worker；手動 /worker/* 返回 409。
 
-```text
-Pending Queue
-    ↓
-Processing Queue
-    ↓
-Completed
-```
-
-演進成：
-
-```text
-Pending Queue
-    ↓
-Processing Queue
-    ↓
-Worker Crash
-    ↓
-Recovery Worker
-    ↓
-Retrying
-    ↓
-Pending Queue
-```
-
----
-
-# Platform Problem
-
-Day3 已經解決：
-
-```text
-Worker Crash
-    ↓
-Job 不會 Lost
-```
-
-但是：
-
-```text
-Job 卡在 processing_queue
-```
-
-仍然沒有任何 Worker 會再處理它。
-
-如果沒有 Recovery 機制：
-
-```text
-Processing Queue
-    ↓
-永遠卡住
-```
-
-平台就無法自我修復（Self Recovery）。
-
----
-
-# 今日知識鏈
-
-```text
-Processing Queue
-    ↓
-processing_started_at
-    ↓
-Timeout Detection
-    ↓
-Recovery Policy
-    ↓
-Retrying
-```
-
----
-
-# Hands-on
-
-## 1. 建立 Recovery API
-
-新增：
-
-```text
-POST /worker/recover-stuck
-```
-
-功能：
-
-* 掃描 `processing_queue`
-* 取得 Processing 中的 Job
-
----
-
-## 2. 加入 Timeout Detection
-
-利用：
+本課對照：[api/worker.py](<../../api/worker.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```python
-processing_started_at
+def tick():
+    """逐筆掃描並取得 lease；單筆例外不阻止本輪繼續處理其他工作。"""
+    redis = main.redis_client
+    for key in redis.scan_iter(match='job:*', count=100):
+        job_id = key.removeprefix('job:')
+        if redis.get(f'worker:done:{job_id}'):
+            continue
+        # 不等待其他持有者；thread_local=False 讓續期執行緒可使用相同 lock token。
+        lock = redis.lock(f'worker:lock:{job_id}', timeout=120, blocking=False,
+                          thread_local=False)
+        if not lock.acquire(blocking=False):
+            continue
+        finished = threading.Event()
+        lost = threading.Event()
+
+        def renew(finished=finished, lock=lock, lost=lost):
+            """每 30 秒把 lease 有效期重設為 120 秒；失敗後通知主流程停止發布。"""
+            # 預設參數固定本次迴圈的物件，避免執行緒引用到下一筆工作的變數。
+            while not finished.wait(30):
+                try:
+                    lock.extend(120, replace_ttl=True)
+                except Exception:
+                    logger.exception('Worker lease renewal failed')
+                    lost.set()
 ```
 
-計算：
+## 閱讀與練習
 
-```text
-現在時間
-    ↓
-開始時間
-    ↓
-Processing Duration
-```
-
-設定：
-
-```text
-Timeout = 30 秒
-```
-
-只有超過 Timeout 才允許 Recovery。
-
----
-
-## 3. Recovery Policy
-
-符合條件：
-
-```text
-status != completed
-
-AND
-
-processing_time > timeout
-```
-
-Recovery Worker：
-
-* 從 `processing_queue` 移除
-* 放回 `job_queue`
-* 更新狀態為 `retrying`
-
----
-
-# 驗證
-
-建立 Job：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 找 guard、續期 thread、submitted collector 三處。比較「worker 停止」與「MPI Pod Pending」，列出兩者不同的排查入口；不直接刪 lock 解問題。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-curl -X POST http://localhost:8000/benchmark \
-  -H "Content-Type: application/json" \
-  -d '{"benchmark":"cpu"}'
+sed -n '81,104p' 'api/worker.py'
 ```
 
-模擬 Worker Crash：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```redis
-LMOVE job_queue processing_queue LEFT RIGHT
-```
+## 怎樣判斷自己讀懂了
 
-確認：
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/automatic-worker-20260922.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-```redis
-LRANGE processing_queue 0 -1
-```
+## 舊版與新版本的關係
 
-執行 Recovery：
-
-```bash
-curl -X POST http://localhost:8000/worker/recover-stuck
-```
-
-再次執行 Worker：
-
-```bash
-curl -X POST http://localhost:8000/worker/process-next
-```
-
-確認：
-
-```bash
-curl http://localhost:8000/jobs
-```
-
-驗證：
-
-* Job 被成功 Recovery
-* Job 回到 `job_queue`
-* Worker 可再次完成 Job
-* 最終狀態為 `completed`
-
----
-
-# 平台架構
-
-```text
-                 Client
-                    │
-                    ▼
-                 FastAPI
-                    │
-          ┌─────────┴─────────┐
-          ▼                   ▼
-     Redis job_queue    Redis processing_queue
-          │                   │
-          ▼                   │
-        Worker                │
-          │                   │
-          ├────────Crash──────┘
-          │
-          ▼
-    Recovery Worker
-          │
-          ▼
-      retrying
-          │
-          ▼
-      job_queue
-```
-
----
-
-# 今日重點
-
-* Recovery Worker 負責找回卡住的 Job。
-* `processing_started_at` 是 Timeout 判斷的依據。
-* Recovery 必須有 Policy，而不是看到 Processing Job 就立即回收。
-* `retrying` 比重新改回 `accepted` 更能反映 Job 的生命週期。
-* Recovery 是 Reliable Queue 的核心能力之一。
-
----
-
-# Interview Q&A
-
-## Q1：為什麼 Recovery 不能直接回收所有 Processing Job？
-
-因為 Worker 可能仍在正常執行。
-
-如果沒有 Timeout，就可能造成兩個 Worker 同時處理同一個 Job（Duplicate Processing）。
-
----
-
-## Q2：為什麼需要 `retrying` 狀態，而不是改回 `accepted`？
-
-`accepted` 代表第一次進入系統。
-
-Recovery 後的 Job 已經執行過一次，因此使用 `retrying` 能更準確表示 Job 的生命週期，也方便後續加入 Retry Count 與 Failed 狀態。
-
----
-
-# 下一步
-
-Week5 Day5：
-
-實作 Retry Strategy。
-
-新增：
-
-* `retry_count`
-* `max_retry`
-* `failed`
-* Dead Letter Queue（DLQ）
-
-讓平台具備完整的 Job Failure Handling 能力。
-
+[改寫前完整教材快照](<../history/20260922-before-current/week5/day4-stuck-job-recovery.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

@@ -1,301 +1,69 @@
-# Week4 Day2 - REST API Design
+<!-- current-curriculum: 2026-09-22 -->
+# Week4 Day2 — REST 與端點契約
 
-## 對應檔案
+[上一課](<day1-platform-api-design.md>) · [本週目錄](README.md) · [下一課](<day3-job-identity.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [api/main.py](../../api/main.py)：API、工作狀態與佇列處理
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「REST 與端點契約」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日平台增加什麼？
+## 概念解說
 
-今天平台從單純的健康檢查 API：
+GET 查詢通常不應啟動運算；POST /benchmark 表示提交請求。HTTP 200 與 job.status=completed 是不同層的成功，不能把提交回應當成 benchmark 結果。
 
-```text
-GET /
-```
+## 在現在的專案中
 
-進化成具備 Benchmark API 語意的入口：
+現行 GKE 主線；本機先用 mock 測試學習，不需要先拿雲端權限。
 
-```text
-GET /benchmarks
-POST /benchmark
-```
-
-這代表平台開始有「查詢 Benchmark 能力」與「提交 Benchmark Request」的 API Contract。
-
----
-
-## 今日解決的 Platform Problem
-
-真正的 HPC AI Performance Engineering Platform 不能只靠人工執行 Python Script。
-
-平台需要讓外部系統透過 HTTP 操作：
-
-```text
-Client
-  ↓
-API
-  ↓
-Benchmark Platform
-```
-
-因此今天建立 GET 與 POST 的基本語意：
-
-```text
-GET  = 查詢資源
-POST = 建立請求 / 提交任務
-```
-
----
-
-## 今日知識鏈
-
-```text
-HTTP
-  ↓
-Method
-  ↓
-GET / POST
-  ↓
-Resource
-  ↓
-RESTful Design
-  ↓
-Request
-  ↓
-Response
-  ↓
-Benchmark API Contract
-```
-
----
-
-## 今日實作
-
-### 1. 保留平台根入口
-
-```text
-GET /
-```
-
-用途：
-
-```text
-確認 API Server 正常運作
-```
-
----
-
-### 2. 新增 Benchmark 查詢 API
-
-```text
-GET /benchmarks
-```
-
-用途：
-
-```text
-查詢目前平台支援哪些 Benchmark 類型
-```
-
-回傳：
-
-```json
-{
-  "benchmarks": [
-    "cpu",
-    "memory",
-    "disk_io"
-  ]
-}
-```
-
-這是查詢資源，不是執行 Benchmark。
-
----
-
-### 3. 新增 Benchmark Request API
-
-```text
-POST /benchmark
-```
-
-用途：
-
-```text
-提交一個 Benchmark Request
-```
-
-回傳：
-
-```json
-{
-  "message": "benchmark request received",
-  "status": "accepted",
-  "next_step": "job identity will be added in Day3"
-}
-```
-
-今天只建立 API Contract，不建立 UUID、Job Model、Queue、Redis 或 Worker。
-
----
-
-## 今日 API 程式
+本課對照：[api/main.py](<../../api/main.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```python
-from fastapi import FastAPI
-
-app = FastAPI(
-    title="HPC AI Performance Engineering Platform",
-    version="0.1.0"
-)
-
-
-@app.get("/")
-def root():
-    return {
-        "message": "HPC AI Performance Engineering Platform API",
-        "status": "running"
-    }
-
-
-@app.get("/benchmarks")
-def list_benchmarks():
-    return {
-        "benchmarks": [
-            "cpu",
-            "memory",
-            "disk_io"
-        ]
-    }
-
-
 @app.post("/benchmark")
-def create_benchmark():
-    return {
-        "message": "benchmark request received",
-        "status": "accepted",
-        "next_step": "job identity will be added in Day3"
+def create_benchmark(request: BenchmarkRequest):
+    logger.info(
+        "Received benchmark request: %s",
+        request.benchmark
+    )
+
+    # uuid4 產生隨機識別碼；str 轉成字串，作為 Redis key 與回應中的 job_id。
+    job_id = str(uuid4())
+
+    job = {
+    "job_id": job_id,
+    "benchmark": request.benchmark,
+    "simulate_failure": request.simulate_failure,
+    "status": "accepted",
+    "result": None,
+    "retry_count": 0
     }
+
+    session = SessionLocal()
+
+    db_job = Job(
+        job_id=job_id,
+        benchmark=job["benchmark"],
 ```
 
----
+## 閱讀與練習
 
-## 今日驗證
-
-重新 Build 並啟動：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 在 API 中找 /benchmark、/jobs/{job_id}、/health，為三者各寫一句成功契約。主環境舊 /worker/* 回 409 是模式保護，不是故障。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-docker compose up -d --build
+sed -n '105,128p' 'api/main.py'
 ```
 
-測試查詢 Benchmark 類型：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```bash
-curl http://localhost:8000/benchmarks
-```
+## 怎樣判斷自己讀懂了
 
-結果：
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/automatic-worker-20260922.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-```json
-{"benchmarks":["cpu","memory","disk_io"]}
-```
+## 舊版與新版本的關係
 
-測試提交 Benchmark Request：
-
-```bash
-curl -X POST http://localhost:8000/benchmark
-```
-
-結果：
-
-```json
-{"message":"benchmark request received","status":"accepted","next_step":"job identity will be added in Day3"}
-```
-
----
-
-## 今日平台架構
-
-```text
-Client
-  ↓
-HTTP Request
-  ↓
-FastAPI
-  ↓
-GET /benchmarks
-  ↓
-查詢 Benchmark 類型
-```
-
-```text
-Client
-  ↓
-HTTP Request
-  ↓
-FastAPI
-  ↓
-POST /benchmark
-  ↓
-接收 Benchmark Request
-```
-
----
-
-## 今日學到的重點
-
-* GET 用來查詢資源。
-* POST 用來提交請求或建立資源。
-* REST API 應該以 Resource 為核心，而不是以 Function 名稱為核心。
-* `GET /benchmarks` 代表查詢 Benchmark 資源集合。
-* `POST /benchmark` 代表提交新的 Benchmark Request。
-* `status: accepted` 比 `completed` 更符合未來 Queue / Worker 架構。
-* 今天只建立 API Contract，不提前實作 Day3 的 Job Identity 或 Day4 的 Queue。
-
----
-
-## 它最後會變成平台哪一部分？
-
-今天建立的是 Benchmark API Contract 的雛形。
-
-未來會演進成：
-
-```text
-Client
-  ↓
-POST /benchmark
-  ↓
-API Server
-  ↓
-Job Identity
-  ↓
-Queue
-  ↓
-Worker
-  ↓
-Benchmark Engine
-  ↓
-Performance Analysis
-```
-
-今天的 `POST /benchmark` 之後會接上 UUID、Job Model、Memory Queue、Redis Queue、Worker、Database 與 Benchmark Engine。
-
----
-
-## Interview
-
-### Q1：GET 和 POST 在平台 API 設計中有什麼差別？
-
-GET 用來查詢資源，不應該改變平台狀態；POST 用來提交請求或建立資源，通常會讓平台產生新的任務或狀態變化。
-
-在本平台中，`GET /benchmarks` 是查詢支援的 Benchmark 類型，`POST /benchmark` 則是提交新的 Benchmark Request。
-
-### Q2：為什麼 `POST /benchmark` 回傳 `accepted`，而不是 `completed`？
-
-因為在真正的平台架構中，API 不應該直接執行 Benchmark。
-
-API 只負責接收請求，後續會交給 Queue、Worker 與 Benchmark Engine 處理。因此 `accepted` 代表請求已被平台接收，但尚未完成執行，這符合非同步平台設計。
-
+[改寫前完整教材快照](<../history/20260922-before-current/week4/day2-rest-api-design.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

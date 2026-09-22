@@ -1,207 +1,69 @@
-# Week10 Day6 - Docker Build in CI
+<!-- current-curriculum: 2026-09-22 -->
+# Week10 Day6 — CI 建置映像
 
-## 對應檔案
+[上一課](<Day5-Pytest-MockCI-Integration.md>) · [本週目錄](README.md) · [下一課](<Day7-GitHub-Actions-GitOps-自動部署-ArgoCD.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [.github/workflows/ci.yml](../../.github/workflows/ci.yml)：CI／映像建置與 GitOps 更新
-- [docker/Dockerfile](../../docker/Dockerfile)：容器映像建置
-- [requirements.txt](../../requirements.txt)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「CI 建置映像」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日目標
+## 概念解說
 
-- 建立 Production 等級 Dockerfile
-- 建立 .dockerignore
-- 將 Docker Build 整合至 GitHub Actions
-- 驗證專案可成功建置 Docker Image
+docker build 產生 image，push 才上 registry，部署再引用 tag 或 digest。Git SHA tag 提供追溯性但不等於已經上線，且 image 內實際 source 仍需核對。
 
----
+## 在現在的專案中
 
-# 今日成果
+只跑本機測試／離線讀 CI；不觸發 push、映像發佈或 Argo 同步。
 
-- 建立 `.dockerignore`
-- 優化 Dockerfile
-- 使用非 root User 執行 Container
-- 新增 Python Runtime Environment Variables
-- GitHub Actions 新增 Docker Build
-- Docker Image Build 成功
+本課對照：[.github/workflows/ci.yml](<../../.github/workflows/ci.yml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
----
+```yaml
+      - name: Build Docker Image
 
-# Dockerfile 優化
+        run: |
 
-新增：
+          docker build \
+            -f docker/Dockerfile \
+            -t asia-east1-docker.pkg.dev/project-4b82f780-0a12-4087-b94/hpc-images/hpc-api:${{ github.sha }} \
+            .
 
-- 非 root User
-- `PYTHONDONTWRITEBYTECODE`
-- `PYTHONUNBUFFERED`
-- 升級 pip
-- Layer 最佳化
-- `COPY --chown`
-- `EXPOSE 8000`
+      - name: Push Docker Image
+        run: |
+          docker push \
+            asia-east1-docker.pkg.dev/project-4b82f780-0a12-4087-b94/hpc-images/hpc-api:${{ github.sha }}
 
----
 
-# .dockerignore
 
-用途：
+      - name: Update Image Tag
+        run: |
+          sed -i "s/^  tag:.*/  tag: ${{ github.sha }}/" helm/api/values-dev.yaml
+          cat helm/api/values-dev.yaml
 
-避免不必要檔案進入 Build Context。
 
-例如：
 
-- .git
-- .venv
-- docs
-- tests
-- terraform
-- __pycache__
-- *.tfstate
+      - name: Commit GitOps Changes
+```
 
-減少 Build 時間與 Image 體積。
+## 閱讀與練習
 
----
-
-# Docker Build
-
-Workflow 新增：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 讀 build 的 -f 與 context，找 tag 使用 github.sha 的位置；將 build 成功、push 成功、rollout 成功列為不同驗收點。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-docker build \
-    -f docker/Dockerfile \
-    -t hpc-api:ci \
-    .
+sed -n '86,109p' '.github/workflows/ci.yml'
 ```
 
-作用：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-驗證 Dockerfile 能成功建置 Image。
+## 怎樣判斷自己讀懂了
 
----
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../../tests/test_worker.py>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-# Docker Build Context
+## 舊版與新版本的關係
 
-```text
-docker build .
-```
-
-`.`
-
-代表：
-
-目前專案目錄。
-
-Docker 只能 COPY Build Context 內的檔案。
-
-因此：
-
-```
-COPY requirements.txt .
-```
-
-才能正常找到檔案。
-
----
-
-# CI Workflow
-
-Git Push
-
-↓
-
-GitHub Actions
-
-↓
-
-Python Syntax Check
-
-↓
-
-Ruff
-
-↓
-
-Pytest
-
-↓
-
-Docker Build
-
-↓
-
-PASS
-
----
-
-# 今日遇到的問題
-
-### Dockerfile Parse Error
-
-原因：
-
-CMD JSON Array 寫法錯誤。
-
-解法：
-
-改為合法 Docker CMD Exec Form。
-
----
-
-### Docker Build 成功
-
-成功於：
-
-- 本機 Build
-- GitHub Actions Build
-
-代表 Dockerfile 可於全新環境正常建置。
-
----
-
-# Build vs Deploy
-
-Build
-
-- 建立 Docker Image
-- 驗證 Dockerfile
-- 驗證依賴
-- 驗證專案可封裝
-
-Deploy
-
-- 將 Image 部署至 Kubernetes
-- Rolling Update
-- 提供服務
-
-Day6 僅完成 Build。
-
----
-
-# 今日重點
-
-- Docker Build 為 CI 的重要驗證流程。
-- .dockerignore 可減少 Build Context。
-- Dockerfile 採用非 root User 提升安全性。
-- GitHub Actions 已完成 Docker Image 自動建置。
-
----
-
-# Interview Q&A
-
-### Q1：為什麼 CI 要做 Docker Build？
-
-確認專案可在全新的環境成功建置成 Docker Image，避免部署時才發現 Dockerfile、依賴或 COPY 路徑問題。
-
----
-
-### Q2：.dockerignore 的用途？
-
-限制 Build Context，避免無關檔案進入 Docker Build，降低建置時間、減少 Image 大小，並避免將敏感或開發環境檔案打包。
-
----
-
-# 本日總結
-
-完成 Production 等級 Dockerfile 與 .dockerignore，成功將 Docker Build 整合至 GitHub Actions，建立從程式碼驗證到 Docker Image 建置的完整 CI 流程。
+[改寫前完整教材快照](<../history/20260922-before-current/week10/Day6-Docker-Build-inCI.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

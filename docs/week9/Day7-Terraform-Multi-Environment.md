@@ -1,269 +1,69 @@
-# Week9 Day7 - Terraform Multi Environment
+<!-- current-curriculum: 2026-09-22 -->
+# Week9 Day7 — 多環境與隔離 state
 
-## 對應檔案
+[上一課](<Day6-Terraform-Network-Module.md>) · [本週目錄](README.md) · [下一課](<Day8-GKE-Cluster-withTerraform.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [terraform/environments/dev/main.tf](../../terraform/environments/dev/main.tf)
-- [terraform/environments/dev/outputs.tf](../../terraform/environments/dev/outputs.tf)
-- [terraform/environments/dev/providers.tf](../../terraform/environments/dev/providers.tf)
-- [terraform/environments/dev/variables.tf](../../terraform/environments/dev/variables.tf)
-- [terraform/environments/dev/versions.tf](../../terraform/environments/dev/versions.tf)
-- [terraform/environments/prod/main.tf](../../terraform/environments/prod/main.tf)
-- [terraform/environments/prod/outputs.tf](../../terraform/environments/prod/outputs.tf)
-- [terraform/environments/prod/providers.tf](../../terraform/environments/prod/providers.tf)
-- [terraform/environments/prod/variables.tf](../../terraform/environments/prod/variables.tf)
-- [terraform/environments/prod/versions.tf](../../terraform/environments/prod/versions.tf)
-- [terraform/environments/stage/main.tf](../../terraform/environments/stage/main.tf)
-- [terraform/environments/stage/outputs.tf](../../terraform/environments/stage/outputs.tf)
-- [terraform/environments/stage/providers.tf](../../terraform/environments/stage/providers.tf)
-- [terraform/environments/stage/variables.tf](../../terraform/environments/stage/variables.tf)
-- [terraform/environments/stage/versions.tf](../../terraform/environments/stage/versions.tf)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「多環境與隔離 state」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日目標
+## 概念解說
 
-- 完成 Terraform Multi Environment
-- 建立 dev / stage / prod 環境
-- 完成 Infrastructure Module 重用
-- 完成 Terraform Sandbox 驗證
-- 清除 Sandbox Infrastructure
+環境差異包含名字、位置、配額與 state；錯用 state 可把主資源當成要改名或刪除。remote state 尚未補齊，不可把隔離本機 state 說成團隊級鎖定流程。
 
----
+## 在現在的專案中
 
-# 今日成果
+本週只讀設定與既有證據；雲端 apply／destroy 須依 runbook 明確確認目標，GPU quota 固定一張。
 
-- 建立 dev / stage / prod 三套 Environment
-- 共用 Compute Module
-- 共用 Network Module
-- 共用 Firewall Module
-- 使用 terraform.tfvars 管理不同環境
-- 完成 Multi Environment 驗證
-- 完成 Terraform Sandbox Destroy
+本課對照：[terraform/environments/gpu-sg/README.md](<../../terraform/environments/gpu-sg/README.md>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
----
+````text
+這個 root module 描述主展示叢集、system-pool 與 L4 gpu-pool。它使用獨立 state，不共用歷史 `environments/dev`。2026-09-21 的實測結果見 [Terraform 對齊證據](../../../docs/evidence/terraform-gpu-sg-20260921.md)。
 
-# 專案架構
+## 管理邊界
 
-```text
-terraform/
-├── environments/
-│   ├── dev/
-│   ├── stage/
-│   └── prod/
-│
-└── modules/
-    ├── compute/
-    ├── network/
-    └── firewall/
-```
+- Terraform 管理 GKE cluster 與兩個 node pools。
+- `default` VPC／subnet 是共享資源，只以 data source 讀取。
+- Kubernetes controllers、queues、platform overlay 與 Secret 由
+  [`scripts/bootstrap_cluster.py`](../../../scripts/bootstrap_cluster.py) 處理，不進入 Terraform state。
+- 現有叢集不是由本 state 建立；必須先 import，不能直接 apply。
 
----
-
-# Multi Environment
-
-所有 Environment 共用：
-
-- providers.tf
-- versions.tf
-- modules
-
-不同的只有：
-
-```text
-terraform.tfvars
-```
-
-例如：
-
-```text
-dev
-environment = dev
-
-stage
-environment = stage
-
-prod
-environment = prod
-```
-
-Infrastructure Code 不需要修改。
-
----
-
-# Module 重用
-
-同一個 Compute Module：
-
-```text
-modules/compute
-```
-
-可以建立：
-
-```text
-hpc-api-dev
-hpc-api-stage
-hpc-api-prod
-```
-
-完全不需修改 Module。
-
-只需要：
-
-```text
-terraform.tfvars
-```
-
-提供不同參數。
-
----
-
-# String Interpolation
-
-Resource Name：
-
-```text
-hpc-${var.environment}-vpc
-```
-
-依照 Environment 自動產生：
-
-```text
-Dev
-
-↓
-
-hpc-dev-vpc
-
-Stage
-
-↓
-
-hpc-stage-vpc
-
-Prod
-
-↓
-
-hpc-prod-vpc
-```
-
-避免重複維護多份 Terraform Code。
-
----
-
-# Terraform Sandbox
-
-Week9 建立的 Infrastructure 僅用於：
-
-- Compute Module 驗證
-- Network Module 驗證
-- Firewall Module 驗證
-- Multi Environment 驗證
-
-完成後：
+## 離線檢查
 
 ```bash
-terraform destroy
+terraform -chdir=terraform/environments/gpu-sg init -backend=false
+terraform -chdir=terraform/environments/gpu-sg fmt -check
+terraform -chdir=terraform/environments/gpu-sg validate
 ```
 
-全部移除。
+## 匯入現有 hpc-gpu-sg
 
-Sandbox 不保留至正式專案。
-
----
-
-# 為什麼要 Destroy？
-
-Sandbox VM：
-
-```text
-hpc-api-dev
-```
-
-不承擔任何正式服務。
-
-持續保留只會增加 GCP 成本。
-
-正式 Infrastructure 將於後續建立：
-
-```text
-hpc-control-plane
-hpc-worker-01
-```
-
-一路使用到專案完成。
-
----
-
-# 驗證
+先建立 repo 外的 state backup 目錄，確認目前 root module 沒有 state，再依序匯入：
 
 ```bash
-terraform fmt -recursive
+terraform -chdir=terraform/environments/gpu-sg import \
+````
 
-terraform validate
+## 閱讀與練習
 
-terraform plan
-```
-
-三個 Environment：
-
-- dev
-- stage
-- prod
-
-皆驗證成功。
-
-最後：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 讀 gpu-sg README 的 rehearsal 說明，列出開始前必核對的 project、cluster_name、state、quota 四項；不執行 destroy。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-terraform destroy
+sed -n '3,26p' 'terraform/environments/gpu-sg/README.md'
 ```
 
-成功移除 Sandbox Infrastructure。
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
----
+## 怎樣判斷自己讀懂了
 
-# Week9 完成成果
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/cpu-bootstrap-acceptance-20260921.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-完成 Terraform Foundation：
+## 舊版與新版本的關係
 
-- Provider
-- Variables
-- Outputs
-- State
-- Compute Module
-- Network Module
-- Firewall Module
-- Module Output
-- Resource Reference
-- Multi Environment
-- Sandbox Lifecycle
-
----
-
-# Interview Q&A
-
-### Q1：Terraform Module 的主要目的？
-
-將 Infrastructure 封裝成可重複使用元件，提高重用性、降低重複程式碼，並統一管理不同環境。
-
----
-
-### Q2：為什麼要使用 dev / stage / prod？
-
-三個環境共用同一份 Terraform Code，只透過不同 `terraform.tfvars` 管理不同設定，避免維護多份 Infrastructure。
-
----
-
-### Q3：為什麼 Week9 最後要 `terraform destroy`？
-
-Week9 建立的是 Terraform Sandbox，用來驗證 Module 與 Infrastructure。正式專案將重新建立真正使用的 Kubernetes 節點，因此 Sandbox 應拆除以降低成本。
-
----
-
-# 本週總結
-
-完成 Terraform Foundation，具備企業常見的 Module 化架構與 Multi Environment 管理能力，能透過同一套 Infrastructure Code 部署不同環境，並理解 State、Module、Output 與 Resource Reference 的關係。Week9 完成後，Terraform 已具備支撐後續 Kubernetes、CI/CD 與 GitOps 的基礎。
+[改寫前完整教材快照](<../history/20260922-before-current/week9/Day7-Terraform-Multi-Environment.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

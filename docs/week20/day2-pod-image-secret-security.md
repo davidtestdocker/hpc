@@ -1,384 +1,69 @@
-# Week20 Day2 — Pod / Image / Secret Security
+<!-- current-curriculum: 2026-09-22 -->
+# Week20 Day2 — Pod、image 與 Secret 安全
 
-## 對應檔案
+[上一課](<day1-rbac-serviceaccount-least-privilege.md>) · [本週目錄](README.md) · [下一課](<day3-networkpolicy-tenant-isolation.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [docker/Dockerfile](../../docker/Dockerfile)：容器映像建置
-- [k8s/postgres-secret.example.yaml](../../k8s/postgres-secret.example.yaml)
-- [k8s/postgres-statefulset.yaml](../../k8s/postgres-statefulset.yaml)
-- [k8s/security/rbac-api-test.yaml](../../k8s/security/rbac-api-test.yaml)
-- [k8s/security/role.yaml](../../k8s/security/role.yaml)
-- [k8s/security/rolebinding.yaml](../../k8s/security/rolebinding.yaml)
-- [k8s/security/serviceaccount.yaml](../../k8s/security/serviceaccount.yaml)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「Pod、image 與 Secret 安全」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日完成
+## 概念解說
 
-完成 workload runtime security、image integrity、secret hygiene。
+image digest 用於追溯內容，securityContext 限制執行權限，Secret mount 提供憑證。任何單一設定都不等於全面 hardening，init container 改權限也需看實際需要。
 
----
+## 在現在的專案中
 
-## 1. RBAC vs Pod Security
+保留所有歷史成功與失敗；不宣稱 node failover、Redis 全失恢復或跨資料庫原子交易。
 
-RBAC：
+本課對照：[api/workloads/templates/jobset-mpi.yaml](<../../api/workloads/templates/jobset-mpi.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
-    控制 Pod 可以對 Kubernetes API 做什麼
+```yaml
+              initContainers:
+                - name: prepare-ssh
+                  # 容器映像及標籤，決定執行的檔案系統與程式版本。
+                  image: mpioperator/mpi-pi:openmpi
+                  # 程序身分、權限與作業系統安全設定。
+                  securityContext:
+                    runAsUser: 0
+                  # 覆寫容器入口指令；多行字串中的 Shell 語法由指定的 shell 解讀。
+                  command:
+                    - /bin/sh
+                    - -lc
+                    - |
+                      set -e
+                      cp /ssh-secret/id_ed25519 /ssh-work/id_ed25519
+                      chown 1000:1000 /ssh-work/id_ed25519
+                      chmod 600 /ssh-work/id_ed25519
+                  # 把已宣告的 volume 掛載到容器中的指定路徑。
+                  volumeMounts:
+                    - name: ssh-secret
+                      # 容器內可見的掛載路徑。
+                      mountPath: /ssh-secret
+                      # 是否以唯讀方式掛載，限制容器透過此掛載點寫入。
+                      readOnly: true
+                    - name: ssh-work
+```
 
-Pod Security：
+## 閱讀與練習
 
-    控制 container runtime 本身可以做什麼
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 讀 MPI template 的 key 複製、chmod 與 mount，說明 public/private key 用途和為何不能把內容放日誌；本課只讀設定，不讀實際 Secret。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
-兩者是不同安全層。
+```bash
+sed -n '68,91p' 'api/workloads/templates/jobset-mpi.yaml'
+```
 
----
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-## 2. Pod Security Baseline
+## 怎樣判斷自己讀懂了
 
-在 rbac-api-test 加入：
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/automatic-worker-20260922.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-    seccompProfile:
-      type: RuntimeDefault
+## 舊版與新版本的關係
 
-Container：
-
-    runAsNonRoot: true
-    runAsUser: 1000
-    runAsGroup: 1000
-
-    allowPrivilegeEscalation: false
-
-    readOnlyRootFilesystem: true
-
-    capabilities:
-      drop:
-        - ALL
-
----
-
-## 3. runAsNonRoot
-
-限制 container process：
-
-    不使用 UID 0
-
-本次：
-
-    UID = 1000
-    GID = 1000
-
-降低 container 被入侵後取得 root runtime 權限的風險。
-
----
-
-## 4. Privilege Escalation
-
-設定：
-
-    allowPrivilegeEscalation: false
-
-避免 process 透過 setuid / setgid 等方式取得更高權限。
-
----
-
-## 5. Linux Capabilities
-
-設定：
-
-    capabilities:
-      drop:
-        - ALL
-
-代表移除 container 不需要的 Linux privileged capabilities。
-
-原則：
-
-    預設全部移除
-    ↓
-    真正需要時才 individually add
-
----
-
-## 6. Read-Only Root Filesystem
-
-設定：
-
-    readOnlyRootFilesystem: true
-
-代表 container image filesystem 不允許 runtime 修改。
-
-程式需要寫：
-
-    /tmp
-
-因此另外使用：
-
-    emptyDir
-    ↓
-    mount /tmp
-
-形成：
-
-    root filesystem → read-only
-    必要 runtime path → writable
-
----
-
-## 7. seccomp
-
-使用：
-
-    RuntimeDefault
-
-seccomp 用來限制 Linux system calls。
-
-目的：
-
-    減少 container 可以呼叫的 kernel attack surface
-
----
-
-## 8. Hardening 後功能驗證
-
-實際 Pod：
-
-    Completed
-
-Security Context：
-
-    RuntimeDefault                ✓
-    runAsNonRoot=true             ✓
-    runAsUser=1000                ✓
-    allowPrivilegeEscalation=false ✓
-    readOnlyRootFilesystem=true   ✓
-    capabilities drop ALL         ✓
-
-原本 RBAC 功能仍正常：
-
-    GET Pods
-    → HTTP 200
-
-    GET Secrets
-    → HTTP 403
-
-    DELETE Pod
-    → HTTP 403
-
-代表：
-
-    security hardening
-    +
-    workload functionality
-
-可以同時成立。
-
----
-
-## 9. Secret Security 問題
-
-掃描 repo 發現：
-
-    postgres-statefulset.yaml
-
-曾直接包含：
-
-    POSTGRES_PASSWORD
-    value: <password>
-
-以及：
-
-    postgres-secret.yaml
-
-把密碼以 Base64 放進 Git。
-
-重要：
-
-    Base64 ≠ Encryption
-
-因此 Kubernetes Secret YAML 直接 commit 真值，
-仍屬於 secret exposure。
-
----
-
-## 10. secretKeyRef
-
-StatefulSet 改成：
-
-    POSTGRES_PASSWORD
-    ↓
-    valueFrom
-    ↓
-    secretKeyRef
-    ↓
-    postgres-secret
-
-因此 workload manifest：
-
-    知道 Secret name / key
-
-但：
-
-    不需要知道真正 password value
-
----
-
-## 11. Secret 不進 Git
-
-舊：
-
-    postgres-secret.yaml
-    → 真實 secret value
-    → Git tracked
-
-修正：
-
-    postgres-secret.yaml
-    → 移出 Git tracking
-    → 加入 .gitignore
-
-Repo 改留：
-
-    postgres-secret.example.yaml
-
-用途：
-
-    描述需要哪些 Secret keys
-    但不包含真正 credential。
-
----
-
-## 12. Secret Rotation
-
-如果 secret 曾進入 Git：
-
-    刪掉目前檔案
-    ≠
-    從 Git history 消失
-
-因此曾經 commit 的 credential：
-
-    應視為已曝光
-
-未來重新使用該服務時：
-
-    必須換新 credential
-
-不能繼續使用舊 password。
-
----
-
-## 13. ServiceAccount Token
-
-Repo 中：
-
-    /var/run/secrets/kubernetes.io/serviceaccount/token
-
-不是 credential 洩漏。
-
-因為 repo 只記錄：
-
-    token runtime path
-
-真正 token：
-
-    由 Kubernetes runtime 注入 Pod
-
----
-
-## 14. Image Security
-
-使用：
-
-    image:tag
-
-例如：
-
-    curlimages/curl:8.12.1
-
-比：
-
-    :latest
-
-安全，因為版本比較固定。
-
-但 tag 仍可能被 registry 重新指向不同 image。
-
----
-
-## 15. Image Digest Pinning
-
-從實際執行成功的 Pod 取得：
-
-    imageID
-
-結果：
-
-    curlimages/curl@sha256:94e9e444bcba979c2ea12e27ae39bee4cd10bc7041a472c4727a558e213744e6
-
-Repo 改成：
-
-    image@sha256:<digest>
-
-好處：
-
-    Deployment 指向 immutable image content
-
-而不是只相信可變的 tag。
-
----
-
-## 16. 最終 Security Model
-
-    Source Code / Git
-        ↓
-    No plaintext secrets
-        ↓
-    Pinned image digest
-        ↓
-    Kubernetes Secret runtime injection
-        ↓
-    ServiceAccount identity
-        ↓
-    RBAC least privilege
-        ↓
-    Non-root container
-        ↓
-    No privilege escalation
-        ↓
-    Drop capabilities
-        ↓
-    Read-only root filesystem
-        ↓
-    RuntimeDefault seccomp
-
----
-
-## 17. Repo
-
-    k8s/security/
-    ├─ serviceaccount.yaml
-    ├─ role.yaml
-    ├─ rolebinding.yaml
-    └─ rbac-api-test.yaml
-
-另外：
-
-    k8s/postgres-statefulset.yaml
-    → secretKeyRef
-
-    k8s/postgres-secret.example.yaml
-    → safe Secret template
-
-    .gitignore
-    → ignore real postgres-secret.yaml
-
----
-
-## Interview Review
-
-**Q1：Kubernetes Secret 使用 Base64 後，是否適合直接 commit 到 Git？**  
-A：不適合。Base64 只是編碼，不是加密。真正的 secret value 不應直接進 Git，workload manifest 應透過 secretKeyRef 或 external secret manager 在 runtime 取得。
-
-**Q2：為什麼 production container 常設定 non-root、drop capabilities、readOnlyRootFilesystem 和 seccomp？**  
-A：目的是降低 container 被入侵後可利用的權限與 kernel attack surface，限制 privilege escalation、filesystem modification 與不必要的 Linux capabilities。
+[改寫前完整教材快照](<../history/20260922-before-current/week20/day2-pod-image-secret-security.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

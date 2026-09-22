@@ -1,139 +1,49 @@
-# Week 1 Day 2－CPU Scheduler（CPU 排程器）
+<!-- current-curriculum: 2026-09-22 -->
+# Week1 Day2 — CPU 排程
 
-## 對應檔案
+[上一課](<day1-linux-process.md>) · [本週目錄](README.md) · [下一課](<day3-context-switch.md>) · [全程導讀](../learning-guide.md)
 
-本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-延伸對照文件：[Day1-Linux-CPU-Performance-Analysis](../week12/Day1-Linux-CPU-Performance-Analysis.md)。
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「CPU 排程」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 今日目標
+## 概念解說
 
-理解 Linux Scheduler 如何將 Process 分配到 CPU Core 執行，以及 CPU Core 與 Process 的關係。
+Linux 排程器分配 CPU 執行時間；Kubernetes Scheduler 選擇 Pod 放哪台 node，兩者不是同一層。CPU requests 是排程容量宣告，limits 則可能造成執行時節流。
 
----
+## 在現在的專案中
 
-# 為什麼需要 Scheduler？
+本週在自己的 Linux 學習環境做唯讀觀察，不聲稱主叢集當下健康。
 
-CPU Core 的數量有限，但系統中可能同時存在數百個 Process。
+本課對照：[helm/api/templates/worker.yaml](<../../helm/api/templates/worker.yaml>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
-Linux Scheduler 的工作就是：
-
-- 決定哪個 Process 先執行
-- 決定 Process 執行多久
-- 決定下一個要執行哪個 Process
-
-CPU Core 不會自己挑選 Process，而是由 Scheduler 負責分配。
-
----
-
-# CPU Core 與 Process
-
-目前實驗環境：
-
-- GCP Ubuntu VM
-- CPU Core：4
-
-如果同時只有四個 Process：
-
-```
-Core0 → Process A
-Core1 → Process B
-Core2 → Process C
-Core3 → Process D
+```yaml
+          resources:
+            # requests 供排程器計算容量，limits 限制容器 CPU／記憶體上限。
+            {{- toYaml .Values.worker.resources | nindent 12 }}
+{{- end }}
 ```
 
-每個 Process 都可以直接使用一個 CPU Core。
+## 閱讀與練習
 
----
-
-# 實驗一：查看 CPU Core
-
-使用指令：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 用 nproc 查看可用邏輯 CPU，再讀 worker resources。說明為何 Pod 已被放到 node 仍可能缺 CPU 時間；不要把核心數當成 node 數。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-nproc
+sed -n '41,44p' 'helm/api/templates/worker.yaml'
 ```
 
-輸出：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```
-4
-```
+## 怎樣判斷自己讀懂了
 
-代表目前 VM 有四個 CPU Core。
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../evidence/README.md>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
----
+## 舊版與新版本的關係
 
-# 實驗二：建立高 CPU 使用率 Process
-
-執行：
-
-```bash
-yes > /dev/null
-```
-
-再使用：
-
-```bash
-top
-```
-
-觀察到：
-
-- 新增一個 Running Process
-- `yes` 的 CPU 使用率接近 100%
-
-代表一個 Process 可以吃滿一個 CPU Core。
-
----
-
-# 實驗三：同時執行兩個 yes
-
-再次執行：
-
-```bash
-yes > /dev/null
-```
-
-再次觀察 `top`：
-
-可以看到兩個 `yes` Process。
-
-兩個 Process 都接近 100% CPU。
-
-代表 Linux Scheduler 將兩個 Process 分配到不同 CPU Core 執行。
-
----
-
-# 今日重點
-
-Scheduler 負責將 Process 分配到 CPU Core。
-
-CPU Core 不會自己選擇要執行哪個 Process。
-
-當 CPU Core 足夠時，每個高負載 Process 可以獨占一個 Core。
-
-當 Process 數量超過 CPU Core 數量時，Scheduler 就必須在 Process 之間不停切換。
-
----
-
-# 與 HPC AI Performance Engineering Platform 的關聯
-
-未來平台中的：
-
-- FastAPI
-- Benchmark Worker
-- Prometheus
-- Grafana
-- vLLM
-
-本質上都是 Linux Process。
-
-Performance Engineer 必須了解 Scheduler 如何分配 CPU，才能分析：
-
-- CPU 是否成為瓶頸
-- Benchmark Worker 是否取得足夠 CPU 資源
-- TPS 為何下降
-- 是否需要調整 CPU 資源配置
+[改寫前完整教材快照](<../history/20260922-before-current/week1/day2-cpu-scheduler.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

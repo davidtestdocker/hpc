@@ -1,271 +1,69 @@
-# Week13 Day3 - PostgreSQL Benchmark
+<!-- current-curriculum: 2026-09-22 -->
+# Week13 Day3 — PostgreSQL benchmark
 
-## 對應檔案
+[上一課](<Day2-Redis-Benchmark.md>) · [本週目錄](README.md) · [下一課](<Day4-PostgreSQL-Concurrency-Benchmark.md>) · [全程導讀](../learning-guide.md)
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-- [benchmark/postgres/run_pgbench.sh](../../benchmark/postgres/run_pgbench.sh)：PostgreSQL 壓測
-- [k8s/postgres-service.yaml](../../k8s/postgres-service.yaml)
-- [k8s/postgres-statefulset.yaml](../../k8s/postgres-statefulset.yaml)
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「PostgreSQL benchmark」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-# 今天平台增加了什麼？
+## 概念解說
 
-今天平台新增 **PostgreSQL Benchmark 能力**。
+pgbench 需要專用資料庫與明確初始化步驟，交易數、client 和 thread 是不同設定。初始化或壓測可能改資料與搶資源，不應拿平台 metadata DB 當預設目標。
 
-平台現在可以量測：
+## 在現在的專案中
 
-- Database TPS
-- Transaction Latency
-- Concurrent Clients
-- Database Transaction Performance
+Day7 的子章按 7-1 到 7-7 閱讀，最後讀 day7-benchmark-report；不新增負載或覆寫舊結果。
 
-至此平台已具備：
-
-- HTTP Benchmark
-- Redis Benchmark
-- PostgreSQL Benchmark
-
-三種效能測試能力。
-
----
-
-# 架構
-
-```
-Benchmark Pod
-      │
-pgbench
-      │
-postgres-service
-      │
-PostgreSQL
-```
-
----
-
-# 初始化 Benchmark Database
-
-建立專用 Database：
-
-```sql
-CREATE DATABASE pgbench;
-```
-
-初始化：
+本課對照：[benchmark/postgres/run_pgbench.sh](<../../benchmark/postgres/run_pgbench.sh>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
 ```bash
-pgbench -i \
--h postgres-service \
--U hpc \
--d pgbench
+# 效能測試腳本（run_pgbench）：讀取參數、執行測試並輸出結果；須在具備對應工具的環境執行。
+# Shell 語法：${變數} 取值，${1:-預設值} 讀取參數並提供預設；$(...) 取得指令輸出。
+# 行尾反斜線延續同一指令；| 把標準輸出傳給下一指令；> 覆寫檔案，>> 附加內容。
+
+# 設定 Shell 錯誤處理；-e 遇未被處理的指令失敗時退出，pipefail 使管線反映其中的失敗。
+set -e
+
+HOST="postgres-service"
+USER="hpc"
+DB="pgbench"
+
+CLIENTS=${1:-10}
+THREADS=${2:-2}
+TRANSACTIONS=${3:-100}
+
+RESULT_DIR="./results"
+
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+
+RESULT_FILE="${RESULT_DIR}/pgbench_${TIMESTAMP}.log"
+
+
+# 建立結果目錄；-p 會建立缺少的父目錄，目錄存在時不報錯。
+mkdir -p ${RESULT_DIR}
 ```
 
-建立測試資料：
+## 閱讀與練習
 
-- pgbench_accounts
-- pgbench_branches
-- pgbench_history
-- pgbench_tellers
-
----
-
-# Benchmark 指令
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 只讀 run_pgbench.sh，找連線資訊與是否初始化，列出重跑前需另建的測試隔離範圍；不要顯示或複製真密碼。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-pgbench \
--h postgres-service \
--U hpc \
--d pgbench \
--c 10 \
--j 2 \
--t 100
+sed -n '2,25p' 'benchmark/postgres/run_pgbench.sh'
 ```
 
----
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-# Benchmark 參數
+## 怎樣判斷自己讀懂了
 
-## -c
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../../benchmark/results/causal-lm-20260922/evidence.json>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-Concurrent Clients。
+## 舊版與新版本的關係
 
-```
-10
-```
-
-代表：
-
-10 個 Client 同時送出交易。
-
----
-
-## -j
-
-Worker Threads。
-
-```
-2
-```
-
-代表：
-
-pgbench 使用 2 個執行緒處理 Benchmark。
-
----
-
-## -t
-
-Transactions per Client。
-
-```
-100
-```
-
-每位 Client 執行 100 次 Transaction。
-
-總交易數：
-
-```
-10 × 100 = 1000 Transactions
-```
-
----
-
-# Benchmark 結果
-
-| 指標 | 結果 |
-|------|------|
-| Clients | 10 |
-| Threads | 2 |
-| Transactions | 1000 |
-| Failed | 0 |
-| Average Latency | 48.868 ms |
-| TPS | 204.63 |
-
----
-
-# Benchmark 指標解析
-
-## TPS
-
-Transactions Per Second。
-
-代表：
-
-每秒可完成多少完整資料庫交易。
-
-本次：
-
-```
-204 TPS
-```
-
----
-
-## Average Latency
-
-```
-48.868 ms
-```
-
-完成一筆 Transaction 平均所需時間。
-
-不是單一 SQL，而是整個交易。
-
----
-
-## Initial Connection Time
-
-```
-153 ms
-```
-
-第一次建立 PostgreSQL Connection 所需時間。
-
-不計入 TPS。
-
----
-
-## Failed Transactions
-
-```
-0%
-```
-
-代表所有 Transaction 均成功完成。
-
----
-
-# Transaction 與 SQL 的差異
-
-SQL：
-
-```
-SELECT
-```
-
-只是單一指令。
-
-Transaction：
-
-```
-BEGIN
-
-↓
-
-SELECT
-
-↓
-
-UPDATE
-
-↓
-
-INSERT
-
-↓
-
-COMMIT
-```
-
-代表一整個交易流程。
-
-因此 PostgreSQL Benchmark 使用 TPS，而非 Requests/sec。
-
----
-
-# 今天學到的重要觀念
-
-Redis Benchmark：
-
-測量單一 Command。
-
-PostgreSQL Benchmark：
-
-測量完整 Transaction。
-
-兩者不能直接比較 Throughput。
-
----
-
-# Interview（2題）
-
-## Q1
-
-為什麼 PostgreSQL Benchmark 使用 TPS，而不是 Requests/sec？
-
-**A：**
-
-因為 PostgreSQL 測量的是完整 Transaction（BEGIN → SQL → COMMIT），而非單一 Request 或 SQL。
-
----
-
-## Q2
-
-`-c` 與 `-j` 有什麼不同？
-
-**A：**
-
-`-c` 是同時連線的 Client 數量；`-j` 是 pgbench 使用的 Worker Thread 數量，用來處理這些 Client 的工作。
+[改寫前完整教材快照](<../history/20260922-before-current/week13/Day3-PostgreSQL-Benchmark.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

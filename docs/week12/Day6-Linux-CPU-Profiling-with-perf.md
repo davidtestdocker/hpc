@@ -1,625 +1,69 @@
-# Week12 Day6 - Linux CPU Profiling with perf
+<!-- current-curriculum: 2026-09-22 -->
+# Week12 Day6 — perf 取樣
 
-## 對應檔案
+[上一課](<Day5-Linux-CPU-Benchmark-with-sysbench.md>) · [本週目錄](README.md) · [下一課](<Day7-Linux-System-Call-Analysis-with-strace.md>) · [全程導讀](../learning-guide.md)
 
-本篇以概念、命令列操作或文內範例為主，未保存對應的獨立程式／設定檔。
+版本：2026-09-22。本文是現行版教材，按儲存庫實作解說；不是新一次雲端實測報告。
 
-延伸對照文件：[performance-report](../performance/performance-report.md)。
+## 先備知識與本課目標
 
----
+先讀本週 README 的基礎解說，再依上方順序進入本課。目標是理解「perf 取樣」，並能把概念對到實際檔案；第一次不要求先懂完整平台架構。
 
-## 目標
+## 概念解說
 
-本章節學習使用 Linux `perf` 進行 CPU Profiling，了解 CPU Time 實際花費的位置，並學會判讀 `perf stat`、`perf record`、`perf report` 的結果，建立 Linux Performance Profiling 的基本能力。
+perf 的取樣統計反映程式在哪些呼叫路徑花 CPU 時間，受 sampling、符號與權限影響。CPU 熱點不等於 GPU kernel 熱點，也不能從樣本比例直接推出整體加速比。
 
-完成本章後，可以回答：
+## 在現在的專案中
 
-- `perf` 是什麼？
-- `perf stat`、`perf record`、`perf report` 有什麼差異？
-- 如何判斷程式是 CPU Bound 還是 IO Bound？
-- `task-clock` 代表什麼？
-- `context-switches` 是什麼？
-- `cpu-migrations` 是什麼？
-- `page-faults` 是錯誤嗎？
-- 為什麼在雲端 VM 上看不到 `cycles` 與 `instructions`？
+歷史 Linux baseline 不是現行 MPI job 的自動 profiling；新硬體需重新建立基線。
 
----
+本課對照：[api/worker.py](<../../api/worker.py>)。先看下面片段在檔案中的位置，再回到完整內容追輸入、處理與輸出。片段刻意只擷取相關起點，不可單獨貼去執行或 apply。
 
-# 今日學習重點
+```python
+def tick():
+    """逐筆掃描並取得 lease；單筆例外不阻止本輪繼續處理其他工作。"""
+    redis = main.redis_client
+    for key in redis.scan_iter(match='job:*', count=100):
+        job_id = key.removeprefix('job:')
+        if redis.get(f'worker:done:{job_id}'):
+            continue
+        # 不等待其他持有者；thread_local=False 讓續期執行緒可使用相同 lock token。
+        lock = redis.lock(f'worker:lock:{job_id}', timeout=120, blocking=False,
+                          thread_local=False)
+        if not lock.acquire(blocking=False):
+            continue
+        finished = threading.Event()
+        lost = threading.Event()
 
-- Linux perf
-- CPU Profiling
-- Software Event
-- task-clock
-- Context Switch
-- CPU Migration
-- Page Fault
-- CPU Bound
-- IO Bound
-
----
-
-# Lab Environment
-
-OS
-
-```text
-Ubuntu 24.04
+        def renew(finished=finished, lock=lock, lost=lost):
+            """每 30 秒把 lease 有效期重設為 120 秒；失敗後通知主流程停止發布。"""
+            # 預設參數固定本次迴圈的物件，避免執行緒引用到下一筆工作的變數。
+            while not finished.wait(30):
+                try:
+                    lock.extend(120, replace_ttl=True)
+                except Exception:
+                    logger.exception('Worker lease renewal failed')
+                    lost.set()
 ```
 
-CPU
+## 閱讀與練習
 
-```text
-AMD EPYC 7B12
-```
-
-Environment
-
-```text
-Google Cloud Platform VM
-```
-
-Profiler
-
-```text
-perf
-```
-
-Benchmark
-
-```text
-sysbench
-```
-
----
-
-# 為什麼需要 Profiling？
-
-Benchmark 可以回答：
-
-```
-程式有多快？
-```
-
-Profiling 則回答：
-
-```
-CPU 時間花在哪裡？
-```
-
-Performance Engineer 的分析流程：
-
-```
-Benchmark
-        │
-        ▼
-Measure
-        │
-        ▼
-Profiling
-        │
-        ▼
-Find Hotspot
-        │
-        ▼
-Optimize
-```
-
----
-
-# perf 是什麼？
-
-`perf`
-
-為 Linux 官方提供的 Performance Profiling 工具。
-
-可用於分析：
-
-- CPU 使用時間
-- Function Hotspot
-- Scheduler
-- Context Switch
-- Cache
-- Branch
-- Hardware Counter（需硬體支援）
-
----
-
-# perf 三種主要模式
-
-| 指令 | 用途 |
-|------|------|
-| `perf stat` | 收集整體效能統計 |
-| `perf record` | 收集 CPU Sampling |
-| `perf report` | 查看 Profiling 結果 |
-
----
-
-# Step1：perf stat
-
-執行：
+1. 從 repo 根目錄讀取下面指定區段，對照概念解說；遇到不熟名詞回本週基礎，不需要先記所有命令。
+2. 讀 worker 的 tick，先預測它是輪詢等待還是計算熱點；說明若觀察的是 CUDA workload，為何还需 GPU profiler 而非只用 perf。
+3. 記下你的觀察與理由，區分「從程式讀到」「本機執行看到」「歷史證據記錄」。沒有做過的實驗不要填成功數值。
 
 ```bash
-perf stat sysbench cpu run
+sed -n '81,104p' 'api/worker.py'
 ```
 
-範例：
+這是唯讀檔案練習。需要實際測試時，依[現行練習與操作分級](../current-environment.md)選擇本機或離線步驟；部署、負載和故障注入另依 runbook 確認目標與影響。本次文件改寫沒有重新執行這些雲端操作。
 
-```text
-task-clock
-context-switches
-cpu-migrations
-page-faults
-```
+## 怎樣判斷自己讀懂了
 
-`perf stat`
+- 能完成上面的具體練習，指出對應欄位／函式，而不是只背工具名稱。
+- 能解釋本課概念在什麼条件下成立，並分清設定存在與實測成功。
+- 能從[本週證據／實作對照](<../../benchmark/cpu/results/cpu_benchmark_20260810.md>)找到相關依據；它是保存的紀錄或原始碼，不是即時可用性保證。
 
-主要回答：
+## 舊版與新版本的關係
 
-```
-程式執行期間
-
-CPU 發生了哪些事件？
-```
-
----
-
-# task-clock
-
-例如：
-
-```text
-10008 ms task-clock
-```
-
-代表：
-
-CPU 真正工作的時間。
-
-不是：
-
-```
-Wall Time
-```
-
-而是：
-
-```
-CPU Time
-```
-
----
-
-## CPU Bound
-
-例如：
-
-```
-Real Time
-
-10 秒
-
-Task Clock
-
-9.9 秒
-```
-
-代表：
-
-CPU 幾乎持續工作。
-
-屬於：
-
-```
-CPU Bound
-```
-
----
-
-## IO Bound
-
-例如：
-
-```
-Real Time
-
-10 秒
-
-Task Clock
-
-2 秒
-```
-
-代表：
-
-CPU 真正工作時間很少。
-
-剩餘時間可能等待：
-
-- Disk
-- Database
-- Network
-- Lock
-
-屬於：
-
-```
-IO Bound
-```
-
----
-
-# Context Switch
-
-例如：
-
-```text
-102 context-switches
-```
-
-代表：
-
-Linux Scheduler
-
-切換 Process 或 Thread 的次數。
-
-例如：
-
-```
-Thread A
-
-↓
-
-Thread B
-```
-
-CPU 需要：
-
-- 保存 Register
-- 載入 Register
-- 切換 Stack
-
-因此：
-
-Context Switch
-
-具有一定成本。
-
----
-
-## Context Switch 過高
-
-若：
-
-```
-Throughput 沒增加
-
-Context Switch 卻大量增加
-```
-
-可能代表：
-
-- Thread 過多
-- Scheduler 負擔增加
-- 排程成本開始影響效能
-
----
-
-# CPU Migration
-
-例如：
-
-```text
-10 cpu-migrations
-```
-
-代表：
-
-Linux Scheduler
-
-將 Thread
-
-從一顆 CPU
-
-搬移到另一顆 CPU。
-
-例如：
-
-```
-CPU0
-
-↓
-
-CPU2
-```
-
----
-
-## 為什麼會 Migration？
-
-Scheduler
-
-希望平衡各 CPU 負載。
-
-例如：
-
-```
-CPU0
-
-100%
-
-↓
-
-四顆 CPU
-
-平均工作
-```
-
----
-
-## Migration 過高
-
-Migration
-
-可能造成：
-
-- CPU Cache 失效
-- Scheduler 成本增加
-
-在：
-
-- HPC
-- AI Training
-- NUMA
-
-通常會透過：
-
-- CPU Affinity
-- CPU Pinning
-
-降低 Migration。
-
----
-
-# Page Fault
-
-例如：
-
-```text
-860 page-faults
-```
-
-Page Fault
-
-並不代表程式錯誤。
-
-Linux 採用：
-
-```
-Virtual Memory
-```
-
-第一次存取 Memory 時，
-
-Kernel
-
-建立：
-
-```
-Virtual Memory
-
-↓
-
-Physical Memory
-```
-
-即會發生：
-
-```
-Minor Page Fault
-```
-
-屬於正常現象。
-
----
-
-## Major Page Fault
-
-若：
-
-RAM 不足，
-
-Linux
-
-需要：
-
-```
-Disk
-
-↓
-
-Swap
-
-↓
-
-RAM
-```
-
-則會發生：
-
-```
-Major Page Fault
-```
-
-速度遠慢於 RAM，
-
-可能造成明顯效能下降。
-
----
-
-# perf record
-
-執行：
-
-```bash
-perf record -g -- sysbench cpu run
-```
-
-作用：
-
-持續收集 CPU Sampling，
-
-並產生：
-
-```
-perf.data
-```
-
-供後續分析。
-
----
-
-# perf report
-
-執行：
-
-```bash
-perf report
-```
-
-可查看：
-
-CPU Hotspot。
-
-例如：
-
-```
-Function A
-
-35%
-
-Function B
-
-20%
-```
-
-若 Binary
-
-沒有 Debug Symbol，
-
-則可能只能看到：
-
-```
-Memory Address
-```
-
-而無法顯示 Function Name。
-
----
-
-# GCP VM 的限制
-
-本次實驗：
-
-```text
-cycles
-
-instructions
-
-branch-misses
-```
-
-皆顯示：
-
-```text
-<not supported>
-```
-
-原因：
-
-Google Cloud VM
-
-未提供完整 Hardware PMU。
-
-因此：
-
-本章主要學習：
-
-Software Event Profiling。
-
-Hardware Counter
-
-將於具備 PMU 的環境再深入探討。
-
----
-
-# Performance Analysis 流程
-
-```
-Application Slow
-        │
-        ▼
-Benchmark
-        │
-        ▼
-perf stat
-        │
-CPU Bound？
-        │
- ┌──────┴──────┐
- │             │
-Yes           No
- │             │
- ▼             ▼
-perf record   分析 I/O、DB、Network
- │
- ▼
-perf report
- │
- ▼
-Find Hotspot
- │
- ▼
-Optimize
-```
-
----
-
-# 今日重點
-
-- `perf` 是 Linux 官方 Performance Profiling 工具。
-- `perf stat` 用於收集整體 CPU 執行統計。
-- `task-clock` 可協助判斷 CPU Bound 與 IO Bound。
-- `context-switches` 過高可能代表排程成本增加。
-- `cpu-migrations` 過高可能造成 CPU Cache 失效。
-- `page-faults` 大多屬於正常的 Minor Page Fault。
-- `perf record` 建立 Sampling。
-- `perf report` 用於分析 CPU Hotspot。
-
----
-
-# Interview
-
-## Q1：`perf stat`、`perf record`、`perf report` 有什麼差異？
-
-**答：**
-
-- `perf stat`：收集整體效能統計，例如 task-clock、context-switches、page-faults。
-- `perf record`：收集 CPU Sampling，建立 `perf.data`。
-- `perf report`：分析 `perf.data`，找出 CPU Hotspot。
-
----
-
-## Q2：如何利用 `task-clock` 判斷 CPU Bound 或 IO Bound？
-
-**答：**
-
-若 `task-clock` 接近程式實際執行時間（Wall Time），代表 CPU 大部分時間都在運算，屬於 CPU Bound；若 `task-clock` 明顯小於 Wall Time，則表示程式大量時間可能在等待 Disk、Database、Network 或 Lock，屬於 IO Bound。
-
----
-
-## Q3：`page-faults` 是否代表程式發生錯誤？
-
-**答：**
-
-不一定。大部分 Page Fault 屬於 Minor Page Fault，是 Linux 建立 Virtual Memory 與 Physical Memory 映射時的正常行為；只有因 RAM 不足而需要從 Swap 或 Disk 載入資料的 Major Page Fault，才可能造成明顯的效能問題。
+[改寫前完整教材快照](<../history/20260922-before-current/week12/Day6-Linux-CPU-Profiling-with-perf.md.txt>)保存原有教學、命令、輸出和版本註記，作為文字檔閱讀；它不是現行操作手冊。日期與環境仍依原文，不把舊結果改名成新驗收。保存規則與 SHA-256 見[歷史索引](../history/20260922-before-current/README.md)。

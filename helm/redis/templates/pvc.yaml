@@ -1,3 +1,5 @@
+# persistence.enabled 決定是否建立 PVC；Deployment 必須同時把它掛載至 /data。
+# PVC 保存跨 Pod 的資料，但不等於備份，也不保證 Redis 資料全失後能重建工作。
 {{- if .Values.persistence.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -6,6 +8,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   accessModes:
+    # ReadWriteOnce 限制讀寫掛載於單一 node，不是「只有一個 Pod」的鎖。
     - ReadWriteOnce
   resources:
     requests:

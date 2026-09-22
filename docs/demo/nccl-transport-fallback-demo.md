@@ -2,7 +2,7 @@
 
 ## Demo 目的
 
-從保存的 NCCL raw log 說明 transport discovery、IB 初始化失敗與 Socket fallback 的判讀。來源為 [原始單 GPU log](../../benchmark/results/week16-day4-nccl-single-gpu.txt) 與 [transport 排障紀錄](../week18/day5-nccl-transport-debugging.md)；本輪未執行 NCCL test。
+從保存的 NCCL raw log 說明 transport discovery、IB 初始化失敗與 Socket fallback 的判讀。來源為 [原始單 GPU log](../../benchmark/results/week16-day4-nccl-single-gpu.txt) 與 [transport 排障紀錄](../history/20260922-before-current/week18/day5-nccl-transport-debugging.md.txt)；本輪未執行 NCCL test。
 
 ## NCCL Transport Discovery
 
