@@ -33,17 +33,25 @@ CPU 排程把可執行的執行緒分配到邏輯 CPU；等待磁碟或網路的
 
 本週直接讀保存的 Linux 觀察與概念示例，不要求重跑，也不聲稱主叢集當下健康。
 
-[本週實作／證據入口](<../evidence/README.md>)。本週的原始碼、manifest 與保存的成功／失敗各有不同證明力，不能全部當成今天又測過一次。
+## 每日閱讀順序與本課材料
 
-## 每日閱讀順序
+Week1 學的是用 Linux 指令觀察程序、CPU、記憶體與磁碟。指令和當時留下的觀察都在各課正文，按下表閱讀即可。
 
-- [Day1：程序與 PID](<day1-linux-process.md>)
-- [Day2：CPU 排程](<day2-cpu-scheduler.md>)
-- [Day3：Context switch](<day3-context-switch.md>)
-- [Day4：CPU utilization](<day4-cpu-utilization.md>)
-- [Day5：Memory](<day5-memory.md>)
-- [Day6：Disk I/O](<day6-disk-io.md>)
-- [Day7：系統效能分析流程](<day7-performance-analysis.md>)
+| 課程 | 這課要看懂什麼、使用什麼材料 | 課文保存了什麼 |
+| --- | --- | --- |
+| [Day1：程序與 PID](day1-linux-process.md) | 用 `ps -ef` 認識程序清單、PID 與 PPID。下方的 Python 檔案另外示範只列 PID 與名稱。 | VM 約有 150 個程序的文字觀察；另引用 Week3 的兩列容器程序輸出，兩者來自不同環境。 |
+| [Day2：CPU 排程](day2-cpu-scheduler.md) | 用 `nproc` 看可用處理單位，以 `yes` 產生負載，再用 `top` 看 CPU 使用率。 | `nproc` 為 4、`yes` 接近 100% 的文字紀錄，沒有完整 `top` 原始輸出。 |
+| [Day3：Context switch](day3-context-switch.md) | 接續 `yes` 實驗，理解多個工作如何分享 CPU 時間。 | 五個 `yes` 各約 75%～85% 的觀察；沒有直接量測 context switch 次數。 |
+| [Day4：CPU utilization](day4-cpu-utilization.md) | 讀懂 `top` 的 `us`、`sy`、`id`，比較空閒與有負載時的 CPU 時間分布。 | 兩種情況的百分比摘錄。 |
+| [Day5：Memory](day5-memory.md) | 用 `free -h` 看整機記憶體，以 RSS 排序查看程序記憶體用量。 | 記憶體總量、已用與可用量摘錄；沒有各程序的 RSS 數值表。 |
+| [Day6：Disk I/O](day6-disk-io.md) | 用 `df -h` 看容量、`lsblk` 看磁碟結構、`iostat` 觀察 I/O。 | 容量、磁碟結構與一次 iowait 摘錄。 |
+| [Day7：系統效能分析流程](day7-performance-analysis.md) | 把前六天的觀念組成排查問題的順序。 | 分析流程與假設案例，沒有完整自動監控實驗結果。 |
+
+### 本週相關的 Python 檔案
+
+[monitoring/process_monitor.py](../../monitoring/process_monitor.py) 只對應 **Day1 的「列出 PID 與程序名稱」**：它執行一次 `ps -eo pid,comm`，再印出文字結果。Day1 的「對應檔案」段落已逐段解釋程式與輸出。
+
+Day2～Day6 的材料是課文裡的 Linux 指令與觀察，沒有各課專用的 Python 實作。Day7 提到的 `cpu_monitor.py`、`memory_monitor.py`、`disk_monitor.py`、`system_monitor.py` 是規劃，儲存庫未保存這些檔案。
 
 ## 直接讀結果，不要求重跑
 

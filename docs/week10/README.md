@@ -20,7 +20,12 @@ CI 會寫 values-dev.yaml，既有 Argo dev 讀 overlays/dev；主 overlay 使�
 
 直接讀歷史測試結果與 CI 設定；本輪沒有重跑測試，不觸發 push、映像發佈或 Argo 同步。
 
-[本週實作／證據入口](<../../tests/test_worker.py>)。本週的原始碼、manifest 與保存的成功／失敗各有不同證明力，不能全部當成今天又測過一次。
+## 本週材料怎麼讀
+
+- **Day1～Day3：CI 步驟** — [.github/workflows/ci.yml](../../.github/workflows/ci.yml) 先看觸發條件，再找語法檢查、Ruff 與 pytest 步驟，分辨每一步檢查什麼。
+- **Day4～Day5：測試與假依賴** — [tests/test_api.py](../../tests/test_api.py) 看輸入與 `assert`；[tests/conftest.py](../../tests/conftest.py) 看 Redis／DB 如何被替換。目前測試直接呼叫 endpoint 函式，課文舊 TestClient 範例另保留在正文。
+- **Day6：映像建置** — [docker/Dockerfile](../../docker/Dockerfile) 和 [.dockerignore](../../.dockerignore) 分別描述建置步驟及排除哪些 context 檔案；再回 workflow 看 build 命令。
+- **Day7：更新 tag 後誰會讀取** — 從 workflow 寫入的 [values-dev.yaml](../../helm/api/values-dev.yaml)，追到 [Argo Application](../../argocd/application-dev.yaml) 指向的 dev overlay；主平台 overlay 有自己的 image 設定。
 
 ## 每日閱讀順序
 

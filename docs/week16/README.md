@@ -20,7 +20,11 @@ speedup=T1/TN，效率可用 speedup/N 描述，但前提是工作量可比。�
 
 現有 CPU／Gloo、單 rank NCCL 與單 GPU 訓練分開保存；未驗證多 GPU scaling。
 
-[本週實作／證據入口](<../evidence/README.md>)。本週的原始碼、manifest 與保存的成功／失敗各有不同證明力，不能全部當成今天又測過一次。
+## 本週材料怎麼讀
+
+- **Day1～Day2：rank、模型副本與同步** — [ddp_test.py](../../runtime/pytorch/ddp_test.py) 建立 CPU／Gloo 通訊群組，執行一次反向傳播與更新，再印各 rank 的參數加總；兩個程序在同一 Pod。
+- **Day3～Day4：NCCL 測試** — [NCCL Job 模板](../../helm/pytorch-runtime/templates/nccl-benchmark-job.yaml) 看測試如何建置、啟動；[Day4 原始 log](../../benchmark/results/week16-day4-nccl-single-gpu.txt) 是保存的單 GPU、單 rank 輸出，可對照 algBw／busBw 欄位。
+- **Day5：比較 worker 數量** — [distributed_scaling.py](../../runtime/pytorch/distributed_scaling.py) 看訓練與計時範圍，再讀課文的 1／2 worker 比較。課文列出的 CPU limit、batch 與計時差異會影響解讀；本週沒有多 GPU scaling 實測。
 
 ## 每日閱讀順序
 

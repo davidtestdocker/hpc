@@ -20,7 +20,12 @@ Kubernetes 又增加 Service／Endpoint／CNI／NetworkPolicy；NCCL 增加 tran
 
 本週可用 CPU 學主機網路；不把 CPU 測試或 Socket fallback 當 RDMA 硬體實測。
 
-[本週實作／證據入口](<../evidence/network-policy-validation-20260921.json>)。本週的原始碼、manifest 與保存的成功／失敗各有不同證明力，不能全部當成今天又測過一次。
+## 本週材料怎麼讀
+
+- **Day1～Day3：主機連線與封包** — 課文保存介面、路由、MTU、吞吐及封包觀察；[run_iperf3.sh](../../benchmark/network/run_iperf3.sh) 只對應 Day2 的 TCP 吞吐命令，未實作課文全部 UDP／MTU 測試。
+- **Day4：Kubernetes 服務路徑** — [API Service](../../k8s/api-service.yaml) 看 selector／port，[default-deny.yaml](../../k8s/security/network-policy/default-deny.yaml) 看網路規則。[隔離叢集的 allow／deny 結果](../evidence/network-policy-validation-20260921.json) 僅對應政策實驗，沒有涵蓋整週網路排障。
+- **Day5：NCCL transport** — [保存的 NCCL log](../../benchmark/results/week16-day4-nccl-single-gpu.txt) 來自 Week16，同一份資料在本課用於讀取 transport 訊息。
+- **Day6～Day7：拓撲與排查順序** — GPU／NIC／NUMA 指令、觀察與 playbook 都在課文；這部分沒有完成的雙節點訓練故障實驗。
 
 ## 每日閱讀順序
 

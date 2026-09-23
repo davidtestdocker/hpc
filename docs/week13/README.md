@@ -20,7 +20,12 @@
 
 Day7 的子章按 7-1 到 7-7 閱讀，最後讀 day7-benchmark-report；不新增負載或覆寫舊結果。
 
-[本週實作／證據入口](<../../benchmark/results/causal-lm-20260922/evidence.json>)。本週的原始碼、manifest 與保存的成功／失敗各有不同證明力，不能全部當成今天又測過一次。
+## 本週材料怎麼讀
+
+- **Day1～Day2：HTTP 與 Redis** — 各課正文保存 `ab` 與 `redis-benchmark` 命令及數值；HTTP 測試的 `GET /` 路由在 [api/main.py](../../api/main.py)，只回固定 JSON。
+- **Day3～Day6：PostgreSQL 與自動化** — [run_pgbench.sh](../../benchmark/postgres/run_pgbench.sh) 看 client、thread、每 client 交易數及 log 輸出；各課正文保存比較表與監控觀察。這支腳本的 `pgbench | tee` 尚未設 pipefail。
+- **Day7-1～Day7-3：CPU、磁碟、網路** — 分別對照 [stress-ng 腳本](../../benchmark/cpu/run_stress_ng.sh)、[fio 腳本](../../benchmark/storage/run_fio.sh)、[iperf3 腳本](../../benchmark/network/run_iperf3.sh)；保存摘要分別為 [CPU](../../benchmark/cpu/results/cpu_benchmark_20260810.md)、[磁碟](../../benchmark/storage/results/fio_20260810.md)、[網路](../../benchmark/network/results/iperf3_20260810.md)。
+- **Day7-4～Day7-7、Day7 總結：串接與報告** — [run_all.sh](../../benchmark/run_all.sh) 依序呼叫 CPU、Storage、PostgreSQL、Network 腳本並保存 log；各子章解釋錯誤處理與結果整理。這條流程沒有串接語言模型訓練。
 
 ## 每日閱讀順序
 

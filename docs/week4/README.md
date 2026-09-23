@@ -20,7 +20,12 @@ HTTP method 與 path 共同識別介面。POST 可建立工作，GET 查狀態�
 
 現行 GKE 主線；直接讀保存結果與 mock 測試原始碼，不要求執行或取得雲端權限。
 
-[本週實作／證據入口](<../evidence/automatic-worker-20260922.json>)。本週的原始碼、manifest 與保存的成功／失敗各有不同證明力，不能全部當成今天又測過一次。
+## 本週材料怎麼讀
+
+- **Day1～Day3：API 與工作編號** — [api/main.py](../../api/main.py) 中的路由、`BenchmarkRequest`、`create_benchmark`，分別對應請求入口、輸入格式、建立 job ID 與回應。
+- **Day4：工作如何保存** — 先讀課文的 `jobs={}`、`job_queue=[]` 舊範例，再對照 [api/main.py](../../api/main.py) 的 PostgreSQL／Redis 寫入。程序內清單與外部儲存的差異是本課重點。
+- **Day5：API 如何啟動** — [docker/Dockerfile](../../docker/Dockerfile) 的 `CMD` 指定 Uvicorn 啟動 `api.main:app`；[compose.yaml](../../compose.yaml) 提供容器設定。
+- **Day6：端點各自回什麼** — 在 [api/main.py](../../api/main.py) 找 `/health`、`/health/redis`、`/metrics` 與 `/job-metrics`，對照健康回應、依賴檢查、Prometheus 格式與工作數量 JSON。
 
 ## 每日閱讀順序
 

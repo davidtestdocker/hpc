@@ -20,7 +20,12 @@ Argo CD 對照 Git 宣告與叢集狀態並同步。Application 的 source 決�
 
 主線是 Helm／Kustomize 渲染與 deploy 工具；Argo CD 為獨立 GitOps 設定教材。
 
-[本週實作／證據入口](<../evidence/platform-deployment-20260921.json>)。本週的原始碼、manifest 與保存的成功／失敗各有不同證明力，不能全部當成今天又測過一次。
+## 本週材料怎麼讀
+
+- **Day1、Day7：GitOps 讀哪裡、部署到哪裡** — [Argo Application](../../argocd/application-dev.yaml) 看 `source`、`destination`、同步設定；[AppProject](../../argocd/project.yaml) 看允許範圍。
+- **Day2～Day4：Helm 如何產生 YAML** — 對照 [values.yaml](../../helm/api/values.yaml)、[Deployment 模板](../../helm/api/templates/deployment.yaml) 和 [命名 helper](../../helm/api/templates/_helpers.tpl)，追一個 value 如何被模板使用。
+- **Day5～Day6：環境差異如何組合** — [dev kustomization](../../kustomize/overlays/dev/kustomization.yaml) 看 `helmCharts` 與 patches；再對照 [主平台 kustomization](../../kustomize/overlays/gpu-sg-platform/kustomization.yaml)。兩份設定的用途不同，Argo dev 指向前者。
+- **保存結果** — 各課正文保留渲染、部署與錯誤觀察；讀到 `Expected` 時將它視為預期示例，不能當成實際輸出。
 
 ## 每日閱讀順序
 

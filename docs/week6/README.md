@@ -39,7 +39,13 @@ spec:
 
 K3s 是獨立基礎練習選項，不是本次主環境；雲端修改只依 runbook。
 
-[本週實作／證據入口](<../evidence/cpu-bootstrap-acceptance-20260921.json>)。本週的原始碼、manifest 與保存的成功／失敗各有不同證明力，不能全部當成今天又測過一次。
+## 本週材料怎麼讀
+
+- **Day1～Day3：Pod 與 Deployment** — [API Deployment](../../k8s/api-deployment.yaml) 可對照 `replicas`、`template`、`containers`，理解控制器要維持的程序與副本。
+- **Day4：Service 找到哪些 Pod** — 對照 [API Service](../../k8s/api-service.yaml) 的 `selector` 和 Deployment 的 Pod labels，再看 `port`／`targetPort`。
+- **Day5：K3s 基礎** — 材料是課文中的安裝與節點觀察紀錄，沒有獨立 Python 實作。
+- **Day6～Day7：服務與儲存依賴** — 先讀課文中的 API、Redis、PostgreSQL YAML；[目前主 overlay](../../kustomize/overlays/gpu-sg-platform/kustomization.yaml) 用來對照後來如何組合設定，不能直接把它當成舊 K3s 操作。
+- **Day7 的延伸驗收** — [CPU bootstrap 結果](../evidence/cpu-bootstrap-acceptance-20260921.json) 是後來新建 GKE 的服務、PVC、資料表等檢查，與課文舊 K3s 紀錄分開閱讀。
 
 ## 每日閱讀順序
 

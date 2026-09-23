@@ -20,7 +20,12 @@ Slurm 分配叢集資源並執行 batch job，Ray 排程 task／actor，Kubernet
 
 Slurm／Ray 是獨立實驗教材與已保存歷史案例，不當作目前可用服務。
 
-[本週實作／證據入口](<../evidence/automatic-worker-20260922.json>)。本週的原始碼、manifest 與保存的成功／失敗各有不同證明力，不能全部當成今天又測過一次。
+## 本週材料怎麼讀
+
+- **Day1：MPI 程序與通訊** — 從 [mpi_hello.c](../../mpi_hello.c) 的 rank 輸出開始，再看 [send/recv](../../mpi_send_recv.c)、[broadcast](../../mpi_broadcast.c)、[reduce](../../mpi_reduce.c)、[allreduce](../../mpi_allreduce.c) 的呼叫。
+- **Day2～Day3：效能工具與通訊堆疊** — OSU benchmark、RDMA 裝置查詢的命令與當時結果在課文；OSU 工具原始碼未保存於本專案。
+- **Day4：Slurm 跨節點啟動** — [mpi-multinode.slurm](../../mpi-multinode.slurm) 看資源申請與 MPI 啟動命令，搭配課文的 allocation／hostname 紀錄理解程序放在哪裡。
+- **Day5～Day6：Ray 與排程層** — [ray-cluster.yaml](../../ray-cluster.yaml) 定義 head／worker，[ray-job.yaml](../../ray-job.yaml) 定義示範 task。課文的 Actor 範例與資源不足觀察另在正文；自動 MPI worker 驗收無法代替這些 Slurm／Ray 案例。
 
 ## 每日閱讀順序
 

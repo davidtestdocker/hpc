@@ -20,7 +20,12 @@ GPU utilization、VRAM used、PyTorch allocated／reserved、tokens/s 不是同�
 
 現存 Week14 從 Day2 開始，維持原檔案命名；不捏造不存在的 Day1 實驗。
 
-[本週實作／證據入口](<../performance/causal-lm-l4-20260922.md>)。本週的原始碼、manifest 與保存的成功／失敗各有不同證明力，不能全部當成今天又測過一次。
+## 本週材料怎麼讀
+
+- **Day2、Day4：GPU 資源與 node pool** — 讀課文的節點資源、Pod 排程、`nvidia-smi` 輸出。舊 `gpu-test-pod.yaml` 沒有保存為獨立檔案。
+- **Day3：指標路徑** — [Prometheus ConfigMap](../../helm/prometheus/templates/configmap.yaml) 用來對照 scrape 設定，配合課文理解 exporter → Prometheus → Grafana 的資料流。
+- **Day5：DCGM 元件** — [nvidia-dcgm.yaml](../../benchmark/k8s/nvidia-dcgm.yaml) 和 [dcgm-exporter-remote.yaml](../../benchmark/k8s/dcgm-exporter-remote.yaml) 分別對照 hostengine 與 exporter 的部署、連線設定。
+- **Day6：Dashboard 觀察** — 讀課文保存的 GPU 負載與指標觀察；`gpu_stress.cu` 未保存在儲存庫。後來的 L4 語言模型訓練報告不是這次 dashboard 實驗的輸出。
 
 ## 每日閱讀順序
 

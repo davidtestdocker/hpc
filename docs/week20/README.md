@@ -20,7 +20,13 @@ ServiceAccount 是 Pod 呼叫 Kubernetes API 的身份，Role／Binding 決定�
 
 保留所有歷史成功與失敗；不宣稱 node failover、Redis 全失恢復或跨資料庫原子交易。
 
-[本週實作／證據入口](<../evidence/automatic-worker-20260922.json>)。本週的原始碼、manifest 與保存的成功／失敗各有不同證明力，不能全部當成今天又測過一次。
+## 本週材料怎麼讀
+
+- **Day1～Day2：身份、權限與 Pod 安全** — [Role](../../k8s/security/role.yaml)、[RoleBinding](../../k8s/security/rolebinding.yaml) 與 [測試 Pod](../../k8s/security/rbac-api-test.yaml) 對照讀取權限與 securityContext；[api-jobset-rbac.yaml](../../k8s/security/api-jobset-rbac.yaml) 是主 worker 的另一組權限。
+- **Day3：封包隔離** — [allow-client-to-server.yaml](../../k8s/security/network-policy/allow-client-to-server.yaml) 對照來源標籤與目的埠，再看 [隔離 Calico 叢集的驗收 JSON](../evidence/network-policy-validation-20260921.json) 中 allow、deny、移除後恢復的結果。
+- **Day4：重建與恢復** — [JobSet 範例](../../k8s/gpu-scheduling/examples/jobset-mpi.yaml) 和 [node failure 測試設定](../../k8s/recovery/gpu-node-failure-test.yaml) 搭配課文的重建、cordon 紀錄閱讀；JobsReady 與原運算成功是不同結果。
+- **Day5：跨層排障** — [Ray 資源不符案例](../../ray-resource-mismatch-job.yaml)、[Ray 重試案例](../../ray-worker-recovery-job.yaml)、[Slurm Pending 案例](../../slurm/pending-cpu-test.sbatch) 分別對應課文的資源等待與重試觀察。
+- **Day6：選型說明** — 材料是正文的架構比較與取捨，沒有一支將所有列出工具串接起來的程式。
 
 ## 每日閱讀順序
 

@@ -20,7 +20,12 @@ HTTP、node、GPU 是不同觀測層；沒有 job_id 關聯就不能假設某張
 
 監控 manifests 和歷史 dashboard 保留為獨立路徑；不宣稱即時 target 健康。
 
-[本週實作／證據入口](<../evidence/README.md>)。本週的原始碼、manifest 與保存的成功／失敗各有不同證明力，不能全部當成今天又測過一次。
+## 本週材料怎麼讀
+
+- **Day1：Prometheus 如何部署** — [Prometheus Deployment](../../helm/prometheus/templates/deployment.yaml) 看程序、設定掛載與儲存；課文保存當時的部署問題與觀察。
+- **Day2：Prometheus 去哪裡抓資料** — [Prometheus ConfigMap](../../helm/prometheus/templates/configmap.yaml) 看 scrape jobs 和 targets，配合課文的格式錯誤案例理解抓取流程。
+- **Day3：API 提供哪些指標** — [api/main.py](../../api/main.py) 的 Instrumentator 提供 `/metrics`；`/job-metrics` 另回工作數量 JSON，兩個端點用途不同。
+- **Day4：發現節點與畫圖** — 同一份 ConfigMap 的 discovery／relabel 設定與 [ClusterRole](../../helm/prometheus/templates/clusterrole.yaml) 對應目標發現及讀取權限。Node Exporter 與 Grafana 的操作、畫面解讀在 Day4 正文。
 
 ## 每日閱讀順序
 

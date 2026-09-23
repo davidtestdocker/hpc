@@ -20,7 +20,13 @@ Topology-aware admission 參考節點拓撲資訊，歷史單 node placement 證
 
 單實體 L4，CPU MPI rank smoke；Kueue quota 與 time-sharing share 都不是實體卡數。
 
-[本週實作／證據入口](<../evidence/automatic-worker-20260922.json>)。本週的原始碼、manifest 與保存的成功／失敗各有不同證明力，不能全部當成今天又測過一次。
+## 本週材料怎麼讀
+
+- **Day1：GPU 分享** — 讀課文的 allocatable 與兩個 Pod 狀態，理解資源份額和實體卡數的差異；沒有獨立 MPS 實驗程式。
+- **Day2～Day4：配額、等待、優先權** — [ClusterQueue](../../k8s/gpu-scheduling/clusterqueue.yaml) 看 quota／preemption，[ResourceFlavor](../../k8s/gpu-scheduling/resourceflavor.yaml) 看節點條件，[PriorityClass](../../k8s/gpu-scheduling/priorityclasses.yaml) 看優先權。等待與 eviction 的保存紀錄在各課正文。
+- **Day5：工作群組** — [jobset-mpi.yaml](../../k8s/gpu-scheduling/examples/jobset-mpi.yaml) 對照 launcher／worker 的 Jobs 結構；目前這份範例執行 echo 與 sleep，沒有 MPI collective。
+- **Day6：拓撲分配** — [topology.yaml](../../k8s/gpu-scheduling/topology.yaml) 配合 ResourceFlavor 讀取 hostname 層級；課文保存單個可用 GPU node 的 placement 結果。
+- **Day7 的後續整合對照** — [自動 worker 驗收](../evidence/automatic-worker-20260922.json) 保存另一條 CPU MPI 提交／完成流程，不能用來代替本週 sharing、preemption、TAS 各自的實驗紀錄。
 
 ## 每日閱讀順序
 

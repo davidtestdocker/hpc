@@ -20,7 +20,14 @@ CPU 使用率與 load、memory 的 available／RSS、I/O 的 latency／IOPS／th
 
 歷史 Linux baseline 不是現行 MPI job 的自動 profiling；新硬體需重新建立基線。
 
-[本週實作／證據入口](<../../benchmark/cpu/results/cpu_benchmark_20260810.md>)。本週的原始碼、manifest 與保存的成功／失敗各有不同證明力，不能全部當成今天又測過一次。
+## 本週材料怎麼讀
+
+本週各課以 Linux 工具命令和文內輸出為材料，沒有每課專用的 Python 實作。
+
+- **Day1～Day3：CPU、記憶體、磁碟** — 讀各課的觀察指令與輸出欄位，分辨使用量、等待和吞吐；Day3 的磁碟測試對象是當時的 `/data`。
+- **Day4：歷史資料** — 課文的 `sar` 紀錄用來學時間對齊，將問題發生時間與資源數值放在一起看。
+- **Day5：CPU 基線** — 課文比較 `sysbench` 的 1／4 threads 結果。原先連結的 `cpu_benchmark_20260810.md` 是 Week13 的 stress-ng 材料，已從本週入口移除。
+- **Day6～Day7：程式在忙什麼、等什麼** — `perf` 與 `strace` 的命令、工具限制、輸出解讀都在各課正文。
 
 ## 每日閱讀順序
 

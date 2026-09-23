@@ -20,7 +20,12 @@ ClusterIP、NodePort、Ingress 是不同流量入口。HPA 依指標調整指定
 
 學習現行 chart；歷史 Traefik／NodePort 位址不當作可用入口。
 
-[本週實作／證據入口](<../evidence/platform-after-training-20260922.json>)。本週的原始碼、manifest 與保存的成功／失敗各有不同證明力，不能全部當成今天又測過一次。
+## 本週材料怎麼讀
+
+- **Day1～Day2：設定如何進入程序** — 對照 [ConfigMap](../../k8s/api-configmap.yaml)、[Secret 範例](../../k8s/postgres-secret.example.yaml) 與 [API Deployment](../../k8s/api-deployment.yaml) 的引用，追環境變數從哪裡來。
+- **Day3～Day4：資源與探針** — 同一份 [API Deployment](../../k8s/api-deployment.yaml) 的 `resources`、`livenessProbe`、`readinessProbe` 對應本課欄位；探針查詢的路由實作在 [api/main.py](../../api/main.py)。
+- **Day5～Day6：對外入口** — [Service](../../k8s/api-service.yaml) 的 NodePort 與 [Ingress](../../k8s/api-ingress.yaml) 的 host／path 是舊課程設定。課文保存當時連線結果；目前主 overlay 使用 ClusterIP 且停用 Ingress。
+- **Day7：自動調整副本** — [api-hpa.yaml](../../k8s/api-hpa.yaml) 看目標 Deployment、CPU 指標與副本上下限；[loadtest/benchmark.js](../../loadtest/benchmark.js) 看當時送出的請求。HPA 調整的是 API 副本。
 
 ## 每日閱讀順序
 

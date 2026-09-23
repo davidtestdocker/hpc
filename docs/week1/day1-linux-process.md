@@ -45,11 +45,55 @@ PID COMMAND
 
 ## 對應檔案
 
-以下連結指向儲存庫目前版本，供對照本文；歷史步驟與現況可能不同。
+本課先學「程序是什麼、PID 是什麼」。[monitoring/process_monitor.py](../../monitoring/process_monitor.py) 只對應其中的 **「列出程序，查看 PID 與名稱」**，不是整篇課文的實作。先看懂下面的指令與輸出，就能理解這個檔案在做什麼；不需要先會 Python。
 
-文中的 `benchmark.py` 是示意檔名，儲存庫未保存該檔案；下方監控程式是程序查詢的現有對照。
+在 Linux 終端機輸入：
 
-- [monitoring/process_monitor.py](../../monitoring/process_monitor.py)：程序資訊收集
+```bash
+ps -eo pid,comm
+```
+
+- `ps`：查看程序。
+- `-e`：列出目前執行環境可見的所有程序。
+- `-o pid,comm`：只顯示兩欄，`pid` 是程序編號，`comm` 是程序的可執行檔名稱，不是完整啟動命令。
+
+這支 Python 程式就是代替你執行上面那行指令，再把結果印出來：
+
+```python
+import subprocess
+
+result = subprocess.run(
+    ["ps", "-eo", "pid,comm"],
+    capture_output=True,
+    text=True,
+    check=False
+)
+
+print(result.stdout)
+```
+
+`subprocess.run(...)` 啟動 `ps` 並等待它結束；清單中的三個字串就是指令及其參數。`capture_output=True` 把輸出收進 `result`，`text=True` 讓輸出以文字字串保存，最後 `print(result.stdout)` 印出標準輸出。`check=False` 表示指令失敗時不會因此自動拋出例外；這個檔案也沒有另外檢查是否成功。
+
+例如，本頁前面引用的歷史容器輸出：
+
+```text
+PID COMMAND
+1   python3
+7   ps
+```
+
+第一列是欄位標題；後兩列表示當時看見 PID 為 `1` 的 `python3` 與 PID 為 `7` 的 `ps`。`ps` 自己也是程序，所以查詢時可能看見它自己。這些編號是該次容器案例的結果，你的環境不必相同。
+
+對照本文時，請注意範圍：
+
+| 課文內容 | 這支程式有沒有呈現？ |
+| --- | --- |
+| 程序的 PID 與名稱 | 有，就是輸出的兩欄。 |
+| PPID、誰啟動了誰 | 沒有，指令沒有要求 `ppid` 欄位。 |
+| Scheduler 如何分配 CPU、核心如何切換工作 | 沒有，程序清單看不出排程過程。 |
+| CPU 使用率、記憶體、程序狀態 | 沒有，這支程式沒有查詢這些欄位。 |
+
+下文的 `ps -ef` 是另一種程序清單格式，包含 PPID 等資訊，和這支程式的兩欄輸出不同。另外，`python benchmark.py` 只是「啟動 Python 程式會產生程序」的示意；儲存庫沒有保存這個 `benchmark.py`，本課不需要執行它。
 
 ---
 

@@ -20,7 +20,12 @@ Compose 管理本機多服務；service 名稱只在相應網路中解析。主�
 
 本週以檢查與離線讀設定為主；不要求安裝另一個 Docker daemon 或啟動正式服務。
 
-[本週實作／證據入口](<../../docker/Dockerfile>)。本週的原始碼、manifest 與保存的成功／失敗各有不同證明力，不能全部當成今天又測過一次。
+## 本週材料怎麼讀
+
+- **Day1～Day3：容器與映像概念** — 讀各課中的 Docker 指令和版本、容器狀態輸出；這部分材料在課文內。
+- **Day4：建置步驟** — [docker/Dockerfile](../../docker/Dockerfile) 可對照 `FROM`、`WORKDIR`、`COPY`、`RUN`、`CMD`。目前最後啟動的是 Uvicorn API；課文的舊監控映像範例保存在正文。
+- **Day5、Day7：多服務設定** — [compose.yaml](../../compose.yaml) 用來看服務定義、環境變數、網路與 volume。課文構想中的監控服務清單並未全部實作。
+- **Day6：容器裡的程序** — [process_monitor.py](../../monitoring/process_monitor.py) 執行一次 `ps`；[Day6 的保存輸出](day6-containerize-monitoring.md#已有結果與解讀) 展示當時容器內的 Python 與 ps。現在的 Compose 已沒有 monitor service。
 
 ## 每日閱讀順序
 

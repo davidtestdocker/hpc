@@ -33,7 +33,12 @@ variable "example_count" {
 
 本週只讀設定與既有證據；雲端 apply／destroy 須依 runbook 明確確認目標，GPU quota 固定一張。
 
-[本週實作／證據入口](<../evidence/cpu-bootstrap-acceptance-20260921.json>)。本週的原始碼、manifest 與保存的成功／失敗各有不同證明力，不能全部當成今天又測過一次。
+## 本週材料怎麼讀
+
+- **Day1～Day2：Terraform 與 HCL** — [versions.tf](../../terraform/environments/dev/versions.tf) 看版本條件，[compute variables](../../terraform/modules/compute/variables.tf) 和 [compute main](../../terraform/modules/compute/main.tf) 看輸入如何用在資源宣告。
+- **Day3～Day5：state、output、module** — 操作紀錄在各課正文；[compute outputs](../../terraform/modules/compute/outputs.tf) 可對照輸出如何引用資源。課文取消的 destroy、未 apply 的 plan 都保留原本結果。
+- **Day6～Day7：網路與環境目錄** — [network module](../../terraform/modules/network/main.tf) 看 VPC／subnet；比較 [dev](../../terraform/environments/dev/main.tf)、[stage](../../terraform/environments/stage/main.tf)、[prod](../../terraform/environments/prod/main.tf) 的 module 呼叫，現在三者並非只有參數不同。
+- **Day8：GKE 設定** — [GKE module](../../terraform/modules/gke/main.tf) 對應課文的叢集與 node pool；[gpu-sg root](../../terraform/environments/gpu-sg/main.tf) 是後來主環境的對照。Kubernetes 服務驗收 JSON 無法代替這些 Terraform 設定與生命週期紀錄。
 
 ## 每日閱讀順序
 

@@ -20,7 +20,12 @@ runtime abstraction 是程式接口設計，不代表所有 adapter 都已接到
 
 單 L4／小模型可重現實驗；無 pretrained 品質、多 GPU 或 RDMA 結論。
 
-[本週實作／證據入口](<../../benchmark/results/causal-lm-20260922/evidence.json>)。本週的原始碼、manifest 與保存的成功／失敗各有不同證明力，不能全部當成今天又測過一次。
+## 本週材料怎麼讀
+
+- **Day1～Day2：PyTorch 計算與訓練** — [runtime.py](../../runtime/pytorch/runtime.py) 對應 GPU 運算介面；[train.py](../../runtime/pytorch/train.py) 對應訓練與 profiler，目前已是 9-step 版本，課文的舊 epoch 結果另保留。
+- **Day3～Day4：vLLM 與共用介面** — [vLLM runtime](../../runtime/vllm/runtime.py) 看 HTTP 呼叫，[base.py](../../runtime/base.py) 與 [manager.py](../../runtime/manager.py) 看介面和 runtime 選擇。這個 manager 沒有接入主 MPI API。
+- **Day5～Day7：讀 benchmark 結果** — [performance_analyzer.py](../../analysis/performance_analyzer.py) 讀取三份 vLLM JSON，比較吞吐與延遲；例如 [vllm-c16-fixed.json](../../benchmark/results/vllm-c16-fixed.json)。課文另有人工作成的訓練 profiler 解讀。
+- **後續單卡訓練案例** — [13M causal LM 報告](../performance/causal-lm-l4-20260922.md) 解釋 batch 8／16 比較，再連到 [原始結果索引](../../benchmark/results/causal-lm-20260922/evidence.json)。這是後來獨立 runner 的實驗，與上述 vLLM 推論結果分開。
 
 ## 每日閱讀順序
 

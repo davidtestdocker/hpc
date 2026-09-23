@@ -20,7 +20,12 @@ Lease 是有期限的協調鎖，需要續期並檢查是否仍擁有它。固�
 
 主 overlay 啟用獨立 api-worker；手動 /worker/* 返回 409。
 
-[本週實作／證據入口](<../evidence/automatic-worker-20260922.json>)。本週的原始碼、manifest 與保存的成功／失敗各有不同證明力，不能全部當成今天又測過一次。
+## 本週材料怎麼讀
+
+- **Day1～Day2：Redis 資料與持久化** — [api/main.py](../../api/main.py) 可看 job record 的寫入；[compose.yaml](../../compose.yaml) 可看 AOF 與資料 volume；[Redis Deployment](../../helm/redis/templates/deployment.yaml) 和 [PVC](../../helm/redis/templates/pvc.yaml) 是 Kubernetes 的對照設定。
+- **Day3～Day5：處理、接續與重試** — [api/worker.py](../../api/worker.py) 可追工作狀態、lease 與失敗分支；[dispatcher.py](../../api/workloads/dispatcher.py) 可看 MPI 工作如何提交或接回既有 JobSet。
+- **Day3～Day5 的保存結果** — [自動 worker 驗收 JSON](../evidence/automatic-worker-20260922.json) 記錄 queued／submitted 階段停啟接續，以及模擬失敗三次後 failed。它對應這三課的恢復與重試案例；不涵蓋 Redis 資料全失。
+- **Day6～Day7：資料表與 Session** — [models.py](../../api/database/models.py) 看保存哪些欄位，[session.py](../../api/database/session.py) 看 Session 建立方式，再回 [api/main.py](../../api/main.py) 追 commit。
 
 ## 每日閱讀順序
 
