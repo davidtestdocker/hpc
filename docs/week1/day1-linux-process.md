@@ -1,76 +1,291 @@
-# Week1 Day1 — 程序與 PID
+# Week 1 Day 1－Linux Process（程序）
 
-[本週目錄](README.md) · [下一課](day2-cpu-scheduler.md)
+[本週基礎](README.md) · [本週目錄](README.md) · [下一課](<day2-cpu-scheduler.md>)
 
 ## 今日目標
 
-看懂「程式開始執行後，Linux 如何識別它」。今天只需要認識程序、PID、PPID 和 `ps -ef` 的輸出欄位。
+理解 Linux 如何執行程式，以及 CPU 如何透過 Scheduler（排程器）分配 Process（程序）到 CPU Core 執行。
 
-## 程式與程序差在哪裡？
+今天不是學 Linux 指令，而是建立 Linux Performance Analysis 的核心觀念。
 
-程式（Program）是儲存在磁碟上的指令；程序（Process）是程式執行時的一個實例。
+---
 
-例如，`bash` 是命令列殼層程式。當你開啟終端機並使用 Bash 時，就會有一個正在執行的 Bash 程序。同一個程式可以啟動多次，產生不同程序。
+# 為什麼要學 Process？
 
-每個程序有自己的識別號、虛擬記憶體空間和執行狀態。程序存在，不代表它此刻正在使用 CPU；它也可能正在等待輸入或其他事件。
+在 HPC AI Performance Engineering Platform 中，所有服務本質上都是 Linux Process，例如：
 
-## PID 與 PPID
+- FastAPI
+- Benchmark Worker
+- Prometheus
+- Grafana
+- vLLM
+- Python Monitoring Script
 
-- **PID**：程序編號，用來識別當下的一個程序。
-- **PPID**：父程序的 PID，用來表示誰建立了這個程序。
+當未來需要分析效能瓶頸時，第一步就是確認有哪些 Process 正在執行，以及它們之間的關係。
 
-例如你在 Bash 中執行 `ps -ef`，Bash 會啟動 `ps`。查詢當下，Bash 是父程序，ps 是子程序。
+---
 
-PID 在同一個 PID 命名空間中識別程序；程序結束後，編號可能被重用，因此它不是永久身分。
+# Program 與 Process
 
-## 查看程序：ps -ef
+## Program（程式）
+
+Program 是儲存在磁碟上的程式檔案。
+
+例如：
+
+- python
+- nginx
+- benchmark.py
+
+Program 本身不會執行。
+
+只有被 Linux 載入記憶體後，才會建立 Process。
+
+---
+
+## Process（程序）
+
+Process 是正在執行中的程式。
+
+每個 Process 都會有自己的：
+
+- PID（Process ID）
+- PPID（Parent Process ID）
+- 記憶體空間
+- 執行狀態
+
+例如：
+
+```bash
+python benchmark.py
+```
+
+Linux 會建立一個新的 Process。
+
+---
+
+# Linux Scheduler
+
+CPU 不會同時執行所有 Process。
+
+Scheduler（排程器）會決定：
+
+- 哪個 Process 可以先執行
+- 執行多久
+- 下一個換誰執行
+
+例如：
+
+Process A
+
+↓
+
+Process B
+
+↓
+
+Process C
+
+↓
+
+Process A
+
+↓
+
+Process D
+
+CPU 就是不斷在不同 Process 之間切換。
+
+---
+
+# CPU Core
+
+假設：
+
+4 Core CPU
+
+同一時間最多可以同時執行四個工作。
+
+例如：
+
+Core0 → Process A
+
+Core1 → Process B
+
+Core2 → Process C
+
+Core3 → Process D
+
+如果系統有 100 個 Process，就只能透過 Scheduler 不斷切換。
+
+---
+
+# Kernel Thread
+
+使用：
 
 ```bash
 ps -ef
 ```
 
-`ps` 顯示程序資訊，`-e` 列出目前環境可見的所有程序，`-f` 使用較完整的欄位格式。
+可以看到大量名稱像是：
 
-下面是**欄位示例，不是保存的實測輸出**：
+- kthreadd
+- kworker
+- ksoftirqd
+- migration
 
-```text
-UID        PID  PPID  C STIME TTY          TIME CMD
-user      1000   900  0 09:00 pts/0    00:00:00 bash
-user      1001  1000  0 09:01 pts/0    00:00:00 ps -ef
+它們不是使用者啟動的程式。
+
+而是 Linux Kernel 自己建立的背景工作。
+
+例如：
+
+- 處理硬體事件
+- 管理記憶體
+- 執行背景工作
+- 處理系統資源
+
+因此稱為 Kernel Thread。
+
+---
+
+# User Process
+
+User Process 是使用者啟動的程式。
+
+例如：
+
+- bash
+- python
+- docker
+- prometheus
+
+未來平台中的：
+
+- FastAPI
+- Benchmark Worker
+- Prometheus
+- Grafana
+- vLLM
+
+全部都屬於 User Process。
+
+---
+
+# PID 與 PPID
+
+PID（Process ID）
+
+Linux 會替每個 Process 分配一個唯一編號。
+
+例如：
+
+```
+PID 323404
+bash
 ```
 
-先看三欄即可：
+---
 
-| 欄位 | 第一個程序 | 第二個程序 |
-| --- | --- | --- |
-| PID | Bash 的編號是 1000 | ps 的編號是 1001 |
-| PPID | Bash 的父程序是 900 | ps 的父程序是 1000，也就是上面的 Bash |
-| CMD | 執行 bash | 執行 ps -ef |
+PPID（Parent Process ID）
 
-這樣就能從兩列資訊讀出「Bash 啟動了 ps」。其餘欄位包含使用者、時間、終端機等資訊，今天不需要一次背完。
+每個 Process 都有自己的父程序。
 
-## 使用者程序、系統服務與核心執行緒
+例如：
 
-在一般 Linux 主機上，你可能看到：
+```
+sshd
+    │
+    ▼
+bash
+    │
+    ▼
+python benchmark.py
+```
 
-- `bash` 等互動程序：處理使用者輸入。
-- `sshd` 等系統服務：在背景提供服務；它們也屬於使用者空間程序。
-- `kthreadd`、`kworker` 等核心執行緒：由 Linux 核心建立，負責核心內的工作。
+bash 啟動了 python，因此：
 
-系統服務和使用者程序不是互斥分類；「系統服務」說的是用途。不同執行環境可見的程序不同，不必看到完全相同的名稱。
+- bash 是 Parent Process
+- python 是 Child Process
 
-## 程序如何取得 CPU？
+Linux 會記錄這個父子關係，方便管理 Process。
 
-程序可以包含一個或多個執行緒，Linux 排程器安排可執行的執行緒使用邏輯 CPU。許多程序平常都在等待，所以程序數量可以遠大於 CPU 數量。
+---
 
-今天先理解「程序清單不是正在同時運算的工作清單」。下一課再看 CPU 時間如何分配。
+# 今天使用的指令
 
-## 已有結果與解讀
+查看目前所有 Process：
 
-舊學習紀錄描述：在當時的 GCP Ubuntu VM 上約有 150 個程序，包含 `systemd`、`sshd`、Bash、VS Code Server 和核心執行緒。
+```bash
+ps -ef
+```
 
-這份紀錄只有文字觀察，沒有保存當次 `ps -ef` 的完整輸出，不能還原各程序的 PID／PPID。上面的兩列是為了講解欄位而寫的示例。
+---
 
-## 今日重點
+# 今天實際觀察
 
-先用 PID 找到程序，再用 PPID 看父子關係。程序存在、程序正在使用 CPU、程序消耗多少資源，是三個不同問題。
+在 GCP Ubuntu VM 中：
+
+- 約有 150 個 Process
+- 觀察到大量 Kernel Thread
+- 看到 systemd、sshd 等系統服務
+- 看到 bash、VS Code Server 等 User Process
+
+可以將 Process 分成三大類：
+
+```
+Linux
+
+├── Kernel Thread
+│      ├── kthreadd
+│      ├── kworker
+│      ├── ksoftirqd
+│
+├── System Service
+│      ├── systemd
+│      ├── sshd
+│      ├── chronyd
+│
+└── User Process
+       ├── bash
+       ├── python
+       ├── vscode-server
+```
+
+---
+
+# 今日重點整理
+
+今天建立了以下觀念：
+
+- Program 是磁碟上的程式。
+- Process 是正在執行中的程式。
+- CPU Core 數量決定同時可執行的工作數。
+- Scheduler 負責分配 CPU 執行 Process。
+- Linux Process 可分為 Kernel Thread 與 User Process。
+- PID 用來識別 Process。
+- PPID 用來記錄 Parent Process。
+
+---
+
+# 與 HPC AI Performance Engineering Platform 的關聯
+
+未來平台中的每一個服務，本質上都是 Linux Process。
+
+例如：
+
+- FastAPI
+- Prometheus
+- Grafana
+- Benchmark Worker
+- vLLM
+
+效能分析的第一步，就是理解：
+
+- 有哪些 Process？
+- 是誰建立它？
+- 它目前是否正在執行？
+- 它是否成為系統瓶頸？
+
+理解 Process，是後續 CPU Scheduling、Context Switch、System Monitoring 與 Performance Analysis 的基礎。

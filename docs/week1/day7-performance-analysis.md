@@ -1,46 +1,267 @@
-# Week1 Day7 — 把本週觀察串成分析流程
+# Week 1 Day 7－Performance Analysis（效能分析）
 
-[上一課](day6-disk-io.md) · [本週目錄](README.md) · [下一週](../week2/README.md)
+[上一課](<day6-disk-io.md>) · [本週目錄](README.md) · [下一週](../week2/README.md)
 
 ## 今日目標
 
-用本週學過的程序、CPU、記憶體與磁碟觀念，說明一個問題應該先查什麼、還缺什麼資料。
+建立 Performance Engineer 的分析思維。
 
-## 先把「慢」說清楚
+理解效能分析不是猜測，而是透過資料一步一步排除瓶頸，最後找出真正影響系統效能的原因。
 
-先確認是哪個工作、何時開始變慢、與什麼情況比較。例如「同一份輸入，以前需要 10 秒，這次需要 20 秒」才提供了比較起點。
+---
 
-舊課文使用 `TPS = 20` 作為假設例子。TPS 表示每秒完成的交易數；只有 20 這個數字，沒有負載、比較基準或目標，無法判斷快慢。
+# 為什麼需要 Performance Analysis？
 
-## 用本週的工具縮小問題
+假設未來平台執行 Benchmark 後得到：
 
-| 要問的問題 | 使用本週哪個材料 | 可以得到什麼 |
-| --- | --- | --- |
-| 工作是否存在、由誰啟動？ | Day1 的 `ps -ef` | 程序 PID、PPID 與命令。 |
-| 哪個程序忙，CPU 時間花在哪裡？ | Day2～Day4 的 `top` 與排程觀念 | 程序使用率、整機 us／sy／id。 |
-| 可用記憶體與程序用量如何？ | Day5 的 `free -h`、RSS 排序 | 整機摘要與較大的程序。 |
-| 空間足夠嗎、I/O 統計如何？ | Day6 的 `df -h`、`lsblk`、`iostat` | 檔案系統容量、裝置結構與統計。 |
+```
+TPS = 20
+```
 
-這些是依問題選用的觀察，不是每次都必須照固定順序跑完。若程式直接回報檔案不存在，就先查路徑與錯誤訊息。
+這只能代表：
 
-## 從數字到結論，中間還需要推理
+系統效能不好。
 
-假設看到整體 CPU idle 很高，仍要確認是否有某個單執行緒已用滿一個 CPU。看到 available 很高，只能說容量看起來尚有餘裕，不能保證所有記憶體相關效能都正常。
+但是：
 
-同樣地，磁碟容量足夠不代表讀寫延遲低。多個觀察應盡量來自同一段工作時間，才能互相比較。
+不知道原因。
 
-可以用三句話整理一次分析：
+真正重要的是回答：
 
-1. **觀察到什麼？** 指出命令、數值和時段。
-2. **目前的解釋是什麼？** 說明它與工作變慢可能有何關係。
-3. **還缺什麼？** 列出能確認或否定這個解釋的下一份資料。
+- CPU 是否成為瓶頸？
+- Memory 是否不足？
+- Disk 是否過慢？
+- Network 是否有問題？
+- GPU 是否已經滿載？
 
-## 已有結果與解讀
+Performance Engineer 的工作就是找出真正原因，而不是猜測。
 
-本課是前六天的概念整理，沒有新增實測。`TPS = 20` 是假設案例，也沒有保存一套自動收集所有指標、產生報告的完整執行結果。
+---
 
-前六天留下的觀察各有自己的環境和缺漏，不能直接拼成同一次完整效能測試。
+# Performance Analysis 的流程
 
-## 本週學習成果
+未來整個平台都會遵循固定分析流程：
 
-你現在應能解釋程序與父子關係、CPU 時間分享與切換、CPU 摘要、記憶體用量，以及磁碟容量和 I/O 的差異，並知道單次觀察能支持哪些結論。
+```
+Benchmark
+
+↓
+
+Process
+
+↓
+
+CPU
+
+↓
+
+Memory
+
+↓
+
+Disk
+
+↓
+
+Network
+
+↓
+
+GPU
+
+↓
+
+Application
+
+↓
+
+Performance Report
+```
+
+每一層都負責排除一種可能性。
+
+---
+
+# 第一層：Process
+
+先確認有哪些 Process 正在執行。
+
+例如：
+
+- FastAPI
+- Benchmark Worker
+- Prometheus
+- Grafana
+- vLLM
+
+確認是否有異常 Process。
+
+---
+
+# 第二層：CPU
+
+查看：
+
+- CPU Usage
+- User Time
+- System Time
+- Idle Time
+
+確認：
+
+CPU 是否真的很忙。
+
+如果 CPU Idle 很高，就代表 CPU 並不是瓶頸。
+
+---
+
+# 第三層：Memory
+
+查看：
+
+```bash
+free -h
+```
+
+確認：
+
+- Available Memory
+- 是否還有足夠 RAM
+
+如果 Available 很高，Memory 通常不是瓶頸。
+
+---
+
+# 第四層：Disk
+
+查看：
+
+```bash
+iostat
+```
+
+重點觀察：
+
+```
+%iowait
+```
+
+如果 iowait 很高，代表 CPU 花大量時間等待磁碟。
+
+Disk I/O 很可能就是瓶頸。
+
+---
+
+# 第五層：Network
+
+目前尚未學習。
+
+Week 1 結束後會開始加入。
+
+---
+
+# 第六層：GPU
+
+目前尚未學習。
+
+Week 9 開始加入 GPU 與 vLLM。
+
+---
+
+# 第七層：Application
+
+如果：
+
+- CPU 正常
+- Memory 正常
+- Disk 正常
+- Network 正常
+- GPU 正常
+
+才開始懷疑：
+
+- Benchmark Worker
+- vLLM
+- FastAPI
+- Application Logic
+
+---
+
+# Week 1 學習成果
+
+本週建立了 Linux Performance Analysis 的基礎觀念：
+
+- Program
+- Process
+- Scheduler
+- Context Switch
+- CPU Utilization
+- Memory
+- Disk I/O
+
+理解 Linux 如何執行程式，以及如何分析 CPU、Memory、Disk 是否成為系統瓶頸。
+
+---
+
+# 與 HPC AI Performance Engineering Platform 的關聯
+
+Week 2 開始將建立 Monitoring Framework：
+
+```
+monitoring/
+
+process_monitor.py
+cpu_monitor.py
+memory_monitor.py
+disk_monitor.py
+system_monitor.py
+```
+
+這些模組的目的不是單純收集資料，而是提供 Performance Analysis 所需的資訊。
+
+未來平台將自動完成：
+
+```
+Benchmark
+
+↓
+
+Collect Metrics
+
+↓
+
+Performance Analysis
+
+↓
+
+Optimization Report
+```
+
+這也是整個 HPC AI Performance Engineering Platform 的核心能力。
+
+---
+
+# Week 1 重點整理
+
+本週建立了 Performance Engineer 最重要的分析流程：
+
+```
+Program
+        │
+        ▼
+Process
+        │
+        ▼
+CPU
+        │
+        ▼
+Memory
+        │
+        ▼
+Disk
+        │
+        ▼
+Performance Analysis
+```
+
+之後所有 Monitoring、Benchmark、Analysis、Optimization 都會建立在這個基礎之上。

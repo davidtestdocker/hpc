@@ -1,40 +1,133 @@
-# Week1 Day4 — CPU 使用率
+# Week 1 Day 4－CPU Utilization（CPU 使用率）
 
-[上一課](day3-context-switch.md) · [本週目錄](README.md) · [下一課](day5-memory.md)
+[上一課](<day3-context-switch.md>) · [本週目錄](README.md) · [下一課](<day5-memory.md>)
 
 ## 今日目標
 
-讀懂 `top` 的 CPU 摘要，分辨使用者程式、核心工作和閒置時間。
+理解 CPU 使用率的真正意義，以及 User、Kernel、Idle 三種 CPU 時間的差異。
 
-## CPU 百分比表示一段時間的分布
+---
 
-執行 `top` 後，除了下面的各程序列表，上方還有整體 CPU 時間摘要。今天先看三個欄位：
+# CPU 使用率不是一個數字
 
-| 欄位 | 意思 | 例子 |
-| --- | --- | --- |
-| us | CPU 執行使用者空間程式的時間比例 | 程式計算數值、處理文字。 |
-| sy | CPU 執行核心工作的時間比例 | 系統呼叫、檔案與網路相關核心處理。 |
-| id | CPU 閒置的時間比例 | 這段時間沒有在執行工作。 |
+CPU 使用率代表 CPU 在不同工作上的時間分布。
 
-`top` 還有其他 CPU 欄位，因此這三項不一定合計為 100%。下方程序列的 `%CPU` 與上方整機摘要也不能直接混用。
+主要可以分為：
 
-## 當時怎麼觀察？
+- us（User）
+- sy（System）
+- id（Idle）
 
-先用 `top` 看沒有額外高 CPU 工作的情況，再啟動 `yes > /dev/null`，觀察摘要如何改變。`yes` 的作用和結束方式已在 Day2 說明。
+今天只學這三個欄位。
 
-## 已有結果與解讀
+---
 
-以下是舊課文保存的數值摘錄，沒有完整 `top` 原始畫面或採樣時間：
+# us（User）
 
-| 情況 | us | sy | id |
-| --- | --- | --- | --- |
-| 尚未加入 yes 負載 | 1.2% | 0.8% | 97.8% |
-| 加入一個 yes 後 | 8.3% | 17.9% | 73.4% |
+代表 CPU 花多少時間執行 User Process。
 
-第一列表示觀察期間整體大多閒置。第二列的閒置比例下降，使用者空間與核心時間增加，表示加入負載後 CPU 時間分布改變。
+例如：
 
-不能把這組 us／sy 比例當成所有程式的固定行為，也不能從整體 idle 很高，就排除某一個執行緒已用滿一個 CPU 的可能。
+- Python
+- FastAPI
+- vLLM
+- Benchmark Worker
+- Prometheus
 
-## 今日重點
+---
 
-看 CPU 使用率時，先確認你看的是整機摘要還是單一程序，再看時間花在哪裡。單一百分比不足以直接指出程式為什麼慢。
+# sy（System）
+
+代表 CPU 花多少時間執行 Linux Kernel。
+
+例如：
+
+- Scheduler
+- System Call
+- Memory Management
+- File System
+- Network
+
+---
+
+# id（Idle）
+
+代表 CPU 閒置時間。
+
+如果 id 很高，代表 CPU 還有很多可用資源。
+
+---
+
+# 實驗一：沒有高 CPU Process
+
+使用：
+
+```bash
+top
+```
+
+觀察：
+
+```
+us = 1.2%
+sy = 0.8%
+id = 97.8%
+```
+
+代表：
+
+CPU 幾乎處於閒置狀態。
+
+---
+
+# 實驗二：建立一個高 CPU Process
+
+執行：
+
+```bash
+yes > /dev/null &
+```
+
+再次觀察：
+
+```
+us = 8.3%
+sy = 17.9%
+id = 73.4%
+```
+
+可以看到：
+
+CPU 開始花時間執行 User Process 與 Linux Kernel。
+
+---
+
+# 今日重點
+
+CPU 使用率不是單一數值。
+
+Performance Engineer 更關心：
+
+- User Time
+- System Time
+- Idle Time
+
+而不是只看 CPU 百分比。
+
+---
+
+# 與 HPC AI Performance Engineering Platform 的關聯
+
+未來分析：
+
+- Benchmark Worker
+- vLLM
+- FastAPI
+
+時，不只需要知道 CPU 是否很忙，更需要判斷：
+
+- CPU 是否真的在執行應用程式？
+- 是否大量時間花在 Linux Kernel？
+- 是否還有 CPU 可用資源？
+
+CPU Utilization 是 Performance Analysis 最重要的基礎指標之一。

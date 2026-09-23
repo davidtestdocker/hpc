@@ -1,55 +1,113 @@
-# Week1 Day5 — 記憶體
+# Week 1 Day 5－Memory（記憶體）
 
-[上一課](day4-cpu-utilization.md) · [本週目錄](README.md) · [下一課](day6-disk-io.md)
+[上一課](<day4-cpu-utilization.md>) · [本週目錄](README.md) · [下一課](<day6-disk-io.md>)
 
 ## 今日目標
 
-分清楚「整台機器還有多少可用記憶體」和「哪個程序使用較多記憶體」。
+理解 Process 與 Memory 的關係，以及如何找出哪一個 Process 正在使用最多記憶體。
 
-## 程序與記憶體
+---
 
-程式執行時，需要把使用中的指令和資料放進記憶體。每個程序有自己的虛擬位址空間，其中部分內容可能與其他程序共享實體記憶體頁面。
+# Program、Process 與 Memory
 
-因此，程序的記憶體數字與整台機器的使用量，是不同角度的觀察。
+程式執行流程：
 
-## 看整機：free -h
+```
+
+Program（Disk）
+        │
+        ▼
+Process
+        │
+        ▼
+Memory（RAM）
+        │
+        ▼
+CPU
+
+```
+
+CPU 不會直接執行磁碟上的程式，而是先將程式載入記憶體，再開始執行。
+
+每個 Process 都有自己的記憶體空間。
+
+---
+
+# free -h
+
+使用：
 
 ```bash
 free -h
 ```
 
-`free` 顯示記憶體摘要；`-h` 用較容易閱讀的單位顯示大小。先看：
+觀察：
 
-- `total`：總記憶體容量。
-- `used`：工具計算的已用量。
-- `available`：估計可供新工作使用、而不需要交換出去的記憶體量，包含部分可回收空間。
-
-`available` 通常比單看完全未使用的 `free` 更有參考價值，但仍是估計值。
-
-## 看程序：按 RSS 排序
-
-```bash
-ps -eo pid,comm,rss --sort=-rss | head
 ```
-
-`ps` 選出 PID、程序名稱和 RSS 三欄，`--sort=-rss` 依 RSS 由大到小排列；`| head` 只顯示前幾列。
-
-RSS 是目前駐留於實體記憶體的大小，這裡以 KiB 顯示。它包含共享頁面，因此多個程序的 RSS 直接相加，可能重複計算共享部分。
-
-## 已有結果與解讀
-
-舊課文把 `free -h` 的觀察摘錄成：
-
-```text
 Mem:          15Gi
 Used:       582Mi
 Available:   14Gi
 ```
 
-這是整理過的摘要，並非完整原始輸出，表示當時估計有約 14Gi 可用。
+重點：
 
-當時 RSS 排序觀察記下 `otelopscol`、`codex`、`MainThread` 三個名稱，但沒有保存它們的 RSS 數值。這只能說明當時看到哪些程序，不能計算各自占用比例。
+- total：實體 RAM 總容量
+- used：目前已使用的記憶體
+- available：目前仍可提供新程式使用的記憶體
 
-## 今日重點
+Performance Engineer 主要觀察的是 **available**。
 
-先看整機 `available`，再查各程序 RSS。要判斷記憶體是否持續增加，需要不同時間的觀察；一次快照不足以判斷記憶體洩漏，也不能排除記憶體頻寬問題。
+---
+
+# 找出誰使用最多記憶體
+
+使用：
+
+```bash
+ps -eo pid,comm,rss --sort=-rss | head
+```
+
+欄位：
+
+- PID：Process ID
+- COMMAND：Process 名稱
+- RSS：目前實際占用的 RAM（KB）
+
+本次觀察：
+
+```
+otelopscol
+codex
+MainThread
+```
+
+代表目前這些 Process 使用最多記憶體。
+
+---
+
+# 今日重點
+
+- CPU 執行的是 Memory 中的資料，而不是磁碟上的程式。
+- 每個 Process 都有自己的記憶體空間。
+- `available` 比 `free` 更能反映目前是否還有足夠記憶體。
+- Performance Engineer 需要知道是哪一個 Process 使用記憶體，而不是只看 Memory 百分比。
+
+---
+
+# 與 HPC AI Performance Engineering Platform 的關聯
+
+未來平台中的：
+
+- FastAPI
+- Benchmark Worker
+- Prometheus
+- Grafana
+- vLLM
+
+都會占用記憶體。
+
+分析 Memory Bottleneck 時，需要確認：
+
+- 哪一個 Process 使用最多 RAM？
+- 是否有 Process 持續增加記憶體（Memory Leak）？
+- 是否還有足夠 Available Memory 可供新的 Benchmark 或模型使用？

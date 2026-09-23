@@ -1,45 +1,105 @@
-# Week1 Day3 — Context switch（上下文切換）
+# Week 1 Day 3－Context Switch（上下文切換）
 
-[上一課](day2-cpu-scheduler.md) · [本週目錄](README.md) · [下一課](day4-cpu-utilization.md)
+[上一課](<day2-cpu-scheduler.md>) · [本週目錄](README.md) · [下一課](<day4-cpu-utilization.md>)
 
 ## 今日目標
 
-理解 CPU 換一個執行對象時發生什麼，以及為什麼 CPU 使用率不能直接當成切換次數。
+理解 Context Switch 是什麼，以及它為什麼會影響系統效能。
 
-## 什麼是上下文切換？
+---
 
-當 CPU 從一個執行緒換到另一個，系統需要保存原先的執行狀態，再載入下一個的狀態，讓它從先前停下的位置繼續。這叫上下文切換（Context switch）。
+# 什麼是 Context Switch？
 
-需要分享 CPU 時會切換；原本的工作開始等待輸入、被阻塞或有其他工作被喚醒時，也可能切換。即使工作數量少於 CPU 數量，切換仍會發生。
+當 CPU Core 不足以同時執行所有 Process 時，Linux Scheduler 必須在不同 Process 之間切換。
 
-## 五個工作分享四份 CPU 時間
+切換前，需要保存目前 Process 的執行狀態。
 
-舊實驗的可用處理單位為 4。當時把下列命令重複執行五次，建立五個背景工作：
+切換後，需要恢復下一個 Process 的執行狀態。
+
+這個過程稱為 Context Switch。
+
+---
+
+# 為什麼需要 Context Switch？
+
+目前實驗環境：
+
+- CPU Core：4
+
+建立五個高 CPU 使用率 Process：
 
 ```bash
 yes > /dev/null &
+yes > /dev/null &
+yes > /dev/null &
+yes > /dev/null &
+yes > /dev/null &
 ```
 
-`&` 表示讓命令在背景執行，終端機可以繼續接收下一個命令。再用 `top` 觀察這五個程序。
+由於 Process 數量超過 CPU Core 數量，Scheduler 必須不停在 Process 之間切換。
 
-如果五個單執行緒工作平均分享四份 CPU 時間，簡化計算為：
+---
 
-```text
-4 ÷ 5 = 0.8
+# 實驗結果
+
+使用：
+
+```bash
+top
 ```
 
-也就是每個工作約拿到一個邏輯 CPU 的 80% 時間。這是理解平均分配的模型，實際數值會受其他工作與採樣時段影響。
+觀察到：
 
-## 已有結果與解讀
+- 五個 `yes` Process 同時存在
+- 每個 Process CPU 使用率約 75%～85%
 
-舊紀錄描述五個 `yes` 同時存在，每個程序的 CPU 使用率約為 75%～85%。這與上面的平均分配模型相近。
+代表 Scheduler 正在公平分配 CPU 時間，而不是讓某一個 Process 長時間獨占 CPU。
 
-當時沒有保存完整 `top` 輸出，也沒有保存上下文切換次數。因此這份觀察只能用來說明 CPU 時間分享，不能說已量出切換多少次或損失多少效能。
+---
 
-## 切換有什麼成本？
+# Context Switch 的成本
 
-保存、恢復狀態需要時間，也可能影響快取。切換過於頻繁時可能增加成本，但不能光憑「有切換」就判定效能有問題；等待 I/O 的工作切換出去，反而讓其他工作有機會執行。
+Context Switch 不會執行任何業務邏輯。
 
-## 今日重點
+它需要：
 
-上下文切換讓不同工作輪流執行。`top` 的 CPU 百分比描述時間使用量，並不是上下文切換計數器。
+- 保存目前 Process 狀態
+- 載入下一個 Process 狀態
+- 恢復執行
+
+因此會消耗 CPU 時間。
+
+Context Switch 越頻繁，可用於真正運算的 CPU 時間就越少。
+
+---
+
+# 今日重點
+
+- Context Switch 是 Linux Scheduler 在 Process 間切換的過程。
+- 當 Process 數量超過 CPU Core 數量時，Context Switch 會增加。
+- CPU 使用率高，不代表 CPU 都在做有效工作。
+- Context Switch 過多會降低整體效能。
+
+---
+
+# 與 HPC AI Performance Engineering Platform 的關聯
+
+未來平台中的：
+
+- FastAPI
+- Benchmark Worker
+- Prometheus
+- Grafana
+- vLLM
+
+都是 Linux Process。
+
+如果 Compute Node 的 CPU 資源不足，Scheduler 會增加 Context Switch。
+
+Context Switch 增加後，可能造成：
+
+- TPS 下降
+- TTFT 增加
+- Latency 增加
+
+因此，Performance Engineer 在分析 CPU Bottleneck 時，不能只看 CPU 使用率，還必須考慮 Context Switch 是否過於頻繁。
