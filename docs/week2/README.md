@@ -46,7 +46,7 @@ print(result)  # ['example-b']
 
 - **Day1：變數與輸出** — [examples/hello.py](../../examples/hello.py) 只有把 `15` 指派給 `cpu_usage`，再用 `print` 印出的例子；這個數字是寫在程式裡的，沒有量測 CPU。
 - **Day2～Day5：函式、return、list、dict** — 讀各課正文的小段 Python 範例，也可對照本頁的 `summarize`。這些範例沒有整合成獨立的監控模組。
-- **Day6～Day7：呼叫指令、取得 stdout** — [process_monitor.py](../../monitoring/process_monitor.py) 的 `subprocess.run` 執行 `ps`，`result.stdout` 保存文字，`print` 顯示它。檔案沒有把輸出轉成 list／dict。
+- **Day6～Day7：呼叫指令、取得 stdout** — [process_monitor.py](../../monitoring/process_monitor.py) 的 `subprocess.run` 執行 `ps`，`result.stdout` 保存文字，`print` 顯示它。檔案沒有把輸出轉成 list／dict。 檔案的 Git 來源、執行命令與完整實際輸出見 [Day6](day6-subprocess.md#process_monitorpy-從哪裡來)。
 
 ## 每日閱讀順序
 

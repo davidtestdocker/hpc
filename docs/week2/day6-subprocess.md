@@ -3,6 +3,56 @@
 
 [上一課](<day5-dictionary.md>) · [本週目錄](README.md) · [下一課](<day7-stdout.md>) · [全程導讀](../learning-guide.md)
 
+## process_monitor.py 從哪裡來？
+
+這是儲存庫已存在的 Python 教學小程式，不是 Linux 內建工具。Git 最早在 `d487524`（2026-07-02，`Initial commit`）加入 `monitoring/process_monitor.py`，當時就有 `subprocess.run`、擷取 stdout 和 `print`。`a35ce50`（2026-07-24）補上 `check=False`；`67b0725`（2026-09-21）加入註解。Git 紀錄只能確認它何時進入版本控制，不能推定實際撰寫日期。
+
+課程中的位置是：Week1 先用 Linux 的 `ps` 看程序，本課再把這個指令寫進 Python，Day7 解釋如何接收輸出。這個檔案的目的，就是示範「Python 呼叫外部指令」。
+
+### 檔案內容與執行方式
+
+檔案位於儲存庫根目錄下的 [monitoring/process_monitor.py](../../monitoring/process_monitor.py)。現有可執行程式碼如下；檔案已存在，不需要另建一份：
+
+```python
+import subprocess
+
+result = subprocess.run(
+    ["ps", "-eo", "pid,comm"],
+    capture_output=True,
+    text=True,
+    check=False
+)
+
+print(result.stdout)
+```
+
+從儲存庫根目錄執行：
+
+```bash
+python3 monitoring/process_monitor.py
+```
+
+Python 啟動 `ps -eo pid,comm`，等它結束後把文字放進 `result.stdout`，再印到終端機。程式只查詢一次。
+
+### 實際執行結果（2026-09-23）
+
+以下是在目前助理的 Linux 工作環境執行上述檔案後保存的完整 stdout；不是舊 GCP VM，也不是 Week3 的 Docker 容器：
+
+```text
+    PID COMMAND
+      1 codex-linux-san
+      2 bash
+      7 python3
+      8 python3
+      9 ps
+```
+
+第一列是欄位名稱。`PID` 是程序編號，`COMMAND` 是程序名稱；例如最後一列表示查詢當下 PID 9 的程序是 `ps`。Python 程式呼叫的 `ps` 本身也是程序，所以會出現在清單裡。不同環境、不同時間的 PID 和程序數量會變。
+
+可直接看 [完整 stdout 檔](results/process-monitor-20260923.stdout.txt)、[stderr 檔](results/process-monitor-20260923.stderr.txt) 和 [執行紀錄](results/process-monitor-20260923.json)。本次 Python 結束碼為 0、stderr 為空，並確實產生上面的程序表；程式本身沒有檢查子程序的 returncode。
+
+這份結果只展示程序編號與名稱，沒有 CPU、記憶體、PPID 或持續採樣。下方舊實作使用未擷取 stdout 的簡化版本；上面才是目前檔案的內容與本次輸出。
+
 ## 本頁內容核對（2026-09-22）
 
 **已核對本課程式／設定、文內操作與引用結果；證據層級：歷史教材輸出（跨頁接回）。** 這是文件核對，不是重跑環境；沒有要求你再開 VM 或做本機測試。全套進度見[逐篇稽核清單](../audits/curriculum-content-audit.md)，尚未核對的頁面不算完成。

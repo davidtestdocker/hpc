@@ -1,0 +1,12 @@
+{
+  "executed_at_utc": "2026-09-23T07:17:02.987811+00:00",
+  "environment": "current agent Linux workspace; not the historical GCP VM or hpc-monitor:v5 container",
+  "command": [
+    "/usr/bin/python3",
+    "monitoring/process_monitor.py"
+  ],
+  "cwd": "/root/hpc-ai-benchmark-platform",
+  "python_exit_code": 0,
+  "source_sha256": "4a90fc64e3199cc94d0e666fd89384de1a5249fda08623f3300c0bd88e49d3db",
+  "note": "The script does not check the child ps return code. The saved table confirms stdout was produced."
+}
