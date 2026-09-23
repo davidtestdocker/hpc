@@ -1,0 +1,15 @@
+NAME    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
+loop0     7:0    0 66.8M  1 loop /snap/core24/1643
+loop1     7:1    0 66.8M  1 loop /snap/core24/2124
+loop2     7:2    0 50.1M  1 loop /snap/snapd/27710
+loop3     7:3    0 50.3M  1 loop /snap/snapd/27738
+sda       8:0    0   30G  0 disk 
+├─sda1    8:1    0 29.9G  0 part /tmp/codex-bwrap-synthetic-mount-targets-0
+│                                /tmp
+│                                /root/.codex
+│                                /root
+│                                /
+├─sda14   8:14   0    4M  0 part 
+└─sda15   8:15   0  106M  0 part /boot/efi
+sdb       8:16   0  100G  0 disk 
+└─sdb1    8:17   0  100G  0 part /data

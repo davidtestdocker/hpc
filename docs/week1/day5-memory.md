@@ -111,3 +111,36 @@ MainThread
 - 哪一個 Process 使用最多 RAM？
 - 是否有 Process 持續增加記憶體（Memory Leak）？
 - 是否還有足夠 Available Memory 可供新的 Benchmark 或模型使用？
+
+## 補充：2026-09-23 實際執行與解讀
+
+以下是助理在目前 Linux 工作環境新執行的結果，原有教材與舊觀察保留在上方。這次程序清單受執行沙箱限制；整機 CPU、記憶體與裝置統計的可見範圍不一定與程序清單相同。不能把新結果冒充當年的 VM 紀錄。
+
+各指令的時間、參數與結束碼見 [執行紀錄](results/20260923/execution.json)。
+
+### `free -h`
+
+```text
+               total        used        free      shared  buff/cache   available
+Mem:            15Gi       1.0Gi        11Gi       1.0Mi       3.0Gi        14Gi
+Swap:             0B          0B          0B
+```
+
+[完整輸出](results/20260923/free-h.stdout.txt)。
+
+本次顯示總量 15Gi、used 1.0Gi、available 14Gi。available 是估計可供新工作使用的量，包含部分可回收空間；這份整機統計不能當作每個程序的配置額度。
+
+### `ps -eo pid,comm,rss --sort=-rss | head`
+
+```text
+    PID COMMAND           RSS
+      1 codex-linux-san 18572
+      2 python3         11300
+     23 bash             3308
+     24 ps               3128
+     25 head             1892
+```
+
+[完整輸出](results/20260923/ps-rss-head.stdout.txt)。
+
+這次可見程序中，PID 1 的 RSS 為 18572 KiB，PID 2 為 11300 KiB。RSS 包含共享頁，不等於程序獨占的 RAM；多程序直接加總可能重複計算。一次快照不能判斷記憶體是否持續洩漏。

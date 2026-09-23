@@ -1,0 +1,15 @@
+Linux 6.8.0-1067-gcp (hpc-demo) 	09/23/26 	_x86_64_	(4 CPU)
+
+avg-cpu:  %user   %nice %system %iowait  %steal   %idle
+           3.45    0.10    2.09    0.29    0.08   93.99
+
+Device             tps    kB_read/s    kB_wrtn/s    kB_dscd/s    kB_read    kB_wrtn    kB_dscd
+loop0             0.03         0.50         0.00         0.00       1066          0          0
+loop1             0.03         0.51         0.00         0.00       1084          0          0
+loop2             0.02         0.16         0.00         0.00        346          0          0
+loop3             0.27         9.77         0.00         0.00      20791          0          0
+loop4             0.01         0.01         0.00         0.00         14          0          0
+sda              28.29       849.83      1025.27       762.49    1807988    2181249    1622180
+sdb               0.11         2.62         0.01         0.00       5569         12          0
+
+

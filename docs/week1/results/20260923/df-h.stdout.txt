@@ -1,0 +1,14 @@
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root        29G   23G  6.8G  77% /
+tmpfs           7.9G     0  7.9G   0% /dev
+efivarfs        256K   19K  233K   8% /sys/firmware/efi/efivars
+tmpfs           3.2G  1.1M  3.2G   1% /run
+tmpfs           5.0M     0  5.0M   0% /run/lock
+tmpfs           1.6G  4.0K  1.6G   1% /run/user/1002
+/dev/sda15      105M  6.1M   99M   6% /boot/efi
+/dev/sdb1        98G  3.1G   90G   4% /data
+tmpfs           7.9G     0  7.9G   0% /root/.git
+tmpfs           7.9G     0  7.9G   0% /root/.agents
+tmpfs           7.9G     0  7.9G   0% /tmp/.git
+tmpfs           7.9G     0  7.9G   0% /tmp/.agents
+tmpfs           7.9G     0  7.9G   0% /tmp/.codex

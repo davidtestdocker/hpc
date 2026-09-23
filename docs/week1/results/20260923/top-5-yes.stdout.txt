@@ -1,0 +1,31 @@
+top - 07:34:01 up 35 min,  2 users,  load average: 0.20, 0.19, 0.17
+Tasks:   8 total,   6 running,   2 sleeping,   0 stopped,   0 zombie
+%Cpu(s): 51.7 us, 48.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+MiB Mem :  15990.4 total,  11817.3 free,   1071.9 used,   3101.2 buff/cache
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.  14617.9 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+     16 root      20   0    3208   1880   1760 R 100.0   0.0   0:00.16 yes
+     15 root      20   0    3208   1880   1760 R  93.3   0.0   0:00.16 yes
+     18 root      20   0    3208   1884   1764 R  93.3   0.0   0:00.16 yes
+     17 root      20   0    3208   1876   1760 R  60.0   0.0   0:00.09 yes
+     19 root      20   0    3208   1876   1760 R  46.7   0.0   0:00.07 yes
+      1 root      20   0  267584  18572  13012 S   0.0   0.1   0:00.01 codex-l+
+      2 root      20   0   16440  11292   6264 S   0.0   0.1   0:00.06 python3
+     20 root      20   0    7664   3664   3140 R   0.0   0.0   0:00.00 top
+
+top - 07:34:02 up 35 min,  2 users,  load average: 0.83, 0.32, 0.21
+Tasks:   8 total,   6 running,   2 sleeping,   0 stopped,   0 zombie
+%Cpu(s): 49.8 us, 49.8 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.2 si,  0.2 st
+MiB Mem :  15990.4 total,  11817.3 free,   1071.9 used,   3101.2 buff/cache
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.  14617.9 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+     18 root      20   0    3208   1884   1764 R  92.0   0.0   0:01.08 yes
+     16 root      20   0    3208   1880   1760 R  84.0   0.0   0:01.00 yes
+     19 root      20   0    3208   1876   1760 R  67.0   0.0   0:00.74 yes
+     17 root      20   0    3208   1876   1760 R  66.0   0.0   0:00.75 yes
+     15 root      20   0    3208   1880   1760 R  65.0   0.0   0:00.81 yes
+      1 root      20   0  267584  18572  13012 S   0.0   0.1   0:00.01 codex-l+
+      2 root      20   0   16440  11292   6264 S   0.0   0.1   0:00.06 python3
+     20 root      20   0    7664   3668   3140 R   0.0   0.0   0:00.00 top

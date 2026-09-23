@@ -289,3 +289,31 @@ Linux
 - 它是否成為系統瓶頸？
 
 理解 Process，是後續 CPU Scheduling、Context Switch、System Monitoring 與 Performance Analysis 的基礎。
+
+## 補充：2026-09-23 實際執行與解讀
+
+以下是助理在目前 Linux 工作環境新執行的結果，原有教材與舊觀察保留在上方。這次程序清單受執行沙箱限制；整機 CPU、記憶體與裝置統計的可見範圍不一定與程序清單相同。不能把新結果冒充當年的 VM 紀錄。
+
+各指令的時間、參數與結束碼見 [執行紀錄](results/20260923/execution.json)。
+
+### `ps -ef`：程序與父子關係
+
+以下保留欄位標題與本次 Python、ps 兩列；較長的沙箱啟動列見 [完整輸出](results/20260923/ps-ef.stdout.txt)。
+
+```text
+UID          PID    PPID  C STIME TTY          TIME CMD
+root           2       1  0 07:33 ?        00:00:00 python3 /tmp/collect_week1_outputs.py
+root           7       2  0 07:33 ?        00:00:00 ps -ef
+```
+
+PID 2 的 Python 正在執行採集腳本；PID 7 的 ps，其 PPID 是 2，表示它由這個 Python 程序啟動。這就是本課父子程序關係的實際例子。
+
+### 舊文的 `python benchmark.py`
+
+本次也嘗試原文命令，結束碼為 127，stderr 如下：
+
+```text
+bash: line 1: python: command not found
+```
+
+目前環境沒有 `python` 這個命令，且儲存庫也沒有 `benchmark.py`。因此原文這一行只能當作啟動程式的示意，沒有可補造的 benchmark 成功結果。[錯誤原文](results/20260923/benchmark-example.stderr.txt)。

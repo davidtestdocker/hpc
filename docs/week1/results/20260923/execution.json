@@ -1,0 +1,154 @@
+{
+  "environment": "Current agent Linux workspace, not the historical GCP VM",
+  "cpu_affinity_count": 4,
+  "all_created_yes_processes_terminated": true,
+  "records": [
+    {
+      "name": "ps-ef",
+      "command": [
+        "ps",
+        "-ef"
+      ],
+      "started_at_utc": "2026-09-23T07:33:57.854814+00:00",
+      "returncode": 0
+    },
+    {
+      "name": "nproc",
+      "command": [
+        "nproc"
+      ],
+      "started_at_utc": "2026-09-23T07:33:57.861243+00:00",
+      "returncode": 0
+    },
+    {
+      "name": "top-baseline",
+      "command": [
+        "top",
+        "-b",
+        "-n",
+        "2",
+        "-d",
+        "1"
+      ],
+      "started_at_utc": "2026-09-23T07:33:57.863844+00:00",
+      "returncode": 0
+    },
+    {
+      "name": "top-1-yes",
+      "command": [
+        "top",
+        "-b",
+        "-n",
+        "2",
+        "-d",
+        "1"
+      ],
+      "started_at_utc": "2026-09-23T07:33:59.032226+00:00",
+      "returncode": 0,
+      "yes_pids": [
+        10
+      ]
+    },
+    {
+      "name": "top-2-yes",
+      "command": [
+        "top",
+        "-b",
+        "-n",
+        "2",
+        "-d",
+        "1"
+      ],
+      "started_at_utc": "2026-09-23T07:34:00.195718+00:00",
+      "returncode": 0,
+      "yes_pids": [
+        12,
+        13
+      ]
+    },
+    {
+      "name": "top-5-yes",
+      "command": [
+        "top",
+        "-b",
+        "-n",
+        "2",
+        "-d",
+        "1"
+      ],
+      "started_at_utc": "2026-09-23T07:34:01.366116+00:00",
+      "returncode": 0,
+      "yes_pids": [
+        15,
+        16,
+        17,
+        18,
+        19
+      ]
+    },
+    {
+      "name": "vmstat-5-yes",
+      "command": [
+        "vmstat",
+        "1",
+        "2"
+      ],
+      "started_at_utc": "2026-09-23T07:34:02.548764+00:00",
+      "returncode": 0
+    },
+    {
+      "name": "free-h",
+      "command": [
+        "free",
+        "-h"
+      ],
+      "started_at_utc": "2026-09-23T07:34:03.568340+00:00",
+      "returncode": 0
+    },
+    {
+      "name": "ps-rss-head",
+      "command": [
+        "bash",
+        "-c",
+        "set -o pipefail; ps -eo pid,comm,rss --sort=-rss | head"
+      ],
+      "started_at_utc": "2026-09-23T07:34:03.575216+00:00",
+      "returncode": 0
+    },
+    {
+      "name": "df-h",
+      "command": [
+        "df",
+        "-h"
+      ],
+      "started_at_utc": "2026-09-23T07:34:03.583064+00:00",
+      "returncode": 0
+    },
+    {
+      "name": "lsblk",
+      "command": [
+        "lsblk"
+      ],
+      "started_at_utc": "2026-09-23T07:34:03.594170+00:00",
+      "returncode": 0
+    },
+    {
+      "name": "iostat",
+      "command": [
+        "iostat"
+      ],
+      "started_at_utc": "2026-09-23T07:34:03.607302+00:00",
+      "returncode": 0
+    },
+    {
+      "name": "benchmark-example",
+      "command": [
+        "bash",
+        "-c",
+        "python benchmark.py"
+      ],
+      "started_at_utc": "2026-09-23T07:35:56.228801+00:00",
+      "returncode": 127
+    }
+  ]
+}

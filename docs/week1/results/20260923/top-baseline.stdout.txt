@@ -1,0 +1,21 @@
+top - 07:33:58 up 35 min,  2 users,  load average: 0.20, 0.19, 0.17
+Tasks:   3 total,   1 running,   2 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  3.4 us,  1.7 sy,  0.0 ni, 94.8 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+MiB Mem :  15990.4 total,  11818.2 free,   1071.2 used,   3101.0 buff/cache
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.  14618.6 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+      1 root      20   0  267584  18572  13012 S   0.0   0.1   0:00.01 codex-l+
+      2 root      20   0   16440  11268   6264 S   0.0   0.1   0:00.04 python3
+      9 root      20   0    7664   3652   3132 R   0.0   0.0   0:00.00 top
+
+top - 07:33:59 up 35 min,  2 users,  load average: 0.20, 0.19, 0.17
+Tasks:   3 total,   1 running,   2 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  3.1 us,  1.8 sy,  0.0 ni, 94.1 id,  0.0 wa,  0.0 hi,  0.8 si,  0.3 st
+MiB Mem :  15990.4 total,  11818.2 free,   1071.2 used,   3101.0 buff/cache
+MiB Swap:      0.0 total,      0.0 free,      0.0 used.  14618.6 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+      1 root      20   0  267584  18572  13012 S   0.0   0.1   0:00.01 codex-l+
+      2 root      20   0   16440  11268   6264 S   0.0   0.1   0:00.04 python3
+      9 root      20   0    7664   3656   3132 R   0.0   0.0   0:00.00 top
